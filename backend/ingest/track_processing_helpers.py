@@ -1,14 +1,14 @@
-import re, os, orjson, json, tarfile, uuid
-import numpy as np
+import re, os, orjson, tarfile, uuid, logging
 import zstandard as zstd
 from collections import Counter, defaultdict
-from datetime import datetime, date
+from datetime import datetime, timezone
 from statistics import median_low
-from typing import NamedTuple
 
-mute_logs = False
+log = logging.getLogger(__name__)
 invalid_date_count = 0
 missing_data_count = 0
+missing_title_count = 0
+invalid_mbid_count = 0
 
 # Columns of multi-value features, we want to ensure same order is used when they're processed
 # For moods_mirex
@@ -28,7 +28,7 @@ FEATURE_FIELDS = [
 ]
 FEATURE_INDEX = {name: i for i, name in enumerate(FEATURE_FIELDS)}
 
-
+# TODO: This should be parse/extract_mbid and should validate + return normalized if valid
 def is_mbid(s: str) -> bool:
     """
     Check if a string is a valid 36 character MBID
@@ -46,13 +46,6 @@ def is_mbid(s: str) -> bool:
         return True
     except ValueError:
         return False
-
-
-def log(message: str) -> None:
-    global mute_logs
-
-    if not mute_logs:
-        print(message)
 
 
 def parse_flexible_date(date_str: str = None) -> str | None:
@@ -145,6 +138,7 @@ def extract_artist_info(tags: dict) -> list[tuple[str, str]]:
     # Keep track of all artists inside an index
     for idx, artist_id in enumerate(artist_ids):
         artist_id = artist_id.strip()
+        # TODO: Normalize MBID
         if is_mbid(artist_id):
             artists.append((artist_id, tags[artist_key][idx]))
 
@@ -169,7 +163,8 @@ def extract_album_info(tags: dict) -> tuple[str | None, str | None, str | None] 
 
     if not release_date:
         invalid_date_count += 1
-
+    
+    # TODO: Normalize MBID
     if not (album_id and is_mbid(album_id)) and not album_name and not release_date:
         return None
 
@@ -200,11 +195,13 @@ def extract_data_from_json_str(json_str: str, file_path: str | None = None) -> d
     - album_info: a tuple (album_id, album_name, release_date), the album the track is on
     """
     global missing_data_count
+    global missing_title_count
+    global invalid_mbid_count
 
     try:
         data = orjson.loads(json_str)
     except orjson.JSONDecodeError:
-        log(f"Bad JSON string")
+        log.warning(f"Bad JSON string")
         missing_data_count += 1
         return None
 
@@ -213,15 +210,19 @@ def extract_data_from_json_str(json_str: str, file_path: str | None = None) -> d
     tags = metadata.get("tags") or {}
 
     try:
+        # TODO: Normalize MBID
         mbid = tags.get("musicbrainz_recordingid", [None])[0]
         if not mbid:
+            invalid_mbid_count += 1
             raise ValueError(f"missing musicbrainz_recordingid")
         elif not is_mbid(mbid):
+            invalid_mbid_count += 1
             raise ValueError(f"bad MBID: {mbid}")
         
         # TODO: Strip leading and trailing single/double quotes
         title = tags.get("title", [None])[0]
         if not title:
+            missing_title_count += 1
             raise ValueError("missing title")
 
         # High-level features     
@@ -258,9 +259,9 @@ def extract_data_from_json_str(json_str: str, file_path: str | None = None) -> d
 
     except (KeyError, IndexError, TypeError, ValueError) as ex:
         if file_path:
-            log(f"Missing data in JSON string ({ex}), path: {os.path.normpath(file_path)}")
+            log.warning(f"Missing data in JSON string ({ex}), path: '{os.path.normpath(file_path)}'")
         else:
-            log(f"Missing data in JSON string ({ex})")
+            log.warning(f"Missing data in JSON string ({ex})")
         missing_data_count += 1
         return None
 
@@ -354,7 +355,7 @@ def process_file(json_path: str) -> dict | None:
             json_string = f.read()
         return extract_data_from_json_str(json_string, json_path)
     except Exception as ex:
-        log(f"Could not process file ({ex}): {os.path.normpath(json_path)}")
+        log.warning(f"Could not process file ({ex}): '{os.path.normpath(json_path)}'")
         return None
 
 
@@ -369,13 +370,13 @@ def stream_json_from_tar_zst(path: str, read_size=2*1024*1024):
                     try:
                         fileobj = tar.extractfile(member)
                         if not fileobj:
-                            log(f"[WARN] Skipping {member.name}")
+                            log.warning(f"Skipping {member.name}")
                             continue
                         with fileobj:
                             data = fileobj.read().decode("utf-8", errors="replace")
                             yield member.name, data
                     except Exception as e:
-                        log(f"[WARN] Failed {member.name}: {e}")                  
+                        log.warning(f"Failed reading archive {member.name}: {e}")                  
 
 def iter_archive(archive_path: str, limit: int | None = None):
     print(f"Loading {os.path.normpath(archive_path)}", end="", flush=True)

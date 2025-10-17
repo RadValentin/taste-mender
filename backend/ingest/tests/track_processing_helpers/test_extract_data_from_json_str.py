@@ -1,14 +1,8 @@
 from django.test import TestCase
-from datetime import date
 import ingest.track_processing_helpers as tph
 import orjson
 
 class ExtractDataFromJsonStrTests(TestCase):
-    @classmethod
-    def setUpClass(cls):
-        tph.mute_logs = True
-        return super().setUpClass()
-
     def setUp(self):
         # Minimal valid JSON structure
         self.valid_json = orjson.dumps({
@@ -51,9 +45,20 @@ class ExtractDataFromJsonStrTests(TestCase):
         self.assertIn("artist_pairs", result)
         self.assertIn("album_info", result)
 
+    def test_invalid_json(self):
+        result = tph.extract_data_from_json_str("YOLO")
+        self.assertIsNone(result)
+
     def test_invalid_mbid(self):
         data = orjson.loads(self.valid_json)
         data["metadata"]["tags"]["musicbrainz_recordingid"] = ["BADMBID"]
+        modified_json = orjson.dumps(data)
+        result = tph.extract_data_from_json_str(modified_json)
+        self.assertIsNone(result)
+
+    def test_missing_mbid(self):
+        data = orjson.loads(self.valid_json)
+        del data["metadata"]["tags"]["musicbrainz_recordingid"]
         modified_json = orjson.dumps(data)
         result = tph.extract_data_from_json_str(modified_json)
         self.assertIsNone(result)

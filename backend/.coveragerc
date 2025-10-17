@@ -1,0 +1,19 @@
+[run]
+branch = True
+source = recommend_api, ingest
+omit =
+    */__init__.py
+    */migrations/*
+    manage.py
+    */settings/*
+    */debug_*.py
+    ingest/pipeline.py
+
+
+[report]
+show_missing = True
+skip_covered = True
+fail_under = 80
+
+[html]
+directory = cover_html

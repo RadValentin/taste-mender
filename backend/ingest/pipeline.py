@@ -1,10 +1,9 @@
 # Data Processing for Music Recommendation System
-from datetime import date
-import os, time, gc, uuid, shutil
+import os, time, gc, uuid, shutil, logging
 import numpy as np
 import pandas as pd
-from . import track_processing_helpers as tph
 from collections import Counter, defaultdict
+from datetime import date
 from django.db import transaction, connection
 from dotenv import dotenv_values
 from pathlib import Path
@@ -12,7 +11,10 @@ from sklearn.preprocessing import StandardScaler
 from recommend_api.models import Track, Artist, TrackArtist, Album, AlbumArtist
 from pympler import asizeof
 from typing import List, Set, Tuple
-from .lmdb_index import LMDBTrackIndex
+from ingest import track_processing_helpers as tph
+from ingest.lmdb_index import LMDBTrackIndex
+
+log = logging.getLogger(__name__)
 
 
 def ingest_parsed_track(result: dict, track_index: LMDBTrackIndex, counters):
@@ -38,15 +40,22 @@ def show_progress_bar(done: int, total: int, step=10000, message: str = ""):
             print(f"\r[{bar}] {done}/{total} ({percent*100:5.1f}%)", end="", flush=True)
 
 
-def build_database(use_sample: bool, show_log: bool, num_parts: int = None, parts_list: list = None):
+def build_database(use_sample: bool, num_parts: int = None, parts_list: list = None):
     # Size of on-disk track index, set an arbitrary default 2GB
     MAP_SIZE = 1024 * 1024 * 1024 * 2
-    WORKERS = max(8, (os.cpu_count() or 8))
     BASE_DIR = Path(__file__).resolve().parent.parent
     config = dotenv_values(BASE_DIR / ".env")
-    # globals used to track how many records are skipped while processing
+    # Globals used to track how many records are skipped while processing
     counters = {"missing_artist": 0, "processing": 0}
-    tph.mute_logs = not show_log
+    # Don't show logs in console, they'll be logged to a file, clear the file at the start
+    logfile_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ingest.log")
+    logging.basicConfig(
+        filename=logfile_path,
+        level=logging.INFO,
+        filemode="w+",
+        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
 
     ## NOTE: Phase 1 - Load JSON data about tracks into memory
 
@@ -194,7 +203,7 @@ def build_database(use_sample: bool, show_log: bool, num_parts: int = None, part
             base_track["artist_pairs"] = tph.merge_artist_pairs(tracks)
             base_track["album_info"] = tph.merge_album_info(tracks)
         except Exception as e:
-            # tph.log(f"{e} {base_track['file_path']}")
+            # log.warning(f"{e} `{base_track['file_path']}`")
             pass
 
         # Skip tracks that don't have an associated artist.
@@ -207,7 +216,6 @@ def build_database(use_sample: bool, show_log: bool, num_parts: int = None, part
         base_track["submissions"] = len(tracks)
         track_index[mbid] = [base_track]
         del tracks
-
 
     # Ensure pending transactions are committed to store
     track_index.flush()
@@ -231,7 +239,7 @@ def build_database(use_sample: bool, show_log: bool, num_parts: int = None, part
     for track_id, track_dupes in track_index.items():
         if not track_dupes or not track_dupes[0]:
             continue
-        
+
         track = track_dupes[0]
         artist_pairs = track["artist_pairs"]
         album_info = track["album_info"]
@@ -297,13 +305,15 @@ def build_database(use_sample: bool, show_log: bool, num_parts: int = None, part
             + track_features
             + vec_features
         )
-    
+
     end = time.time()
     print(f"Built Track models in {end - start:.2f}s, now running the ORM inserts.")
     print(f"Size of Track models {asizeof.asizeof(track_list) / 1024**2:.2f} MB.")
     print(f"Found {track_index.stats['duplicates']:,} duplicate submissions.")
     print(f"Found {tph.invalid_date_count:,} submissions with invalid dates.")
-    print(f"Found {tph.missing_data_count:,} submissions with missing data.")
+    print(f"Found {tph.missing_data_count:,} submissions with missing data:")
+    print(f"  - {tph.invalid_mbid_count:,} invalid MBIDs")
+    print(f"  - {tph.missing_title_count:,} missing title")
     print(f"Dropped {counters['missing_artist']:,} tracks with no artist.")
     zero_year_count = sum(row[3] == 0 for row in track_features_list)
     print(f"Tracks with year=0: {zero_year_count} / {len(track_features_list)}")
@@ -423,3 +433,7 @@ def build_database(use_sample: bool, show_log: bool, num_parts: int = None, part
 
     end = time.time()
     print(f"Exported feature matrix and indexes in {end - start:.2f} seconds")
+
+
+if __name__ == "__main__":
+    build_database(use_sample=True)
