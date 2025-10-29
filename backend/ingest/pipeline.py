@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 from collections import Counter, defaultdict
 from datetime import date
+from django.contrib.postgres.search import SearchVector
 from django.db import transaction, connection
 from dotenv import dotenv_values
 from pathlib import Path
@@ -20,10 +21,10 @@ log = logging.getLogger(__name__)
 def ingest_parsed_track(result: dict, track_index: LMDBTrackIndex, counters):
     if not result:
         return
-    
+
     track_id = result["musicbrainz_recordingid"]
     track_index.append(track_id, result)
-    
+
     counters["processing"] += 1
     if counters["processing"] % 1000 == 0:
         print(".", end="", flush=True)
@@ -85,7 +86,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
     if parts_list and len(archive_paths):
         archive_paths = [archive_paths[i] for i in parts_list]
     elif num_parts and len(archive_paths):
-        archive_paths = archive_paths[:num_parts]    
+        archive_paths = archive_paths[:num_parts]
 
     start = time.time()
 
@@ -169,7 +170,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
     for mbid_raw in track_index_keys:
         mbid = str(uuid.UUID(bytes=mbid_raw.tobytes()))
         # Show progress bar
-        merged_count += 1 
+        merged_count += 1
         show_progress_bar(merged_count, track_index_keys_count, message="Merging:")
 
         tracks = track_index.get(mbid)
@@ -203,7 +204,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
             base_track["artist_pairs"] = tph.merge_artist_pairs(tracks)
             base_track["album_info"] = tph.merge_album_info(tracks)
         except Exception as e:
-            # log.warning(f"{e} `{base_track['file_path']}`")
+            # log.warning(f"{e}")
             pass
 
         # Skip tracks that don't have an associated artist.
@@ -251,7 +252,8 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
             genre_dortmund=track["genre_dortmund"],
             genre_rosamerica=track["genre_rosamerica"],
             submissions=track["submissions"],
-            # file_path=track["file_path"],
+            # TODO: Handle this after the duplicate artist names are merged.
+            artists_text=" ".join(dict.fromkeys(name for _, name in artist_pairs if name))
         )
         track_list.append(track_obj)
 
@@ -352,8 +354,15 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
             )
             show_progress_bar(i, len(track_list), BATCH_SIZE, message="Inserting Tracks:")
 
+        print(f"\nBuilding search vectors for tracks")
+        search_vector = (
+            SearchVector("title", config="simple", weight="A") +
+            SearchVector("artists_text", config="simple", weight="B")
+        )
+        Track.objects.update(search_vector=search_vector)
+
         end = time.time()
-        print(f"\nInserted {len(track_list)} Tracks in {end - start:.2f} seconds")
+        print(f"Inserted {len(track_list)} Tracks in {end - start:.2f} seconds")
         del track_list
 
         start = time.time()
