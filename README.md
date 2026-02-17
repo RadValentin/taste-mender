@@ -1,6 +1,6 @@
 # TasteMender: A stateless music recommendation API
 
-[![codecov](https://codecov.io/github/RadValentin/CM3070-FP-Music-Recommendation/graph/badge.svg?token=ITNRZ3ZZZK)](https://codecov.io/github/RadValentin/CM3070-FP-Music-Recommendation)
+[![codecov](https://codecov.io/gh/RadValentin/taste-mender/graph/badge.svg?token=JfbmGuIWGl)](https://codecov.io/gh/RadValentin/taste-mender)
 
 _Created as a final project for UoL BScCS (CM3070) by Valentin Radulescu_
 
