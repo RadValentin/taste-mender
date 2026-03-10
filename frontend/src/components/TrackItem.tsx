@@ -5,9 +5,10 @@ import "./TrackItem.css";
 type TrackItemProps = {
   track: Track;
   onPlay?: (track: Track) => void;
+  disabled?: boolean;
 };
 
-export default function TrackItem({ track, onPlay }: TrackItemProps) {
+export default function TrackItem({ track, onPlay, disabled }: TrackItemProps) {
   const artists = track.artists?.map(a => a.name).join(", ") || "Unknown artist";
   const album = track.album?.name ?? null;
   const year = track.album?.date ? new Date(track.album.date).getFullYear() : null;
@@ -40,6 +41,7 @@ export default function TrackItem({ track, onPlay }: TrackItemProps) {
       <div className="actions">
         {onPlay && (
           <button
+            disabled={disabled}
             type="button"
             className="button"
             aria-label="Play"
