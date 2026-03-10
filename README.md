@@ -2,10 +2,8 @@
 
 [![codecov](https://codecov.io/gh/RadValentin/taste-mender/graph/badge.svg?token=JfbmGuIWGl)](https://codecov.io/gh/RadValentin/taste-mender)
 
-_Created as a final project for UoL BScCS (CM3070) by Valentin Radulescu_
-
-> [!IMPORTANT]
-> Created as a final project for UoL BScCS (CM3070) by Valentin Radulescu.
+> [!NOTE]
+> Originally developed as a final project for the BSc Computer Science degree at Goldsmiths, University of London (available [here](https://github.com/RadValentin/CM3070-FP-Music-Recommendation)). This repository continues that work, aiming to transform it into a deployable music discovery web app.
 
 ## Installation
 
