@@ -104,7 +104,7 @@ export default function Player({ ref }: PlayerProps) {
           playsinline: 1,
         },
         events: {
-          onReady: () => { 
+          onReady: () => {
             setPlayerState(playerState => ({...playerState, isReady: true}));
           },
           onStateChange: (e: any) => {
@@ -129,7 +129,7 @@ export default function Player({ ref }: PlayerProps) {
       mounted = false;
       try {
         iframeRef.current?.destroy?.();
-      } catch { 
+      } catch {
         console.error("Could not destroy iframe player");
       }
     };
@@ -138,10 +138,10 @@ export default function Player({ ref }: PlayerProps) {
   // Methods callable by parent component
   useImperativeHandle(ref, () => ({
     // Play a track
-    loadAndPlay: (track: Track) => { 
-      playTrack(track);
-      setPlayerState(defaultPlayerState);
+    loadAndPlay: (track: Track) => {
+      setPlayerState(() => ({...defaultPlayerState, track}));
       setRecState(defaultRecState);
+      playTrack(track);
     },
     // Stop playback and reset state
     reset: () => {
@@ -171,8 +171,8 @@ export default function Player({ ref }: PlayerProps) {
       console.log("Got recommendations:", data);
       setRecState(recState => ({
         ...recState,
-        isLoading: false, 
-        similarList: data.similar_list, 
+        isLoading: false,
+        similarList: data.similar_list,
         stats: data.stats,
         filtersPayload: payload
       }))
@@ -202,8 +202,8 @@ export default function Player({ ref }: PlayerProps) {
         console.log("Got recommendations:", data);
         setRecState(recState => ({
           ...recState,
-          isLoading: false, 
-          similarList: data.similar_list, 
+          isLoading: false,
+          similarList: data.similar_list,
           stats: data.stats,
           listenedMbids: [track.mbid, ...recState.listenedMbids]
         }))
@@ -250,11 +250,11 @@ export default function Player({ ref }: PlayerProps) {
             {year && <> • <span className="year">{year}</span></>}
           </div>
         </div>
-        
+
         <div>
           <button type="button" className="button" aria-label="Play/Pause" onClick={togglePlayback}>
-            { playerState.isPlaying 
-              ? <i className="fa-solid fa-pause"></i> 
+            { playerState.isPlaying
+              ? <i className="fa-solid fa-pause"></i>
               : <i className="fa-solid fa-play"></i>
             }
           </button>
@@ -262,8 +262,8 @@ export default function Player({ ref }: PlayerProps) {
             <i className="fa-solid fa-forward"></i>
           </button>
           <button type="button" className="button" aria-label="Minimize/Maximize" onClick={toggleMaximize}>
-            { playerState.isMaximized 
-              ? <i className="fa-solid fa-caret-down"></i> 
+            { playerState.isMaximized
+              ? <i className="fa-solid fa-caret-down"></i>
               : <i className="fa-solid fa-caret-up"></i>
             }
           </button>
@@ -292,9 +292,10 @@ export default function Player({ ref }: PlayerProps) {
   };
 
   const overlayClass = playerState.isMaximized ? "overlay maximized" : "overlay minimized";
+  const playerClass = playerState.track ? "player" : "player empty";
 
   return (
-    <div className="player">
+    <div className={playerClass}>
       <div className={overlayClass}>
         <div className="player-filters">
           <Filters onChange={onFiltersChange} />

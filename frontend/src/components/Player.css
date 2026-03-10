@@ -20,6 +20,10 @@
     border-radius: 4px;
   }
 
+  &.empty {
+    flex: 0 0 0;
+  }
+
   & .overlay {
     display: flex;
     position: absolute;
@@ -61,7 +65,7 @@
   & .player-recommendations {
     position: relative;
     padding: 1rem;
-    
+
     & .heading {
       color: white;
       font-weight: bold;
