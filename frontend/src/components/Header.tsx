@@ -16,9 +16,9 @@ export default function Header({onSearch}: { onSearch: (query: string, type: str
 
   return (
     <div className="header">
-      <h1>TasteMender</h1>
+      <a className="logo" href="/">TasteMender</a>
       <div>
-        <input 
+        <input
           value={searchQuery}
           placeholder={inputPlaceholder}
           onChange={(e) => setSearchQuery(e.target.value)}
