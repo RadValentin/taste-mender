@@ -19,7 +19,7 @@ function App() {
   const [isLoading, setLoading] = useState(false);
   const playerRef = useRef<PlayerRef>(null);
 
-  function onSearch(query: string, type: string) {
+  function onSearch(query: string) {
     if (isLoading) {
       return;
     }
@@ -31,29 +31,27 @@ function App() {
     playerRef.current?.minimize();
     setLoading(true);
 
-    if (type == "track") {
-      searchTracks(query)
-        .then(resp => {
-          setResults({ 
-            data: resp.results, 
-            status: resp.results.length !== 0 ? "SEARCH" : "EMPTY"
-          });
-        })
-        .catch(err => {
-          console.error("Error while searching for tracks: ", err);
-          setResults({ data: [], status: "ERROR" });
-        }).finally(() => {
-           setLoading(false);
+    searchTracks(query)
+      .then(resp => {
+        setResults({
+          data: resp.results,
+          status: resp.results.length !== 0 ? "SEARCH" : "EMPTY"
         });
-    }
+      })
+      .catch(err => {
+        console.error("Error while searching for tracks: ", err);
+        setResults({ data: [], status: "ERROR" });
+      }).finally(() => {
+          setLoading(false);
+      });
   }
 
   function loadTopTracks() {
     setLoading(true);
     getTracks("-submissions")
       .then(resp => {
-        setResults({ 
-          data: resp.results, 
+        setResults({
+          data: resp.results,
           status: resp.results.length !== 0 ? "TOP" : "EMPTY"
         });
         setLoading(false);

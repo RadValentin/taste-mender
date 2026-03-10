@@ -2,15 +2,14 @@ import { useState } from 'react';
 import { API_BASE_URL } from '../api';
 import './Header.css'
 
-export default function Header({onSearch}: { onSearch: (query: string, type: string) => void }) {
-  const [searchType, setSearchType] = useState("track");
+export default function Header({onSearch}: { onSearch: (query: string) => void }) {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const inputPlaceholder = `Search for ${searchType}s...`;
+  const inputPlaceholder = `Search for track or artist...`;
 
   function onInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
-      onSearch(searchQuery, searchType)
+      onSearch(searchQuery)
     }
   }
 
@@ -24,11 +23,6 @@ export default function Header({onSearch}: { onSearch: (query: string, type: str
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={onInputKeyDown}
         />
-        <select value={searchType} onChange={e => setSearchType(e.target.value)}>
-          <option value="track">Track</option>
-          <option value="artist" disabled>Artist</option>
-          <option value="album" disabled>Album</option>
-        </select>
       </div>
       <div style={{textAlign: "right"}}>
         <a href={API_BASE_URL}>API</a>
