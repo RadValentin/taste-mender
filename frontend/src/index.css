@@ -54,3 +54,9 @@ html, body {
   padding: 0.15rem 0.4rem;
   border-radius: 999px;
 }
+
+#root {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+}

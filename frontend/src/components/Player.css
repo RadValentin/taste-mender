@@ -1,7 +1,7 @@
 .player {
   position: relative;
   background-color: deepskyblue;
-  height: 80px;
+  flex: 0 0 80px;
   scrollbar-width: thin;
   scrollbar-color: coral dodgerblue;
 
