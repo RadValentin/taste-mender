@@ -2,7 +2,8 @@
   /* Background colors */
   --bg-primary: #1C1F23; /* Main app background */
   --bg-secondary: #262A2F; /* Cards, containers */
-  --bg-secondary-dark: #1A1D21; /* Sidebar */
+  --bg-secondary-light: rgb(77, 81, 86); /* Inputs */
+  --bg-secondary-dark: #12151b; /* Sidebar */
 
   /* Accent colors */
   --accent-cyan: #2ED3E6; /* Main highlight */
@@ -21,7 +22,8 @@
   --font-size-ui-label: 0.75rem; /* 12px - UI labels */
 
   /* Effects */
-  --shadow-glow: 0 0 8px rgba(46,211,230,0.5);
+  --shadow-glow: 0 0 8px rgba(46, 211, 230, 0.5);
+  --shadow-outline: 0 0 0 .25rem rgba(46, 211, 230, 0.8);
 
   /* UI element sizes */
   --header-height-lg: 80px;
@@ -36,6 +38,31 @@ html, body {
   margin: 0;
   padding: 0;
   font-family: "Inter", sans-serif;
+  color: var(--text-primary);
+}
+
+input {
+  background: var(--bg-secondary-light);
+  border: 1px solid var(--bg-secondary-light);
+  color: var(--text-primary);
+
+  &::placeholder {
+    color: var(--text-secondary);
+  }
+}
+
+button {
+  color: var(--text-primary);
+}
+
+input:focus {
+  outline: 2px solid var(--accent-cyan);
+  outline-offset: 2px;
+}
+
+a {
+  color: var(--accent-cyan);
+  text-decoration: none;
 }
 
 /* Reusable styles */

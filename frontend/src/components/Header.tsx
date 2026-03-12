@@ -9,20 +9,24 @@ export default function Header({onSearch}: { onSearch: (query: string) => void }
 
   function onInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
-      onSearch(searchQuery)
+      onSearch(searchQuery);
     }
   }
 
   return (
     <div className="header">
       <a className="logo" href="/">TasteMender</a>
-      <div>
+      <div className="search-box">
         <input
+          name="search"
           value={searchQuery}
           placeholder={inputPlaceholder}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={onInputKeyDown}
         />
+        <button type="button" className="button button-search" aria-label="Search" onClick={() => {onSearch(searchQuery)}}>
+          <i className="fa-solid fa-magnifying-glass"></i>
+        </button>
       </div>
       <div style={{textAlign: "right"}}>
         <a href={API_BASE_URL}>API</a>

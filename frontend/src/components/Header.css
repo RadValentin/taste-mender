@@ -2,7 +2,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: coral;
+    background-color: var(--bg-secondary-dark);
     flex: 0 0 var(--player-height-lg);
     padding: 0.5em 2em;
 
@@ -13,34 +13,46 @@
 
   & .logo {
     display: inline-block;
-    color: #fff;
+    color: var(--text-primary);
     font-family: "Orbitron", sans-serif;
     font-size: var( --font-size-app-title);
     font-weight: 700;
     letter-spacing: 0.05em;
-    text-shadow: 2px 2px #a13c2f;
+    text-shadow: 0px 0px 20px var(--accent-cyan-light);
     text-decoration: none;
   }
 
-  & input {
-    border-radius: 6px;
-  }
+  & .search-box {
+    & input {
+      height: 2.6rem;
+      padding: 0.5em 1em;
+      border: 1px solid var(--bg-secondary-light);
+      border-radius: 6px 0 0 6px;
+      font-size: 1em;
+      background: var(--bg-secondary-light);
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
 
-  & input {
-    padding: 0.5em 1em;
-    border: 1px solid #ccc;
-    font-size: 1em;
-    background: #fff;
-    transition: border-color 0.2s, box-shadow 0.2s;
-  }
+    & input:focus {
+      outline: none;
+      box-shadow: var(--shadow-outline);
+    };
 
-  & input:focus {
-    outline: 2px solid #3b82f6;
-    outline-offset: 2px;
+    & .button-search {
+      height: 2.6rem;
+      border: 1px solid var(--bg-secondary);
+      border-radius: 0 6px 6px 0;
+      background: var(--bg-secondary);
+    }
+
+    & .button-search:focus {
+      outline: none;
+      box-shadow: var(--shadow-outline);
+    }
   }
 
   & a {
-    color: #fff;
+    font-weight: bold;
   }
 
   & a + a {
