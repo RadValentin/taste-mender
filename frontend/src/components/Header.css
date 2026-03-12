@@ -3,7 +3,7 @@
     align-items: center;
     justify-content: space-between;
     background-color: coral;
-    flex: 0 0 80px;
+    flex: 0 0 var(--player-height-lg);
     padding: 0.5em 2em;
 
   & > * {

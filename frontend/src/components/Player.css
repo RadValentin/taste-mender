@@ -1,7 +1,7 @@
 .player {
   position: relative;
   background-color: deepskyblue;
-  flex: 0 0 80px;
+  flex: 0 0 var(--player-height-lg);
   scrollbar-width: thin;
   scrollbar-color: coral dodgerblue;
 
@@ -36,7 +36,7 @@
   }
 
   & .overlay.maximized {
-    height: calc(100vh - 160px);
+    height: calc(100vh - var(--header-height-lg) - var(--player-height-lg));
   }
 
   & .overlay.minimized {

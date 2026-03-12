@@ -22,6 +22,10 @@
 
   /* Effects */
   --shadow-glow: 0 0 8px rgba(46,211,230,0.5);
+
+  /* UI element sizes */
+  --header-height-lg: 80px;
+  --player-height-lg: 80px;
 }
 
 * {
