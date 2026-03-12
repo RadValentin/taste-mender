@@ -62,9 +62,18 @@
     margin-bottom: 1rem;
   }
 
+  /* Recommendations drawer */
   & .player-recommendations {
     position: relative;
-    padding: 1rem;
+    overflow: hidden;
+
+    /* We need a way to overlay the loading spinner on top of scrollable content:
+      make the parent non scrollable, and the content scrollable. */
+    & .recommendations-content {
+      overflow: auto;
+      height: 100%;
+      padding: 1rem;
+    }
 
     & .heading {
       color: white;

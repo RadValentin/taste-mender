@@ -283,10 +283,22 @@ export default function Player({ ref }: PlayerProps) {
     return (
       <div className="player-recommendations">
         {recState.isLoading && <LoadingSpinner />}
-        <div className="heading">Up Next:</div>
-        <TrackItem key={firstRec.mbid} track={firstRec} onPlay={() => {playTrack(firstRec)}} />
-        <div className="heading">Other recommendations:</div>
-        {otherRec.map(track => <TrackItem key={track.mbid} track={track} onPlay={() => {playTrack(track)}} disabled={recState.isLoading} />)}
+        <div className="recommendations-content">
+          <div className="heading">Up Next:</div>
+          <TrackItem
+            key={firstRec.mbid}
+            track={firstRec}
+            onPlay={() => { playTrack(firstRec) }}
+            disabled={recState.isLoading} />
+          <div className="heading">Other recommendations:</div>
+          {otherRec.map(track =>
+            <TrackItem
+              key={track.mbid}
+              track={track}
+              onPlay={() => { playTrack(track) }}
+              disabled={recState.isLoading} />
+          )}
+        </div>
       </div>
     );
   };
