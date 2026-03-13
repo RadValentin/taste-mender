@@ -39,6 +39,23 @@ html, body {
   padding: 0;
   font-family: "Inter", sans-serif;
   color: var(--text-primary);
+  scrollbar-width: thin;
+  scrollbar-color: var(--accent-orange) var(--bg-secondary);
+}
+
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--accent-orange);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--bg-secondary);
+  border-radius: 4px;
 }
 
 input {

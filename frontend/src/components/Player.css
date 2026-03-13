@@ -2,23 +2,6 @@
   position: relative;
   background-color: deepskyblue;
   flex: 0 0 var(--player-height-lg);
-  scrollbar-width: thin;
-  scrollbar-color: coral dodgerblue;
-
-  & ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
-  }
-
-  & ::-webkit-scrollbar-thumb {
-    background: coral;
-    border-radius: 4px;
-  }
-
-  & ::-webkit-scrollbar-track {
-    background: #e0f0ff;
-    border-radius: 4px;
-  }
 
   &.empty {
     flex: 0 0 0;
