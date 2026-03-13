@@ -1,5 +1,6 @@
 import type { Track } from "../types";
 import ImageLoader from "./ImageLoader";
+import PlayButton from "./PlayButton";
 import "./TrackItem.css";
 
 type TrackItemProps = {
@@ -39,17 +40,7 @@ export default function TrackItem({ track, onPlay, disabled }: TrackItemProps) {
       </div>
 
       <div className="actions">
-        {onPlay && (
-          <button
-            disabled={disabled}
-            type="button"
-            className="button"
-            aria-label="Play"
-            onClick={() => onPlay(track)}
-          >
-            <i className="fa-solid fa-play"></i>
-          </button>
-        )}
+        {onPlay && <PlayButton disabled={disabled} onClick={() => onPlay(track)} />}
       </div>
     </div>
   );
