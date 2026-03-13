@@ -19,16 +19,22 @@ export default function Header({onSearch}: { onSearch: (query: string) => void }
       <div className="search-box">
         <input
           name="search"
+          type="search"
           value={searchQuery}
           placeholder={inputPlaceholder}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={onInputKeyDown}
         />
-        <button type="button" className="button button-search" aria-label="Search" onClick={() => {onSearch(searchQuery)}}>
+        <button
+          type="button"
+          className="button button-search"
+          aria-label="Search"
+          onClick={() => {onSearch(searchQuery)}}
+        >
           <i className="fa-solid fa-magnifying-glass"></i>
         </button>
       </div>
-      <div style={{textAlign: "right"}}>
+      <div className="links">
         <a href={API_BASE_URL}>API</a>
         {/* <a href="#">About</a> */}
       </div>

@@ -23,7 +23,11 @@
   }
 
   & .search-box {
+    flex: 0 1 600px;
+    display: flex;
+
     & input {
+      flex: 1;
       height: 2.6rem;
       padding: 0.5em 1em;
       border: 1px solid var(--bg-secondary-light);
@@ -51,11 +55,23 @@
     }
   }
 
-  & a {
-    font-weight: bold;
-  }
+  & .links {
+    text-align: right;
 
-  & a + a {
-    margin-left: 1em;
+    & a {
+      font-weight: bold;
+    }
+
+    & a + a {
+      margin-left: 1em;
+    }
+  }
+}
+
+@media (max-width: 992px) {
+  .header {
+    & .search-box {
+      flex: 1 1 auto;
+    }
   }
 }
