@@ -44,9 +44,15 @@
 
     & .button-search {
       height: 2.6rem;
+      padding: 0.45rem 0.7rem;
       border: 1px solid var(--bg-secondary);
       border-radius: 0 6px 6px 0;
       background: var(--bg-secondary);
+    }
+
+    & .button-search:hover {
+      border-color: var(--bg-secondary-light);
+      background: var(--bg-secondary-light);
     }
 
     & .button-search:focus {
