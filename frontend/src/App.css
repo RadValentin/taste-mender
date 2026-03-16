@@ -5,10 +5,9 @@
   background-color: var(--bg-primary);
 
   .content {
-    height: 100%;
     max-width: 1200px;
     margin: 0 auto;
-    padding-top: 1rem;
+    padding: 1rem;
 
     .track-item {
       margin-bottom: 10px;

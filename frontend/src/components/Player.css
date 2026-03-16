@@ -1,6 +1,6 @@
 .player {
   position: relative;
-  background-color: deepskyblue;
+  background-color: var(--bg-secondary);
   flex: 0 0 var(--player-height-lg);
 
   &.empty {
@@ -132,6 +132,10 @@
     & > * {
       white-space: nowrap;
     }
+  }
+
+  & .content button {
+    font-size: 1.4rem;
   }
 
   & .content button + button {
