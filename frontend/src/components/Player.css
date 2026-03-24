@@ -80,6 +80,18 @@
     justify-content: space-between;
     align-items: center;
 
+    border: 2px solid;
+    border-image-slice: 1;
+    border-image-source: linear-gradient(
+      to left,
+      var(--bg-secondary),
+      var(--bg-secondary-light),
+      var(--bg-secondary)
+    );
+    border-bottom: 0;
+    border-left: 0;
+    border-right: 0;
+
     & .meta {
       flex: 1;
     }
