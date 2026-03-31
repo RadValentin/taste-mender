@@ -284,13 +284,13 @@ export default function Player({ ref }: PlayerProps) {
       <div className="player-recommendations">
         {recState.isLoading && <LoadingSpinner />}
         <div className="recommendations-content">
-          <div className="heading">Up Next:</div>
+          <h4 className="heading">Up Next:</h4>
           <TrackItem
             key={firstRec.mbid}
             track={firstRec}
             onPlay={() => { playTrack(firstRec) }}
             disabled={recState.isLoading} />
-          <div className="heading">Other recommendations:</div>
+          <h4 className="heading">Other recommendations:</h4>
           {otherRec.map(track =>
             <TrackItem
               key={track.mbid}
@@ -316,16 +316,45 @@ export default function Player({ ref }: PlayerProps) {
           <div ref={containerRef}></div>
           {recState && recState.stats && (
             <>
-              <div className="heading">Stats</div>
-              <ul>
-                <li>Candidate count: {recState.stats.candidate_count}</li>
-                <li>Max similarity: {Number(recState.stats.max).toPrecision(5)}</li>
-                <li>Mean similarity: {Number(recState.stats.mean).toPrecision(5)}</li>
-                <li>P95: {Number(recState.stats.p95).toPrecision(5)}</li>
-                <li>STD: {Number(recState.stats.std).toPrecision(5)}</li>
-                <li>Cosine search time: {Number(recState.stats.search_time).toPrecision(5)}s</li>
-                <li>Listened to {recState.listenedMbids.length} tracks</li>
-              </ul>
+              <h4 className="heading">Stats</h4>
+              <div className="stats">
+                <div className="stats-box">
+                  <p className="stats-box-heading">Tracks analyzed</p>
+                  <p className="stats-box-counter">{Number(recState.stats.candidate_count).toLocaleString()}</p>
+                </div>
+                <div className="stats-box">
+                  <p className="stats-box-heading">Best match</p>
+                  <p className="stats-box-counter">
+                    {Math.floor(Number(recState.stats.max) * 100)}%
+                  </p>
+                </div>
+                <div className="stats-box">
+                  <p className="stats-box-heading">Average match</p>
+                  <p className="stats-box-counter">
+                    {Math.floor(Number(recState.stats.mean) * 100)}%
+                  </p>
+                </div>
+                <div className="stats-box">
+                  <p className="stats-box-heading">Top-tier match (95th percentile)</p>
+                  <p className="stats-box-counter">
+                    {Math.floor(Number(recState.stats.p95) * 100)}%
+                  </p>
+                </div>
+                <div className="stats-box">
+                  <p className="stats-box-heading">Score spread (STD)</p>
+                  <p className="stats-box-counter">{Number(recState.stats.std).toFixed(3)}</p>
+                </div>
+                <div className="stats-box">
+                  <p className="stats-box-heading">Search time</p>
+                  <p className="stats-box-counter">
+                    {Number(recState.stats.search_time * 1000).toFixed(3)}ms
+                  </p>
+                </div>
+                <div className="stats-box">
+                  <p className="stats-box-heading">Listened tracks</p>
+                  <p className="stats-box-counter">{recState.listenedMbids.length}</p>
+                </div>
+              </div>
             </>
           )}
         </div>

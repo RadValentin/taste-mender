@@ -7,13 +7,18 @@
     flex: 0 0 0;
   }
 
+  & .heading {
+    font-weight: bold;
+    margin-bottom: .5rem;
+  }
+
   & .overlay {
     display: flex;
     position: absolute;
     left: 0;
     right: 0;
     bottom: 100%;
-    background-color: dodgerblue;
+    background-color: var(--bg-primary);
     transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
   }
@@ -32,20 +37,50 @@
     overflow: auto;
   }
 
+  /* Video & stats tab */
   & .player-iframe {
     display: flex;
     flex-direction: column;
     flex: 1.5;
     margin-top: 1rem;
-    color: white;
+
+    & iframe {
+      width: 100%;
+      margin-bottom: 1rem;
+    }
+
+    & .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+    }
+
+    & .stats-box {
+      width: calc((100% / 3) - (1rem / 3));
+      border: 1px solid var(--bg-secondary);
+      border-radius: 0.3rem;
+      background: var(--bg-secondary-dark);
+      padding: .6rem;
+
+      @media (width < 992px) {
+        width: calc((100% / 2) - (.5rem / 2));
+      }
+    }
+
+    & .stats-box-heading {
+      font-size: var(--font-size-metadata);
+      margin: 0 0 .6rem;
+    }
+
+    & .stats-box-counter {
+      font-size: var(--font-size-section-title);
+      font-weight: 600;
+      margin: 0;
+    }
   }
 
-  & .player-iframe iframe {
-    width: 100%;
-    margin-bottom: 1rem;
-  }
 
-  /* Recommendations drawer */
+  /* Recommendations tab */
   & .player-recommendations {
     position: relative;
     overflow: hidden;
@@ -56,16 +91,6 @@
       overflow: auto;
       height: 100%;
       padding: 1rem;
-    }
-
-    & .heading {
-      color: white;
-      font-weight: bold;
-      margin-bottom: .5rem;
-    }
-
-    & ul {
-      color: white;
     }
 
     & .track-item {
@@ -80,6 +105,7 @@
     justify-content: space-between;
     align-items: center;
 
+    /* Gradient border for footer top */
     border: 2px solid;
     border-image-slice: 1;
     border-image-source: linear-gradient(
@@ -119,8 +145,8 @@
         justify-content: center;
         width: 100%;
         height: 100%;
-        font-weight: 700;
-        font-size: 1rem;
+        font-weight: 600;
+        font-size: 1.6rem;
         color: #666;
       }
     }

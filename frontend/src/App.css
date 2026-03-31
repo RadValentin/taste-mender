@@ -4,12 +4,12 @@
   overflow-y: auto;
   background-color: var(--bg-primary);
 
-  .content {
+  & .content {
     max-width: 1200px;
     margin: 0 auto;
     padding: 1rem;
 
-    .track-item {
+    & .track-item {
       margin-bottom: 10px;
     }
   }
