@@ -13,6 +13,7 @@
   /* Text colors */
   --text-primary: #E6E6E6; /* Main text */
   --text-secondary: #9CA3AF; /* Secondary text */
+  --text-heading: #c7e6f7; /* Headings */
 
   /* Font sizes */
   --font-size-app-title: 1.5rem; /* 24px - App Title */
@@ -41,6 +42,12 @@ html, body {
   color: var(--text-primary);
   scrollbar-width: thin;
   scrollbar-color: var(--accent-orange) var(--bg-secondary);
+}
+
+h1, h2, h3, h4, h5, h6 {
+  color: var(--text-heading);
+  margin: 0;
+  padding: 0;
 }
 
 ::-webkit-scrollbar {

@@ -4,7 +4,7 @@ import "./Filters.css";
 
 export type FiltersPayload = {
     filters?: any;
-    feature_weights?: any; 
+    feature_weights?: any;
     total_weights?: any;
 }
 
@@ -117,7 +117,7 @@ export default function Filters({ onChange }: FiltersProps) {
 
   return (
     <div className="filters">
-      <div className="heading">Filters</div>
+      <h4 className="heading">Filters</h4>
       <label>
         <span>Same genre</span>
         <input
@@ -136,8 +136,8 @@ export default function Filters({ onChange }: FiltersProps) {
       </label>
       <label>
         <span>Genre classification</span>
-        <select 
-          value={filters.genre_classification} 
+        <select
+          value={filters.genre_classification}
           onChange={e => {updateClassification(e.target.value)}}
         >
           <option value="rosamerica">rosamerica</option>
@@ -145,44 +145,44 @@ export default function Filters({ onChange }: FiltersProps) {
         </select>
       </label>
 
-      <div className="heading">Total Weights</div>
+      <h4 className="heading">Total Weights</h4>
       <div className="sliders-container">
         <label>
           <span>Similarity</span>
-          <input 
+          <input
             className="slider" type="range" min={0} max={1} step={0.1}
             value={totalWeights.similarity}
             onChange={e => updateSimilarity(parseFloat(e.target.value))}
             onMouseUp={handleChangeEnd}
             onKeyUp={handleChangeEnd}
-            onTouchEnd={handleChangeEnd}  
+            onTouchEnd={handleChangeEnd}
           />
         </label>
         <label>
           Popularity
-          <input 
+          <input
             className="slider" type="range" min={0} max={1} step={0.1}
             value={totalWeights.popularity}
-            onChange={e => updatePopularity(parseFloat(e.target.value))}   
+            onChange={e => updatePopularity(parseFloat(e.target.value))}
             onMouseUp={handleChangeEnd}
             onKeyUp={handleChangeEnd}
-            onTouchEnd={handleChangeEnd}  
+            onTouchEnd={handleChangeEnd}
           />
         </label>
       </div>
-      
-      <div className="heading">Similarity Weights</div>
+
+      <h4 className="heading">Similarity Weights</h4>
       <div className="sliders-container">
         {FEATURES.map(feature_name => (
           <label key={feature_name}>
             <span>{getFeatureDisplayName(feature_name)}</span>
-            <input 
+            <input
               className="slider" type="range" min={0} max={1} step={0.1}
               value={featureWeights[feature_name]}
-              onChange={e => updateFeatureWeight(feature_name, parseFloat(e.target.value))}   
+              onChange={e => updateFeatureWeight(feature_name, parseFloat(e.target.value))}
               onMouseUp={handleChangeEnd}
               onKeyUp={handleChangeEnd}
-              onTouchEnd={handleChangeEnd}  
+              onTouchEnd={handleChangeEnd}
             />
           </label>
         ))}

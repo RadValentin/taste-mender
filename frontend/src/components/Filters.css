@@ -1,10 +1,7 @@
 .filters {
   padding: 1rem;
-  color: white;
 
   & .heading {
-    color: white;
-    font-weight: bold;
     margin: .5rem 0 .5rem;
   }
 
