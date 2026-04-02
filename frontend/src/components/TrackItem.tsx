@@ -1,18 +1,20 @@
 import type { Track } from "../types";
 import ImageLoader from "./ImageLoader";
+import PlayButton from "./PlayButton";
 import "./TrackItem.css";
 
 type TrackItemProps = {
   track: Track;
   onPlay?: (track: Track) => void;
+  disabled?: boolean;
 };
 
-export default function TrackItem({ track, onPlay }: TrackItemProps) {
+export default function TrackItem({ track, onPlay, disabled }: TrackItemProps) {
   const artists = track.artists?.map(a => a.name).join(", ") || "Unknown artist";
   const album = track.album?.name ?? null;
   const year = track.album?.date ? new Date(track.album.date).getFullYear() : null;
-  const artUrl = track.album?.links?.art ?? null
-  const fallbackText = track.title?.charAt(0)?.toUpperCase() ?? "♪"
+  const artUrl = track.album?.links?.art ?? null;
+  const fallbackText = track.album?.name?.trim()?.charAt(0)?.toUpperCase() || "♪";
 
   return (
     <div
@@ -38,16 +40,7 @@ export default function TrackItem({ track, onPlay }: TrackItemProps) {
       </div>
 
       <div className="actions">
-        {onPlay && (
-          <button
-            type="button"
-            className="button"
-            aria-label="Play"
-            onClick={() => onPlay(track)}
-          >
-            <i className="fa-solid fa-play"></i>
-          </button>
-        )}
+        {onPlay && <PlayButton disabled={disabled} onClick={() => onPlay(track)} />}
       </div>
     </div>
   );

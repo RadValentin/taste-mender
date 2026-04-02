@@ -1,15 +1,15 @@
 .main {
-  height: calc(100vh - 160px);
+  position: relative;
+  flex: 1;
   overflow-y: auto;
+  background-color: var(--bg-primary);
 
-  .content {
-    position: relative;
-    height: 100%;
+  & .content {
     max-width: 1200px;
     margin: 0 auto;
-    padding-top: 1rem;
+    padding: 1rem;
 
-    .track-item {
+    & .track-item {
       margin-bottom: 10px;
     }
   }

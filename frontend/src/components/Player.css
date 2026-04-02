@@ -1,23 +1,15 @@
 .player {
   position: relative;
-  background-color: deepskyblue;
-  height: 80px;
-  scrollbar-width: thin;
-  scrollbar-color: coral dodgerblue;
+  background-color: var(--bg-secondary);
+  flex: 0 0 var(--player-height-lg);
 
-  & ::-webkit-scrollbar {
-    width: 8px;
-    height: 8px;
+  &.empty {
+    flex: 0 0 0;
   }
 
-  & ::-webkit-scrollbar-thumb {
-    background: coral;
-    border-radius: 4px;
-  }
-
-  & ::-webkit-scrollbar-track {
-    background: #e0f0ff;
-    border-radius: 4px;
+  & .heading {
+    font-weight: bold;
+    margin-bottom: .5em;
   }
 
   & .overlay {
@@ -26,13 +18,13 @@
     left: 0;
     right: 0;
     bottom: 100%;
-    background-color: dodgerblue;
+    background-color: var(--bg-primary);
     transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
   }
 
   & .overlay.maximized {
-    height: calc(100vh - 160px);
+    height: calc(100vh - var(--header-height-lg) - var(--player-height-lg));
   }
 
   & .overlay.minimized {
@@ -45,31 +37,60 @@
     overflow: auto;
   }
 
+  /* Video & stats tab */
   & .player-iframe {
     display: flex;
     flex-direction: column;
     flex: 1.5;
     margin-top: 1rem;
-    color: white;
-  }
 
-  & .player-iframe iframe {
-    width: 100%;
-    margin-bottom: 1rem;
-  }
-
-  & .player-recommendations {
-    position: relative;
-    padding: 1rem;
-    
-    & .heading {
-      color: white;
-      font-weight: bold;
-      margin-bottom: .5rem;
+    & iframe {
+      width: 100%;
+      margin-bottom: 1rem;
     }
 
-    & ul {
-      color: white;
+    & .stats {
+      display: flex;
+      flex-wrap: wrap;
+      gap: .5rem;
+    }
+
+    & .stats-box {
+      width: calc((100% / 3) - (1rem / 3));
+      border: 1px solid var(--bg-secondary);
+      border-radius: 0.3rem;
+      background: var(--bg-secondary-dark);
+      padding: .6rem;
+
+      @media (width < 992px) {
+        width: calc((100% / 2) - (.5rem / 2));
+      }
+    }
+
+    & .stats-box-heading {
+      font-size: var(--font-size-metadata);
+      margin: 0 0 .6rem;
+    }
+
+    & .stats-box-counter {
+      font-size: var(--font-size-section-title);
+      font-weight: 600;
+      margin: 0;
+    }
+  }
+
+
+  /* Recommendations tab */
+  & .player-recommendations {
+    position: relative;
+    overflow: hidden;
+
+    /* We need a way to overlay the loading spinner on top of scrollable content:
+      make the parent non scrollable, and the content scrollable. */
+    & .recommendations-content {
+      overflow: auto;
+      height: 100%;
+      padding: 1rem;
     }
 
     & .track-item {
@@ -84,6 +105,19 @@
     justify-content: space-between;
     align-items: center;
 
+    /* Gradient border for footer top */
+    border: 2px solid;
+    border-image-slice: 1;
+    border-image-source: linear-gradient(
+      to left,
+      var(--bg-secondary),
+      var(--bg-secondary-light),
+      var(--bg-secondary)
+    );
+    border-bottom: 0;
+    border-left: 0;
+    border-right: 0;
+
     & .meta {
       flex: 1;
     }
@@ -96,7 +130,7 @@
       height: 56px;
       border-radius: 0.5rem;
       overflow: hidden;
-      background: #f3f3f3;
+      background: var(--bg-secondary-light);
 
       & > img {
         display: block;
@@ -111,9 +145,9 @@
         justify-content: center;
         width: 100%;
         height: 100%;
-        font-weight: 700;
-        font-size: 1rem;
-        color: #666;
+        font-weight: 600;
+        font-size: 1.6rem;
+        color: var( --text-secondary);
       }
     }
   }
@@ -136,6 +170,10 @@
     & > * {
       white-space: nowrap;
     }
+  }
+
+  & .content button {
+    font-size: 1.4rem;
   }
 
   & .content button + button {

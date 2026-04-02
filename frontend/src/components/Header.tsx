@@ -2,35 +2,39 @@ import { useState } from 'react';
 import { API_BASE_URL } from '../api';
 import './Header.css'
 
-export default function Header({onSearch}: { onSearch: (query: string, type: string) => void }) {
-  const [searchType, setSearchType] = useState("track");
+export default function Header({onSearch}: { onSearch: (query: string) => void }) {
   const [searchQuery, setSearchQuery] = useState("");
 
-  const inputPlaceholder = `Search for ${searchType}s...`;
+  const inputPlaceholder = `Search for track or artist...`;
 
   function onInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {
-      onSearch(searchQuery, searchType)
+      onSearch(searchQuery);
     }
   }
 
   return (
     <div className="header">
-      <h1>TasteMender</h1>
-      <div>
-        <input 
+      <a className="logo" href="/">TasteMender</a>
+      <div className="search-box">
+        <input
+          name="search"
+          type="search"
           value={searchQuery}
           placeholder={inputPlaceholder}
           onChange={(e) => setSearchQuery(e.target.value)}
           onKeyDown={onInputKeyDown}
         />
-        <select value={searchType} onChange={e => setSearchType(e.target.value)}>
-          <option value="track">Track</option>
-          <option value="artist" disabled>Artist</option>
-          <option value="album" disabled>Album</option>
-        </select>
+        <button
+          type="button"
+          className="button button-search"
+          aria-label="Search"
+          onClick={() => {onSearch(searchQuery)}}
+        >
+          <i className="fa-solid fa-magnifying-glass"></i>
+        </button>
       </div>
-      <div style={{textAlign: "right"}}>
+      <div className="links">
         <a href={API_BASE_URL}>API</a>
         {/* <a href="#">About</a> */}
       </div>

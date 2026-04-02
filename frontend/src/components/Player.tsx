@@ -104,7 +104,7 @@ export default function Player({ ref }: PlayerProps) {
           playsinline: 1,
         },
         events: {
-          onReady: () => { 
+          onReady: () => {
             setPlayerState(playerState => ({...playerState, isReady: true}));
           },
           onStateChange: (e: any) => {
@@ -129,7 +129,7 @@ export default function Player({ ref }: PlayerProps) {
       mounted = false;
       try {
         iframeRef.current?.destroy?.();
-      } catch { 
+      } catch {
         console.error("Could not destroy iframe player");
       }
     };
@@ -138,10 +138,10 @@ export default function Player({ ref }: PlayerProps) {
   // Methods callable by parent component
   useImperativeHandle(ref, () => ({
     // Play a track
-    loadAndPlay: (track: Track) => { 
-      playTrack(track);
-      setPlayerState(defaultPlayerState);
+    loadAndPlay: (track: Track) => {
+      setPlayerState(() => ({...defaultPlayerState, track}));
       setRecState(defaultRecState);
+      playTrack(track);
     },
     // Stop playback and reset state
     reset: () => {
@@ -171,8 +171,8 @@ export default function Player({ ref }: PlayerProps) {
       console.log("Got recommendations:", data);
       setRecState(recState => ({
         ...recState,
-        isLoading: false, 
-        similarList: data.similar_list, 
+        isLoading: false,
+        similarList: data.similar_list,
         stats: data.stats,
         filtersPayload: payload
       }))
@@ -202,8 +202,8 @@ export default function Player({ ref }: PlayerProps) {
         console.log("Got recommendations:", data);
         setRecState(recState => ({
           ...recState,
-          isLoading: false, 
-          similarList: data.similar_list, 
+          isLoading: false,
+          similarList: data.similar_list,
           stats: data.stats,
           listenedMbids: [track.mbid, ...recState.listenedMbids]
         }))
@@ -250,11 +250,11 @@ export default function Player({ ref }: PlayerProps) {
             {year && <> • <span className="year">{year}</span></>}
           </div>
         </div>
-        
+
         <div>
           <button type="button" className="button" aria-label="Play/Pause" onClick={togglePlayback}>
-            { playerState.isPlaying 
-              ? <i className="fa-solid fa-pause"></i> 
+            { playerState.isPlaying
+              ? <i className="fa-solid fa-pause"></i>
               : <i className="fa-solid fa-play"></i>
             }
           </button>
@@ -262,8 +262,8 @@ export default function Player({ ref }: PlayerProps) {
             <i className="fa-solid fa-forward"></i>
           </button>
           <button type="button" className="button" aria-label="Minimize/Maximize" onClick={toggleMaximize}>
-            { playerState.isMaximized 
-              ? <i className="fa-solid fa-caret-down"></i> 
+            { playerState.isMaximized
+              ? <i className="fa-solid fa-caret-down"></i>
               : <i className="fa-solid fa-caret-up"></i>
             }
           </button>
@@ -283,18 +283,31 @@ export default function Player({ ref }: PlayerProps) {
     return (
       <div className="player-recommendations">
         {recState.isLoading && <LoadingSpinner />}
-        <div className="heading">Up Next:</div>
-        <TrackItem key={firstRec.mbid} track={firstRec} onPlay={() => {playTrack(firstRec)}} />
-        <div className="heading">Other recommendations:</div>
-        {otherRec.map(track => <TrackItem key={track.mbid} track={track} onPlay={() => {playTrack(track)}} />)}
+        <div className="recommendations-content">
+          <h4 className="heading">Up Next:</h4>
+          <TrackItem
+            key={firstRec.mbid}
+            track={firstRec}
+            onPlay={() => { playTrack(firstRec) }}
+            disabled={recState.isLoading} />
+          <h4 className="heading">Other Recommendations:</h4>
+          {otherRec.map(track =>
+            <TrackItem
+              key={track.mbid}
+              track={track}
+              onPlay={() => { playTrack(track) }}
+              disabled={recState.isLoading} />
+          )}
+        </div>
       </div>
     );
   };
 
   const overlayClass = playerState.isMaximized ? "overlay maximized" : "overlay minimized";
+  const playerClass = playerState.track ? "player" : "player empty";
 
   return (
-    <div className="player">
+    <div className={playerClass}>
       <div className={overlayClass}>
         <div className="player-filters">
           <Filters onChange={onFiltersChange} />
@@ -303,16 +316,45 @@ export default function Player({ ref }: PlayerProps) {
           <div ref={containerRef}></div>
           {recState && recState.stats && (
             <>
-              <div className="heading">Stats</div>
-              <ul>
-                <li>Candidate count: {recState.stats.candidate_count}</li>
-                <li>Max similarity: {Number(recState.stats.max).toPrecision(5)}</li>
-                <li>Mean similarity: {Number(recState.stats.mean).toPrecision(5)}</li>
-                <li>P95: {Number(recState.stats.p95).toPrecision(5)}</li>
-                <li>STD: {Number(recState.stats.std).toPrecision(5)}</li>
-                <li>Cosine search time: {Number(recState.stats.search_time).toPrecision(5)}s</li>
-                <li>Listened to {recState.listenedMbids.length} tracks</li>
-              </ul>
+              <h4 className="heading">Stats</h4>
+              <div className="stats">
+                <div className="stats-box">
+                  <p className="stats-box-heading">Tracks analyzed</p>
+                  <p className="stats-box-counter">{Number(recState.stats.candidate_count).toLocaleString()}</p>
+                </div>
+                <div className="stats-box">
+                  <p className="stats-box-heading">Best match</p>
+                  <p className="stats-box-counter">
+                    {Math.floor(Number(recState.stats.max) * 100)}%
+                  </p>
+                </div>
+                <div className="stats-box">
+                  <p className="stats-box-heading">Average match</p>
+                  <p className="stats-box-counter">
+                    {Math.floor(Number(recState.stats.mean) * 100)}%
+                  </p>
+                </div>
+                <div className="stats-box">
+                  <p className="stats-box-heading">Top-tier match (95th percentile)</p>
+                  <p className="stats-box-counter">
+                    {Math.floor(Number(recState.stats.p95) * 100)}%
+                  </p>
+                </div>
+                <div className="stats-box">
+                  <p className="stats-box-heading">Score spread (STD)</p>
+                  <p className="stats-box-counter">{Number(recState.stats.std).toFixed(3)}</p>
+                </div>
+                <div className="stats-box">
+                  <p className="stats-box-heading">Search time</p>
+                  <p className="stats-box-counter">
+                    {Number(recState.stats.search_time * 1000).toFixed(3)}ms
+                  </p>
+                </div>
+                <div className="stats-box">
+                  <p className="stats-box-heading">Listened tracks</p>
+                  <p className="stats-box-counter">{recState.listenedMbids.length}</p>
+                </div>
+              </div>
             </>
           )}
         </div>
