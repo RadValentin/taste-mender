@@ -56,6 +56,12 @@ class Track(models.Model):
             GistIndex(fields=["title"], name="track_title_trgm_gist", opclasses=["gist_trgm_ops"]),
 
             GinIndex(fields=["search_vector"], name="track_search_vector_gin"),
+
+            # Optimize retrieving top tracks with the MBID as a tiebreaker
+            models.Index(
+                fields=["-submissions", "musicbrainz_recordingid"],
+                name="track_subs_mbid_idx",
+            ),
         ]
 
 
