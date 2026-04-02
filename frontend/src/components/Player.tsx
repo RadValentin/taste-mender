@@ -290,7 +290,7 @@ export default function Player({ ref }: PlayerProps) {
             track={firstRec}
             onPlay={() => { playTrack(firstRec) }}
             disabled={recState.isLoading} />
-          <h4 className="heading">Other recommendations:</h4>
+          <h4 className="heading">Other Recommendations:</h4>
           {otherRec.map(track =>
             <TrackItem
               key={track.mbid}
