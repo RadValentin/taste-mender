@@ -48,7 +48,7 @@ function App() {
 
   function loadTopTracks() {
     setLoading(true);
-    getTracks("-submissions")
+    getTracks("-submissions,musicbrainz_recordingid")
       .then(resp => {
         setResults({
           data: resp.results,
