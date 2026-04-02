@@ -128,7 +128,7 @@ a {
   background: var(--bg-secondary);
   padding: 0.15rem 0.5rem;
   border-radius: 1rem;
-  box-shadow: 1px 1px 1 var(--bg-secondary-dark);
+  box-shadow: 1px 1px 1px var(--bg-secondary-dark);
 }
 
 #root {

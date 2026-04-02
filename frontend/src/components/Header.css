@@ -3,7 +3,7 @@
     align-items: center;
     justify-content: space-between;
     background-color: var(--bg-secondary-dark);
-    flex: 0 0 var(--player-height-lg);
+    flex: 0 0 var(--header-height-lg);
     padding: 0.5em 2em;
 
     border: 2px solid;
@@ -52,7 +52,7 @@
     & input:focus {
       outline: none;
       box-shadow: var(--shadow-outline);
-    };
+    }
 
     & .button-search {
       height: 2.6rem;

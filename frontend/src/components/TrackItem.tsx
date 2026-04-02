@@ -14,7 +14,7 @@ export default function TrackItem({ track, onPlay, disabled }: TrackItemProps) {
   const album = track.album?.name ?? null;
   const year = track.album?.date ? new Date(track.album.date).getFullYear() : null;
   const artUrl = track.album?.links?.art ?? null;
-  const fallbackText = track.album?.name?.trim().charAt(0).toUpperCase() || "♪";
+  const fallbackText = track.album?.name?.trim()?.charAt(0)?.toUpperCase() || "♪";
 
   return (
     <div
