@@ -11,9 +11,27 @@
 
 2. Create a config file in `backend/.env` with DB login information, see `.env.example`
 
-3. Build the DB (see below)
+3. Create the DB and user
 
-4. Install Django dependencies, check that everything is running:
+```sql
+--Optional commands if DB/USER were created previously
+--REVOKE ALL ON SCHEMA public FROM django;
+--DROP DATABASE IF EXISTS taste_mender_db;
+--DROP USER IF EXISTS django;
+CREATE USER django WITH PASSWORD 'password';
+CREATE DATABASE taste_mender_db WITH ENCODING 'UTF8' OWNER django;
+GRANT ALL PRIVILEGES ON DATABASE taste_mender_db TO django;
+GRANT ALL PRIVILEGES ON SCHEMA public TO django;
+GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO django;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO django;
+
+-- Needed for creating a DB when running tests
+ALTER USER django CREATEDB;
+```
+
+4. Load data into the DB (ingest), see below
+
+5. Install Django dependencies, check that everything is running:
 ```bash
 cd backend/
 pip install -r requirements.txt
@@ -22,7 +40,7 @@ python manage.py test
 python manage.py runserver
 ```
 
-5. Install React dependencies:
+6. Install React dependencies:
 ```bash
 cd frontend/
 npm install
