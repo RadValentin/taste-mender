@@ -21,7 +21,7 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
     lookup_url_kwarg = "mbid"
     filter_backends = [OrderingFilter]
     # fields that may be ordered against
-    ordering_fields = ["title", "album__date", "submissions", "musicbrainz_recordingid"]
+    ordering_fields = ["title", "album__date", "submissions"]
     # default ordering
     ordering = ["pk"]
 
