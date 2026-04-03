@@ -1,4 +1,5 @@
 import logging, time
+from django.conf import settings
 from django.contrib.postgres.search import TrigramDistance, TrigramWordDistance, SearchQuery, SearchRank
 from django.db.models import F, Func, FloatField, ExpressionWrapper
 from drf_spectacular.utils import extend_schema, OpenApiParameter
@@ -81,6 +82,9 @@ class SearchView(APIView):
                     .order_by("-combined_rank")
                     .values_list("pk", flat=True)[:limit]
                 )
+                # for debugging SQL query
+                if settings.DEBUG:
+                    print(str(fts_id_qs.query))
                 fts_ids = list(fts_id_qs)
 
                 # FTS may not return enough results, fill in the rest using fuzzy trigram matching
@@ -101,6 +105,9 @@ class SearchView(APIView):
                         .order_by("distance", "-submissions")
                         .values_list("pk", flat=True)[:remaining]
                     )
+                    # for debugging SQL query
+                    if settings.DEBUG:
+                        print(str(trgm_id_qs.query))
                     # merge results while preserving order
                     trgm_ids = list(trgm_id_qs)
 
@@ -125,7 +132,7 @@ class SearchView(APIView):
                     .order_by("distance")[:limit]
                 )
                 serializer = ArtistSerializer(results, many=True)
-            elif search_type == "album":
+            else:
                 results = (
                     Album.objects.filter(name__trigram_similar=query)
                     .annotate(distance=TrigramDistance("name", query))
@@ -144,16 +151,17 @@ class SearchView(APIView):
             elif search_type == "artist":
                 results = Artist.objects.filter(name__icontains=query)[:limit]
                 serializer = ArtistSerializer(results, many=True)
-            elif search_type == "album":
+            else:
                 results = (
                     Album.objects.filter(name__icontains=query)[:limit]
                     .prefetch_related("artists")
                 )
                 serializer = AlbumSerializer(results, many=True)
 
-        # for debugging SQL query
-        # print(str(results.query))
-        # print(results.query.explain(using="default", format="text"))
+            # for debugging SQL query
+            if settings.DEBUG:
+                print(str(results.query))
+                print(results.query.explain(using="default", format="text"))
 
         # materialize results BEFORE calculating response time for accurate timings
         results = serializer.data
