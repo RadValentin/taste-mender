@@ -84,7 +84,7 @@ class SearchView(APIView):
                 )
                 # for debugging SQL query
                 if settings.DEBUG:
-                    print(str(fts_id_qs.query))
+                    log.debug(str(fts_id_qs.query))
                 fts_ids = list(fts_id_qs)
 
                 # FTS may not return enough results, fill in the rest using fuzzy trigram matching
@@ -107,7 +107,7 @@ class SearchView(APIView):
                     )
                     # for debugging SQL query
                     if settings.DEBUG:
-                        print(str(trgm_id_qs.query))
+                        log.debug(str(trgm_id_qs.query))
                     # merge results while preserving order
                     trgm_ids = list(trgm_id_qs)
 
@@ -160,8 +160,8 @@ class SearchView(APIView):
 
             # for debugging SQL query
             if settings.DEBUG:
-                print(str(results.query))
-                print(results.query.explain(using="default", format="text"))
+                log.debug(str(results.query))
+                #log.debug(results.query.explain(using="default", format="text"))
 
         # materialize results BEFORE calculating response time for accurate timings
         results = serializer.data
