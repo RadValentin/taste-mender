@@ -52,10 +52,15 @@ class Track(models.Model):
 
     class Meta:
         indexes = [
+            # Speed up searching tracks by title for short queries (<= 3 chars)
             GinIndex(fields=["title"], name="track_title_trgm", opclasses=["gin_trgm_ops"]),
+            # Speed up backfilling full-text results with tracks matched using trigram distance
             GistIndex(fields=["title"], name="track_title_trgm_gist", opclasses=["gist_trgm_ops"]),
-
+            # Speed up full-text search on tracks by title + artist name
             GinIndex(fields=["search_vector"], name="track_search_vector_gin"),
+
+            # Optimize retrieving most popular tracks
+            models.Index(fields=["submissions"], name="track_subs_idx"),
         ]
 
 
