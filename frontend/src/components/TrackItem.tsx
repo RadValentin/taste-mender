@@ -9,6 +9,37 @@ type TrackItemProps = {
   disabled?: boolean;
 };
 
+function getDortmundLabel(str: string): string {
+  const labels: Record<string, string> = {
+    alternative: "Alternative",
+    blues: "Blues",
+    electronic: "Electronic",
+    folkcountry: "Folk/Country",
+    funksoulrnb: "Funk/Soul/R&B",
+    jazz: "Jazz",
+    pop: "Pop",
+    raphiphop: "Rap/Hip-Hop",
+    rock: "Rock",
+  };
+
+  return (labels[str] ?? str).toLowerCase();
+}
+
+function getRosamericaLabel(str: string): string {
+  const labels: Record<string, string> = {
+    cla: "Classical",
+    dan: "Dance",
+    hip: "Hip-Hop",
+    jaz: "Jazz",
+    pop: "Pop",
+    rhy: "R&B",
+    roc: "Rock",
+    spe: "Speech",
+  };
+
+  return (labels[str] ?? str).toLowerCase();
+}
+
 export default function TrackItem({ track, onPlay, disabled }: TrackItemProps) {
   const artists = track.artists?.map(a => a.name).join(", ") || "Unknown artist";
   const album = track.album?.name ?? null;
@@ -33,9 +64,9 @@ export default function TrackItem({ track, onPlay, disabled }: TrackItemProps) {
           {year && <> • <span className="year">{year}</span></>}
         </div>
         <div className="badges">
-          <span className="badge">{track.genre_dortmund}</span>
-          <span className="badge">{track.genre_rosamerica}</span>
-          <span className="badge" title="Submissions">subs: {track.submissions}</span>
+          <span className="badge" title="Genre in Rosamerica system">{getRosamericaLabel(track.genre_rosamerica)} &middot; r</span>
+          <span className="badge" title="Genre in Dortmund system">{getDortmundLabel(track.genre_dortmund)} &middot; d</span>
+          <span className="badge" title="Submissions">{track.submissions} subs</span>
         </div>
       </div>
 
