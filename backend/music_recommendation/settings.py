@@ -196,18 +196,35 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "unique-snowflake",
-        "TIMEOUT": 600
+# Set up caching for production only. Don't cache on dev or when running tests.
+# Note that certain middleware need to be enabled for caching to work.
+if DEBUG or "test" in sys.argv:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
+        }
     }
-}
+    MIDDLEWARE = [
+        mw for mw in MIDDLEWARE
+        if mw not in (
+            "django.middleware.cache.UpdateCacheMiddleware",
+            "django.middleware.cache.FetchFromCacheMiddleware",
+        )
+    ]
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "unique-snowflake",
+            "TIMEOUT": 600
+        }
+    }
 
-CACHE_MIDDLEWARE_ALIAS = "default"
-CACHE_MIDDLEWARE_SECONDS = 600
-CACHE_MIDDLEWARE_KEY_PREFIX = ""
+    CACHE_MIDDLEWARE_ALIAS = "default"
+    CACHE_MIDDLEWARE_SECONDS = 600
+    CACHE_MIDDLEWARE_KEY_PREFIX = ""
 
+# Format logging
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -248,13 +265,6 @@ if "test" in sys.argv:
             "ENGINE": "django.db.backends.sqlite3",
             "NAME": BASE_DIR / "db.sqlite3",
        },
-    }
-
-    # Disable caching
-    CACHES = {
-        "default": {
-            "BACKEND": "django.core.cache.backends.dummy.DummyCache",
-        }
     }
 
     # Disable logging
