@@ -62,101 +62,82 @@ class SearchView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
-        use_trigram = len(query) > 3
-        if use_trigram:
-            if search_type == "track":
-                search_query = SearchQuery(query, search_type="websearch", config="simple")
-                fts_id_qs = (
-                    Track.objects.alias(
-                        search_rank=SearchRank(F("search_vector"), search_query),
-                        popularity=ExpressionWrapper(
-                            Func(F("submissions") + 1, function="ln"),
-                            output_field=FloatField(),
-                        ),
-                        combined_rank=ExpressionWrapper(
-                            0.4 * F("search_rank") + 0.6 * F("popularity"),
-                            output_field=FloatField(),
-                        ),
-                    )
-                    .filter(search_vector=search_query)
-                    .order_by("-combined_rank")
-                    .values_list("pk", flat=True)[:limit]
+        if search_type == "track":
+            search_query = SearchQuery(query, search_type="websearch", config="simple")
+            fts_id_qs = (
+                Track.objects.alias(
+                    search_rank=SearchRank(F("search_vector"), search_query),
+                    popularity=ExpressionWrapper(
+                        Func(F("submissions") + 1, function="ln"),
+                        output_field=FloatField(),
+                    ),
+                    combined_rank=ExpressionWrapper(
+                        0.4 * F("search_rank") + 0.6 * F("popularity"),
+                        output_field=FloatField(),
+                    ),
+                )
+                .filter(search_vector=search_query)
+                .order_by("-combined_rank")
+                .values_list("pk", flat=True)[:limit]
+            )
+            # for debugging SQL query
+            if settings.DEBUG:
+                log.debug(str(fts_id_qs.query))
+            fts_ids = list(fts_id_qs)
+
+            # FTS may not return enough results, fill in the rest using fuzzy trigram matching
+            remaining = max(0, limit - len(fts_ids))
+            trgm_ids = []
+            if remaining:
+                log.info("Backfilling search for (%s) with %s/%s entries using trigrams.", query, remaining, limit)
+                is_one_word = len(query.split()) == 1
+                if is_one_word:
+                    distance_expr = TrigramWordDistance(query, "title")
+                else:
+                    distance_expr = TrigramDistance("title", query)
+
+                trgm_id_qs = (
+                    Track.objects.filter(title__trigram_similar=query)
+                    .alias(distance=distance_expr)
+                    .exclude(pk__in=fts_ids)
+                    .order_by("distance", "-submissions")
+                    .values_list("pk", flat=True)[:remaining]
                 )
                 # for debugging SQL query
                 if settings.DEBUG:
-                    log.debug(str(fts_id_qs.query))
-                fts_ids = list(fts_id_qs)
+                    log.debug(str(trgm_id_qs.query))
+                # merge results while preserving order
+                trgm_ids = list(trgm_id_qs)
 
-                # FTS may not return enough results, fill in the rest using fuzzy trigram matching
-                remaining = max(0, limit - len(fts_ids))
-                trgm_ids = []
-                if remaining:
-                    log.info("Backfilling search for (%s) with %s/%s entries using trigrams.", query, remaining, limit)
-                    is_one_word = len(query.split()) == 1
-                    if is_one_word:
-                        distance_expr = TrigramWordDistance(query, "title")
-                    else:
-                        distance_expr = TrigramDistance("title", query)
-
-                    trgm_id_qs = (
-                        Track.objects.filter(title__trigram_similar=query)
-                        .alias(distance=distance_expr)
-                        .exclude(pk__in=fts_ids)
-                        .order_by("distance", "-submissions")
-                        .values_list("pk", flat=True)[:remaining]
-                    )
-                    # for debugging SQL query
-                    if settings.DEBUG:
-                        log.debug(str(trgm_id_qs.query))
-                    # merge results while preserving order
-                    trgm_ids = list(trgm_id_qs)
-
-                final_ids = fts_ids + trgm_ids
-                if not final_ids:
-                    serializer = TrackSerializer([], many=True)
-                else:
-                    results = (
-                        Track.objects
-                        .filter(pk__in=final_ids)
-                        .select_related("album")
-                        .prefetch_related("artists")
-                    )
-                    # Preserve order of results, FTS ones should come before trgm backfill.
-                    id_to_pos = {pk: pos for pos, pk in enumerate(final_ids)}
-                    results_list = sorted(results, key=lambda track: id_to_pos[track.pk])
-                    serializer = TrackSerializer(results_list, many=True)
-            elif search_type == "artist":
-                results = (
-                    Artist.objects.filter(name__trigram_similar=query)
-                    .annotate(distance=TrigramDistance("name", query))
-                    .order_by("distance")[:limit]
-                )
-                serializer = ArtistSerializer(results, many=True)
+            final_ids = fts_ids + trgm_ids
+            if not final_ids:
+                serializer = TrackSerializer([], many=True)
             else:
                 results = (
-                    Album.objects.filter(name__trigram_similar=query)
-                    .annotate(distance=TrigramDistance("name", query))
-                    .order_by("distance")[:limit]
-                    .prefetch_related("artists")
-                )
-                serializer = AlbumSerializer(results, many=True)
-        else:
-            if search_type == "track":
-                results = (
-                    Track.objects.filter(title__icontains=query)[:limit]
+                    Track.objects
+                    .filter(pk__in=final_ids)
                     .select_related("album")
                     .prefetch_related("artists")
                 )
-                serializer = TrackSerializer(results, many=True)
-            elif search_type == "artist":
-                results = Artist.objects.filter(name__icontains=query)[:limit]
-                serializer = ArtistSerializer(results, many=True)
-            else:
-                results = (
-                    Album.objects.filter(name__icontains=query)[:limit]
-                    .prefetch_related("artists")
-                )
-                serializer = AlbumSerializer(results, many=True)
+                # Preserve order of results, FTS ones should come before trgm backfill.
+                id_to_pos = {pk: pos for pos, pk in enumerate(final_ids)}
+                results_list = sorted(results, key=lambda track: id_to_pos[track.pk])
+                serializer = TrackSerializer(results_list, many=True)
+        elif search_type == "artist":
+            results = (
+                Artist.objects.filter(name__trigram_similar=query)
+                .annotate(distance=TrigramDistance("name", query))
+                .order_by("distance")[:limit]
+            )
+            serializer = ArtistSerializer(results, many=True)
+        else:
+            results = (
+                Album.objects.filter(name__trigram_similar=query)
+                .annotate(distance=TrigramDistance("name", query))
+                .order_by("distance")[:limit]
+                .prefetch_related("artists")
+            )
+            serializer = AlbumSerializer(results, many=True)
 
             # for debugging SQL query
             if settings.DEBUG:
@@ -169,7 +150,7 @@ class SearchView(APIView):
         response_serializer = SearchResponseSerializer({
             "query": query,
             "type": search_type,
-            "use_trigram": use_trigram,
+            "use_trigram": True,
             "response_time": end_time - start_time,
             "count": len(results),
             "results": results
