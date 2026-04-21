@@ -50,6 +50,9 @@ class Track(models.Model):
     artists_text = models.TextField(default="", blank=True)
     search_vector = SearchVectorField(null=True)
 
+    source_found_count = models.IntegerField(default=0)
+    source_not_found_count = models.IntegerField(default=0)
+
     class Meta:
         indexes = [
             # Speed up searching tracks by title for short queries (<= 3 chars)
