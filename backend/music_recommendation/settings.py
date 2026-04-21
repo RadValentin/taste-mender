@@ -259,13 +259,5 @@ LOGGING = {
 
 # Custom settings for running tests
 if "test" in sys.argv:
-    # Run tests using SQLite DB for simplicity
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": BASE_DIR / "db.sqlite3",
-       },
-    }
-
     # Disable logging
     logging.disable(logging.WARNING)
