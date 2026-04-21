@@ -10,17 +10,22 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
+import os
 import sys, logging, dj_database_url
 from pathlib import Path
 from dotenv import dotenv_values
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-config = dotenv_values(BASE_DIR / ".env")
+
+def env_get(key, default=None):
+    config = dotenv_values(BASE_DIR / ".env")
+    # Prefer real environment variables (CI, container, runtime) over .env values.
+    return os.getenv(key, config.get(key, default))
 
 if "test" not in sys.argv:
     REQUIRED_ENV_VARS = ["DJANGO_SECRET_KEY", "DATABASE_URL", "YOUTUBE_API_KEY"]
-    missing_vars = [var for var in REQUIRED_ENV_VARS if not config.get(var)]
+    missing_vars = [var for var in REQUIRED_ENV_VARS if not env_get(var)]
     if missing_vars:
         raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
@@ -29,10 +34,10 @@ if "test" not in sys.argv:
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = config.get("DJANGO_SECRET_KEY", "django-insecure-jb4&(vsla6+72a&1le(m)30*qmp)k60oihb-s-js%0sc0e8r)8")
+SECRET_KEY = env_get("DJANGO_SECRET_KEY", "django-insecure-jb4&(vsla6+72a&1le(m)30*qmp)k60oihb-s-js%0sc0e8r)8")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = config.get("DJANGO_DEBUG", "False") == "True"
+DEBUG = env_get("DJANGO_DEBUG", "False") == "True"
 
 if not DEBUG and "test" not in sys.argv:
     # Temporarily disable until set up Certbot/Let's Encrypt
@@ -46,7 +51,7 @@ if not DEBUG and "test" not in sys.argv:
     SECURE_HSTS_PRELOAD = True
 
 
-ALLOWED_HOSTS = config.get("DJANGO_ALLOWED_HOSTS", "localhost").split(",")
+ALLOWED_HOSTS = env_get("DJANGO_ALLOWED_HOSTS", "localhost").split(",")
 
 
 # Application definition
@@ -113,7 +118,7 @@ DATABASES = {
     #     "NAME": BASE_DIR / "db.sqlite3",
     # },
     "default": dj_database_url.config(
-        default=config.get("DATABASE_URL"),
+        default=env_get("DATABASE_URL"),
         conn_max_age=600,
         # TODO: check if this is needed when running on DO / dev
         ssl_require=not DEBUG  # enable SSL for managed Postgres in production
@@ -182,7 +187,7 @@ SPECTACULAR_SETTINGS = {
 
 # allow Vite dev server to hit API in dev
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = config.get(
+CORS_ALLOWED_ORIGINS = env_get(
     "CORS_ALLOWED_ORIGINS",
     "http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000"
 ).split(",")
