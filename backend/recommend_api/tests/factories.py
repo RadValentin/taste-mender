@@ -30,10 +30,14 @@ class TrackFactory(DjangoModelFactory):
     title = factory.Faker("sentence", nb_words=2)
     duration = factory.LazyAttribute(lambda o: randint(1, 1000))
     genre_dortmund = factory.LazyAttribute(lambda o: choice([
-        "electronic", "folkcountry", "blues", "jazz", "alternative", "rock", "raphiphop", "pop", 
+        "electronic", "folkcountry", "blues", "jazz", "alternative", "rock", "raphiphop", "pop",
         "funksoulrnb",
     ]))
     genre_rosamerica =  factory.LazyAttribute(lambda o: choice([
         "rhy", "dan", "pop", "roc", "cla", "hip", "jaz", "spe"
     ]))
     submissions = factory.LazyAttribute(lambda o: randint(1, 100))
+
+    # NOTE: These are used for full-text search logic.
+    artists_text = ""
+    search_vector = None
