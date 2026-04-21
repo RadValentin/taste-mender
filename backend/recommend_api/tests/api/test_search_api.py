@@ -44,12 +44,19 @@ class SearchAPITests(APITestCase):
         self.assertEqual(resp.data["count"], 5)
         self.assertEqual(len(resp.data["results"]), 5)
 
-    def test_search_for_track(self):
+    def test_search_for_track_single_word(self):
         url = reverse("api:search")
         resp = self.client.get(url, {"q": "eve", "type": "track"})
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data["count"], 5)
         self.assertContains(resp, "Track even", 5)
+
+    def test_search_for_track_multi_word(self):
+        url = reverse("api:search")
+        resp = self.client.get(url, {"q": "tra odd", "type": "track"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["count"], 5)
+        self.assertContains(resp, "Track odd", 5)
 
     def test_search_defaults_to_tracks(self):
         url = reverse("api:search")
@@ -58,19 +65,33 @@ class SearchAPITests(APITestCase):
         self.assertEqual(resp.data["count"], 5)
         self.assertContains(resp, "Track even", 5)
 
-    def test_search_for_artist(self):
+    def test_search_for_artist_single_word(self):
         url = reverse("api:search")
         resp = self.client.get(url, {"q": "eve", "type": "artist"})
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data["count"], 5)
         self.assertContains(resp, "Artist even", 5)
 
-    def test_search_for_album(self):
+    def test_search_for_artist_multi_word(self):
+        url = reverse("api:search")
+        resp = self.client.get(url, {"q": "art odd", "type": "artist"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["count"], 5)
+        self.assertContains(resp, "Artist odd", 5)
+
+    def test_search_for_album_single_word(self):
         url = reverse("api:search")
         resp = self.client.get(url, {"q": "eve", "type": "album"})
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data["count"], 5)
         self.assertContains(resp, "Album even", 5)
+
+    def test_search_for_album_multi_word(self):
+        url = reverse("api:search")
+        resp = self.client.get(url, {"q": "alb odd", "type": "album"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["count"], 5)
+        self.assertContains(resp, "Album odd", 5)
 
     def test_limit(self):
         url = reverse("api:search")

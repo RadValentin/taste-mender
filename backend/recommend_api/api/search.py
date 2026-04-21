@@ -16,11 +16,10 @@ class SearchView(APIView):
     """Search endpoint for tracks, albums and artists.
 
     This view accepts a free-text query via the `q` query parameter and returns
-    a list of matching objects (`track`, `artist` or `album`). For short
-    queries the endpoint falls back to case-insensitive substring matching
-    (`icontains`); for longer queries it uses PostgreSQL full-text / trigram
-    ranking against a `search_vector` on `Track` and a combined rank that
-    mixes textual relevance with a popularity score.
+    a list of matching objects (`track`, `artist` or `album`).
+
+    Tracks search uses full-text search and ranks by text relevance and popularity. Trigrams are
+    used to backfill the results. Artist and album search rely solely on trigram similarity.
 
     Query parameters:
     - q (required): search string
@@ -62,6 +61,10 @@ class SearchView(APIView):
                 status=status.HTTP_400_BAD_REQUEST
             )
 
+        # Make search results relevant by comparing words when the query is a single word
+        # and use standard trigram similarity for multi-word searches.
+        query_is_one_word = len(query.split()) == 1
+
         if search_type == "track":
             search_query = SearchQuery(query, search_type="websearch", config="simple")
             fts_id_qs = (
@@ -90,19 +93,22 @@ class SearchView(APIView):
             trgm_ids = []
             if remaining:
                 log.info("Backfilling search for (%s) with %s/%s entries using trigrams.", query, remaining, limit)
-                is_one_word = len(query.split()) == 1
-                if is_one_word:
-                    distance_expr = TrigramWordDistance(query, "title")
+                if query_is_one_word:
+                    trgm_id_qs = (
+                        Track.objects.filter(title__trigram_word_similar=query)
+                        .alias(distance=TrigramWordDistance(query, "title"))
+                        .exclude(pk__in=fts_ids)
+                        .order_by("distance", "-submissions")
+                        .values_list("pk", flat=True)[:remaining]
+                    )
                 else:
-                    distance_expr = TrigramDistance("title", query)
-
-                trgm_id_qs = (
-                    Track.objects.filter(title__trigram_similar=query)
-                    .alias(distance=distance_expr)
-                    .exclude(pk__in=fts_ids)
-                    .order_by("distance", "-submissions")
-                    .values_list("pk", flat=True)[:remaining]
-                )
+                    trgm_id_qs = (
+                        Track.objects.filter(title__trigram_similar=query)
+                        .alias(distance=TrigramDistance("title", query))
+                        .exclude(pk__in=fts_ids)
+                        .order_by("distance", "-submissions")
+                        .values_list("pk", flat=True)[:remaining]
+                    )
                 # for debugging SQL query
                 if settings.DEBUG:
                     log.debug(str(trgm_id_qs.query))
@@ -124,19 +130,34 @@ class SearchView(APIView):
                 results_list = sorted(results, key=lambda track: id_to_pos[track.pk])
                 serializer = TrackSerializer(results_list, many=True)
         elif search_type == "artist":
-            results = (
-                Artist.objects.filter(name__trigram_similar=query)
-                .annotate(distance=TrigramDistance("name", query))
-                .order_by("distance")[:limit]
-            )
+            if query_is_one_word:
+                results = (
+                    Artist.objects.filter(name__trigram_word_similar=query)
+                    .annotate(distance=TrigramWordDistance(query, "name"))
+                    .order_by("distance")[:limit]
+                )
+            else:
+                results = (
+                    Artist.objects.filter(name__trigram_similar=query)
+                    .annotate(distance=TrigramDistance("name", query))
+                    .order_by("distance")[:limit]
+                )
             serializer = ArtistSerializer(results, many=True)
         else:
-            results = (
-                Album.objects.filter(name__trigram_similar=query)
-                .annotate(distance=TrigramDistance("name", query))
-                .order_by("distance")[:limit]
-                .prefetch_related("artists")
-            )
+            if query_is_one_word:
+                results = (
+                    Album.objects.filter(name__trigram_word_similar=query)
+                    .annotate(distance=TrigramWordDistance(query, "name"))
+                    .order_by("distance")[:limit]
+                    .prefetch_related("artists")
+                )
+            else:
+                results = (
+                    Album.objects.filter(name__trigram_similar=query)
+                    .annotate(distance=TrigramDistance("name", query))
+                    .order_by("distance")[:limit]
+                    .prefetch_related("artists")
+                )
             serializer = AlbumSerializer(results, many=True)
 
             # for debugging SQL query
