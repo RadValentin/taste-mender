@@ -24,7 +24,7 @@ export interface TrackLinks {
 /** Core resources (match Model/Serializer fields) */
 export interface Artist {
   // musicbrainz_artistid
-  mbid: UUID;           
+  mbid: UUID;
   name: string;
   links: ArtistLinks;
 }
@@ -108,7 +108,6 @@ export type SearchType = "track" | "artist" | "album";
 export interface SearchResponse<T = Record<string, unknown>> {
   query: string;
   type: SearchType;
-  use_trigram: boolean;
   response_time: number;
   count: number;
   results: T[];

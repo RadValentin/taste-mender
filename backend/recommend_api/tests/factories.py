@@ -1,4 +1,5 @@
 import factory
+from django.contrib.postgres.search import SearchVector
 from factory.django import DjangoModelFactory
 from random import randint, choice
 from recommend_api.models import Artist, Album, Track
@@ -30,10 +31,25 @@ class TrackFactory(DjangoModelFactory):
     title = factory.Faker("sentence", nb_words=2)
     duration = factory.LazyAttribute(lambda o: randint(1, 1000))
     genre_dortmund = factory.LazyAttribute(lambda o: choice([
-        "electronic", "folkcountry", "blues", "jazz", "alternative", "rock", "raphiphop", "pop", 
+        "electronic", "folkcountry", "blues", "jazz", "alternative", "rock", "raphiphop", "pop",
         "funksoulrnb",
     ]))
     genre_rosamerica =  factory.LazyAttribute(lambda o: choice([
         "rhy", "dan", "pop", "roc", "cla", "hip", "jaz", "spe"
     ]))
     submissions = factory.LazyAttribute(lambda o: randint(1, 100))
+
+    # NOTE: These are used for full-text search logic.
+    artists_text = ""
+    search_vector = None
+
+    @factory.post_generation
+    def populate_search_vector(obj, create, extracted, **kwargs):
+        """Populate search_vector after track is created (matches ingest pipeline)."""
+        if create:
+            search_vector = (
+                SearchVector("title", config="simple", weight="A") +
+                SearchVector("artists_text", config="simple", weight="B")
+            )
+            Track.objects.filter(pk=obj.pk).update(search_vector=search_vector)
+            obj.refresh_from_db()

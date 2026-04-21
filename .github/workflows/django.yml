@@ -6,9 +6,29 @@ on:
   pull_request:
     branches: [ "main", "dev" ]
 
+env:
+  DATABASE_URL: "postgres://postgres:postgres@127.0.0.1:5432/taste_mender_db"
+  DJANGO_SECRET_KEY: "unit-tests"
+  DJANGO_DEBUG: "True"
+
 jobs:
   test:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:17
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: taste_mender_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
     defaults:
       run:
         working-directory: backend

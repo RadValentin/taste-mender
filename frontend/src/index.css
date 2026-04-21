@@ -123,6 +123,7 @@ a {
 }
 
 .badge {
+  cursor: default;
   font-size: 0.75rem;
   color: var(--text-secondary);
   background: var(--bg-secondary);
