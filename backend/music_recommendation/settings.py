@@ -17,11 +17,11 @@ from dotenv import dotenv_values
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+ENV_CONFIG = dotenv_values(BASE_DIR / ".env")
 
 def env_get(key, default=None):
-    config = dotenv_values(BASE_DIR / ".env")
     # Prefer real environment variables (CI, container, runtime) over .env values.
-    return os.getenv(key, config.get(key, default))
+    return os.getenv(key, ENV_CONFIG.get(key, default))
 
 if "test" not in sys.argv:
     REQUIRED_ENV_VARS = ["DJANGO_SECRET_KEY", "DATABASE_URL", "YOUTUBE_API_KEY"]
