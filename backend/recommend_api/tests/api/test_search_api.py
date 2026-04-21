@@ -18,7 +18,8 @@ class SearchAPITests(APITestCase):
             cls.albums.append(new_album)
             cls.tracks.append(TrackFactory.create(
                 title=f"Track {'odd' if i % 2 == 1 else 'even'} {i}",
-                album=new_album
+                album=new_album,
+                artists_text=f"mockart {i}"
             ))
             cls.artists.append(ArtistFactory.create(
                 name=f"Artist {'odd' if i % 2 == 1 else 'even'} {i}"
@@ -57,6 +58,13 @@ class SearchAPITests(APITestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data["count"], 5)
         self.assertContains(resp, "Track odd", 5)
+
+    def test_search_for_track_by_artists_text(self):
+        url = reverse("api:search")
+        resp = self.client.get(url, {"q": "mockart 1", "type": "track"})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["count"], 1)
+        self.assertEqual(resp.data["results"][0]["title"], "Track odd 1")
 
     def test_search_defaults_to_tracks(self):
         url = reverse("api:search")

@@ -1,4 +1,5 @@
 import factory
+from django.contrib.postgres.search import SearchVector
 from factory.django import DjangoModelFactory
 from random import randint, choice
 from recommend_api.models import Artist, Album, Track
@@ -41,3 +42,14 @@ class TrackFactory(DjangoModelFactory):
     # NOTE: These are used for full-text search logic.
     artists_text = ""
     search_vector = None
+
+    @factory.post_generation
+    def populate_search_vector(obj, create, extracted, **kwargs):
+        """Populate search_vector after track is created (matches ingest pipeline)."""
+        if create:
+            search_vector = (
+                SearchVector("title", config="simple", weight="A") +
+                SearchVector("artists_text", config="simple", weight="B")
+            )
+            Track.objects.filter(pk=obj.pk).update(search_vector=search_vector)
+            obj.refresh_from_db()
