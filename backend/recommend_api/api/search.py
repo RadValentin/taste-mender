@@ -27,8 +27,8 @@ class SearchView(APIView):
     - type (optional): one of "track", "artist", "album" (defaults to "track")
     - limit (optional): max number of results (default 100, clamped to 1..500)
 
-    Returns a serialized JSON response with `query`, `type`, `use_trigram`,
-    `response_time`, `count` and `results` keys.
+    Returns a serialized JSON response with `query`, `type`, `response_time`, `count`
+    and `results` keys.
     """
     @extend_schema(
         responses=SearchResponseSerializer,
@@ -150,7 +150,6 @@ class SearchView(APIView):
         response_serializer = SearchResponseSerializer({
             "query": query,
             "type": search_type,
-            "use_trigram": True,
             "response_time": end_time - start_time,
             "count": len(results),
             "results": results

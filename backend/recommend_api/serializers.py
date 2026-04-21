@@ -94,7 +94,7 @@ class AlbumResponseSerializer(AlbumSerializer):
 
     class Meta(AlbumSerializer.Meta):
         fields = AlbumSerializer.Meta.fields + ["tracks"]
-    
+
     def get_tracks(self, obj):
         qs = Track.objects.filter(album=obj).prefetch_related("artists")
         return AlbumTrackSerializer(qs, many=True, context=self.context).data
@@ -103,7 +103,7 @@ class AlbumResponseSerializer(AlbumSerializer):
 class SimilarTrackSerializer(TrackSerializer):
     """Serialized track data with an added similarity score"""
     similarity = serializers.FloatField()
-    
+
     class Meta(TrackSerializer.Meta):
         fields = TrackSerializer.Meta.fields + ["similarity"]
 
@@ -131,22 +131,22 @@ class RecommendFiltersSerializer(serializers.Serializer):
 
 
 class RecommendFeatureWeightsSerializer(serializers.Serializer):
-    danceability = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    aggressiveness = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    happiness = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    sadness = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    relaxedness = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    partyness = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    acousticness = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    electronicness = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    instrumentalness = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    tonality = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    brightness = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    moods_mirex_1 = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    moods_mirex_2 = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    moods_mirex_3 = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    moods_mirex_4 = serializers.FloatField(required=False, min_value=0, max_value=1) 
-    moods_mirex_5 = serializers.FloatField(required=False, min_value=0, max_value=1) 
+    danceability = serializers.FloatField(required=False, min_value=0, max_value=1)
+    aggressiveness = serializers.FloatField(required=False, min_value=0, max_value=1)
+    happiness = serializers.FloatField(required=False, min_value=0, max_value=1)
+    sadness = serializers.FloatField(required=False, min_value=0, max_value=1)
+    relaxedness = serializers.FloatField(required=False, min_value=0, max_value=1)
+    partyness = serializers.FloatField(required=False, min_value=0, max_value=1)
+    acousticness = serializers.FloatField(required=False, min_value=0, max_value=1)
+    electronicness = serializers.FloatField(required=False, min_value=0, max_value=1)
+    instrumentalness = serializers.FloatField(required=False, min_value=0, max_value=1)
+    tonality = serializers.FloatField(required=False, min_value=0, max_value=1)
+    brightness = serializers.FloatField(required=False, min_value=0, max_value=1)
+    moods_mirex_1 = serializers.FloatField(required=False, min_value=0, max_value=1)
+    moods_mirex_2 = serializers.FloatField(required=False, min_value=0, max_value=1)
+    moods_mirex_3 = serializers.FloatField(required=False, min_value=0, max_value=1)
+    moods_mirex_4 = serializers.FloatField(required=False, min_value=0, max_value=1)
+    moods_mirex_5 = serializers.FloatField(required=False, min_value=0, max_value=1)
 
 
 class RecommendTotalWeightsSerializer(serializers.Serializer):
@@ -172,7 +172,6 @@ class RecommendRequestSerializer(serializers.Serializer):
 class SearchResponseSerializer(serializers.Serializer):
     query = serializers.CharField()
     type = serializers.ChoiceField(["track", "artist", "album"])
-    use_trigram = serializers.BooleanField()
     response_time = serializers.FloatField()
     count = serializers.IntegerField(min_value=0)
     results = serializers.ListField(

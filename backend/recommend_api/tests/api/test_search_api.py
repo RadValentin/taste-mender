@@ -40,7 +40,6 @@ class SearchAPITests(APITestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data["query"], "eve")
         self.assertEqual(resp.data["type"], "track")
-        self.assertEqual(resp.data["use_trigram"], False)
         self.assertIn("response_time", resp.data)
         self.assertEqual(resp.data["count"], 5)
         self.assertEqual(len(resp.data["results"]), 5)
