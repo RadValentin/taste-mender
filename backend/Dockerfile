@@ -1,4 +1,16 @@
-# Use official Python image
+# Stage 1: Build frontend
+FROM node:20-alpine AS frontend-builder
+
+WORKDIR /app/frontend
+
+COPY frontend/package*.json ./
+RUN npm ci
+
+COPY frontend/ .
+RUN npm run build
+
+
+# Stage 2: Django app
 FROM python:3.13-slim
 
 # Prevent Python from buffering stdout
@@ -25,8 +37,8 @@ COPY backend/.env backend/.env
 # Copy backend code
 COPY backend/ backend/
 
-# Copy frontend dist (build this locally first: cd frontend && npm run build)
-COPY frontend/dist frontend/dist/
+# Copy frontend dist from build stage
+COPY --from=frontend-builder /app/frontend/dist frontend/dist/
 
 # Switch to backend directory
 WORKDIR /app/backend
