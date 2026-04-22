@@ -1,6 +1,7 @@
 import requests
 from requests import Response
 from dataclasses import dataclass
+from django.db.models import F
 from dotenv import dotenv_values
 from music_recommendation.settings import BASE_DIR
 from recommend_api.models import Track, Artist
@@ -50,22 +51,18 @@ def get_youtube_source(track: Track) -> YTSource | None:
         "key": YOUTUBE_API_KEY
     }, timeout=8)
     response.raise_for_status()
-    
+
     items: list[dict] = response.json().get("items", [])
-    
-    # meta = {
-    #     "query": query,
-    #     "request_url": request.url, 
-    #     "status": request.status_code, 
-    #     "items_count": len(items)
-    # }
-    # print(meta)
 
     if not items:
+        Track.objects.filter(pk=track.pk).update(source_not_found_count=F('source_not_found_count') + 1)
         return None
 
     source: dict = items[0]
     video_id: str = source["id"]["videoId"]
+
+    Track.objects.filter(pk=track.pk).update(source_found_count=F('source_found_count') + 1)
+
     return YTSource(
         video_id=video_id,
         title=source["snippet"]["title"],
