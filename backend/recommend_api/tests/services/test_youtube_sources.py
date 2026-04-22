@@ -1,5 +1,6 @@
 from django.test import TestCase
 from unittest.mock import patch, MagicMock
+from recommend_api.models import Track, Artist
 from recommend_api.tests.factories import TrackFactory, ArtistFactory
 from recommend_api.services.youtube_sources import YTSource, get_youtube_source, YOUTUBE_SEARCH_URL
 
@@ -7,8 +8,8 @@ from recommend_api.services.youtube_sources import YTSource, get_youtube_source,
 class YoutubeSourcesTests(TestCase):
     def setUp(self):
         # Test data
-        self.artist = ArtistFactory()
-        self.track = TrackFactory()
+        self.artist: Artist = ArtistFactory()
+        self.track: Track = TrackFactory()
         self.track.artists.add(self.artist)
         self.mock_yt_api_key = "foo-bar-key"
         self.search_response = {
@@ -21,23 +22,23 @@ class YoutubeSourcesTests(TestCase):
                 },
             }]
         }
-        
+
         # Mocks
-        self.patched_dotenv = patch("recommend_api.services.youtube_sources.dotenv_values", 
+        self.patched_dotenv = patch("recommend_api.services.youtube_sources.dotenv_values",
                                  return_value={"YOUTUBE_API_KEY": self.mock_yt_api_key})
         self.mock_dotenv = self.patched_dotenv.start()
-        
+
         response = MagicMock()
         response.raise_for_status.return_value = None
         response.json.return_value = self.search_response
-        self.patched_requests = patch("recommend_api.services.youtube_sources.requests.get", 
+        self.patched_requests = patch("recommend_api.services.youtube_sources.requests.get",
                                  return_value = response)
         self.mock_get = self.patched_requests.start()
 
     def test_raises_for_missing_api_key(self):
         self.mock_dotenv.return_value = {}
         self.assertRaises(RuntimeError, get_youtube_source, self.track)
-    
+
     def test_makes_request_to_youtube_search(self):
         get_youtube_source(self.track)
         self.assertTrue(self.mock_get.called)
@@ -50,13 +51,13 @@ class YoutubeSourcesTests(TestCase):
             "key": self.mock_yt_api_key
         }, timeout=8)
         self.assertIsInstance(self.artist.name, str)
-    
+
     def test_returns_no_items_for_empty_response(self):
         empty_response = MagicMock()
         empty_response.json.return_value = {}
         self.mock_get.return_value = empty_response
         self.assertIsNone(get_youtube_source(self.track))
-    
+
     def test_returns_youtube_sources(self):
         result: YTSource = get_youtube_source(self.track)
         json_source = self.search_response["items"][0]
@@ -67,6 +68,21 @@ class YoutubeSourcesTests(TestCase):
         self.assertEqual(result.channel, json_source["snippet"]["channelTitle"])
         self.assertEqual(result.thumbnail, json_source["snippet"]["thumbnails"]["medium"]["url"])
         self.assertIn(json_source["id"]["videoId"], result.url)
+
+    def test_found_counter_is_incremented(self):
+        get_youtube_source(self.track)
+        self.track.refresh_from_db()
+        self.assertEqual(self.track.source_found_count, 1)
+        self.assertEqual(self.track.source_not_found_count, 0)
+
+    def test_not_found_counter_is_incremented(self):
+        empty_response = MagicMock()
+        empty_response.json.return_value = {}
+        self.mock_get.return_value = empty_response
+        get_youtube_source(self.track)
+        self.track.refresh_from_db()
+        self.assertEqual(self.track.source_found_count, 0)
+        self.assertEqual(self.track.source_not_found_count, 1)
 
     def tearDown(self):
         self.patched_dotenv.stop()
