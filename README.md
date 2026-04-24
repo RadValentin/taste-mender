@@ -131,36 +131,17 @@ $$finalSize = datasetSize - duplicateCount - tracksMissingData - tracksMissingAr
 For the sample dataset (100k tracks), 85732 unique entries will be loaded:
 $$85732 = 100000 - 11182 - 4 - 3082$$
 
-## Deploy and Docker
+## Deploy with Docker
 This project uses [Docker](https://docs.docker.com/) to build and manage a reproducible environment that runs the same both locally and in production. This removes the need of having some special setup that exists solely on the server and isn't included in the repo.
 
-```sh
-# run in repo root
-docker build . -f ./backend/Dockerfile -t taste-mender-image
-docker run --name taste-mender-web -p 8000:8000 taste-mender-image
-docker stop taste-mender-web
-```
-
-> [!TIP]
-> In Windows you may need to stop WSL from running distros in the background, to do this run:
->```sh
-># list running distros
->wsl -l -v
-># terminate one to free up RAM
->wsl -t {NAME}
->```
-
-### Setting up the droplet
+### Setting up the server
 ```sh
 ssh root@your-server-ip
 cd ~
 
-# install Nginx and Node
+# install Nginx
 sudo apt update
 sudo apt install -y nginx
-curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
-nvm install v20.17.0
-nvm use v20.17.0
 
 # enable and start
 sudo systemctl enable nginx
@@ -172,17 +153,39 @@ sudo ufw allow 443/tcp   # HTTPS (for certs later)
 sudo systemctl reload ufw
 sudo ufw status
 
+# install Certbot and generate SSL certificates
+sudo apt install certbot python3-certbot-nginx
+sudo certbot certonly --nginx -d taste-mender.com -d www.taste-mender.com
+# set up certificate auto-renewal
+sudo systemctl enable certbot.timer
+sudo systemctl start certbot.timer
+
 # create Nginx config
-sudo touch /etc/nginx/sites-available/tastemender
-code /etc/nginx/sites-available/tastemender
+sudo touch /etc/nginx/sites-available/taste-mender
+sudo nano /etc/nginx/sites-available/taste-mender
 ```
 
-> [NOTE]
-> TODO: Enable SSL
-```
+```nginx
+# Redirect HTTP to HTTPS
 server {
     listen 80;
-    server_name taste-mender.com www.taste-mender.com your-server-ip;
+    server_name taste-mender.com www.taste-mender.com;
+    return 301 https://$server_name$request_uri;
+}
+
+# HTTPS config
+server {
+    listen 443 ssl http2;
+    server_name taste-mender.com www.taste-mender.com;
+
+    # SSL certificates from Certbot
+    ssl_certificate /etc/letsencrypt/live/taste-mender.com/fullchain.pem;
+    ssl_certificate_key /etc/letsencrypt/live/taste-mender.com/privkey.pem;
+
+    # SSL configuration
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers HIGH:!aNULL:!MD5;
+    ssl_prefer_server_ciphers on;
 
     location / {
         proxy_pass http://localhost:8000;
@@ -202,72 +205,55 @@ server {
 
 ```sh
 # Enable the config
-sudo ln -s /etc/nginx/sites-available/tastemender /etc/nginx/sites-enabled/
+sudo ln -s /etc/nginx/sites-available/taste-mender /etc/nginx/sites-enabled/
 sudo nginx -t  # check config syntax
 sudo systemctl reload nginx
 
 # Setup project
-git clone https://github.com/RadValentin/CM3070-FP-Music-Recommendation.git tastemender
-cd tastemender
+git clone https://github.com/RadValentin/taste-mender.git taste-mender
+cd taste-mender
 
-# copy `features_and_index.npz` that was built locally during ingest to backend/
+# IMPORTANT: copy `features_and_index.npz` that was built locally during ingest to backend/
 
 # create .env file in backend/
 touch backend/.env
-# add production values (see .env.example)
-code backend/.env
+# add production values, required values: DJANGO_ALLOWED_HOSTS, DJANGO_SECRET_KEY, DATABASE_URL,
+# YOUTUBE_API_KEY (see .env.example for full list)
+nano backend/.env
 ```
 
-### Run the project directly on droplet
+### Deploy and run
+If the server is already set up (see below), this is all that's required to start/update the app:
 
 ```sh
-# install Python 3.13 and venv
-sudo add-apt-repository ppa:deadsnakes/ppa
-sudo apt update
-sudo apt install -y python3.13 python3.13-venv python3-pip build-essential
+ssh root@taste-mender-droplet-ip
+cd ~/taste-mender/backend
 
-# build frontend
-cd ~/tastemender/frontend
-npm install && npm run build
-
-# create virtual environment
-cd ~/tastemender/backend
-python3.13 -m venv venv
-source venv/bin/activate
-
-# install requirements
-pip install -r requirements.txt
-pip install gunicorn
-
-python manage.py collectstatic --noinput
-
-gunicorn music_recommendation.wsgi:application \
-  --bind 0.0.0.0:8000 \
-  --workers 1 \
-  --timeout 300 \
-  --preload \
-  --access-logfile - \
-  --error-logfile - \
-  --daemon
-```
-
-### Deploy and Run
-```sh
-cd ~/tastemender
-git pull
-
-# build the frontend
-cd frontend && npm install && npm run build && cd ..
-
-# build and start container
-# from repo root
-docker compose -f backend/docker-compose.yml up --build -d
+git pull origin main
+docker-compose down
+docker-compose up -d --build
 
 # run migrations
-docker exec taste-mender-web python manage.py migrate
+docker-compose exec django python manage.py migrate
+```
 
+```sh
+# Restore DB from local file
+docker exec -i taste-mender-postgres pg_restore -U django -d taste_mender_db --clean --if-exists --no-owner --no-privileges < ~/backup.sql
+
+# Restart DB container to clear any RAM overhead left behind by restore
+docker compose restart postgres
+```
+
+```sh
 # check logs
 docker logs -f taste-mender-web
 
 docker stop taste-mender-web
 ```
+
+> [!TIP]
+> If running Docker on Windows the `Vmmem` process might persist even after the Docker Engine is shut down, you can stop it with this command:
+>```sh
+>wsl --shutdown
+>```
