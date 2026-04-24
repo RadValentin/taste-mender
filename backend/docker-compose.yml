@@ -20,7 +20,7 @@ services:
       context: ..
       dockerfile: backend/Dockerfile
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
     # Load environment variables from .env file (includes DATABASE_URL, POSTGRES_PASSWORD, API keys, etc)
     env_file:
       - .env

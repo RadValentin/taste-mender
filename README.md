@@ -149,7 +149,7 @@ sudo systemctl start nginx
 
 # open ports so nginx can serve front-end
 sudo ufw allow 80/tcp    # HTTP
-sudo ufw allow 443/tcp   # HTTPS (for certs later)
+sudo ufw allow 443/tcp   # HTTPS
 sudo systemctl reload ufw
 sudo ufw status
 
