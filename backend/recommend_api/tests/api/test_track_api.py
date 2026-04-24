@@ -1,5 +1,6 @@
 import numpy as np
 from unittest.mock import patch
+from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from recommend_api.services.youtube_sources import YTSource
@@ -34,7 +35,7 @@ class TrackAPITests(APITestCase):
         self.assertEqual(resp.data["mbid"], track_tuple[0])
         self.assertEqual(resp.data["title"], track_tuple[1])
 
-    def test_get_features(self):
+    def test_get_features_includes_raw_features(self):
         mbid = self.track_tuples[0][0]
         with patch("recommend_api.api.track.rec") as mock_rec:
             features = np.array([0.5, 0.2])
@@ -54,6 +55,24 @@ class TrackAPITests(APITestCase):
             self.assertDictEqual(resp.data["raw_features"], {
                 "danceability": features_raw[0], "aggressiveness": features_raw[1]
             })
+
+    def test_get_features_omits_raw_features_when_none(self):
+        mbid = self.track_tuples[0][0]
+        with patch("recommend_api.api.track.rec") as mock_rec:
+            features = np.array([0.5, 0.2])
+            mock_rec.STORE.mbid_to_idx = np.array([mbid for mbid, _ in self.track_tuples])
+            mock_rec.STORE.feature_names = ["danceability", "aggressiveness"]
+            mock_rec.STORE.feature_matrix = np.array([features], dtype=object)
+            mock_rec.STORE.feature_matrix_raw = None
+
+            url = reverse("api:track-features", kwargs={"mbid": mbid})
+            resp = self.client.get(url)
+            self.assertEqual(resp.status_code, 200)
+            self.assertEqual(resp.data["track"]["mbid"], mbid)
+            self.assertDictEqual(resp.data["features"], {
+                "danceability": features[0], "aggressiveness": features[1]
+            })
+            self.assertNotIn("raw_features", resp.data)
 
     def test_get_sources(self):
         mbid = self.track_tuples[0][0]

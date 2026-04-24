@@ -35,18 +35,21 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
         mbid = track.musicbrainz_recordingid
         index = np.where(rec.STORE.mbid_to_idx == mbid)[0]
         features = rec.STORE.feature_matrix[index][0]
-        raw_features = rec.STORE.feature_matrix_raw[index][0]
+        raw_features = None
+        if rec.STORE.feature_matrix_raw is not None:
+            raw_features = rec.STORE.feature_matrix_raw[index][0]
 
         features_dict = {}
         raw_features_dict = {}
         for i, feature in enumerate(features):
             features_dict[rec.STORE.feature_names[i]] = feature
-            raw_features_dict[rec.STORE.feature_names[i]] = raw_features[i]
+            if raw_features is not None:
+                raw_features_dict[rec.STORE.feature_names[i]] = raw_features[i]
 
         serializer = TrackFeaturesResponseSerializer({
             "track": track,
             "features": features_dict,
-            "raw_features": raw_features_dict
+            **({"raw_features": raw_features_dict} if raw_features is not None else {}),
         })
         return Response(serializer.data)
 

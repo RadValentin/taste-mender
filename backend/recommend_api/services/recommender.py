@@ -4,6 +4,7 @@
 
 import os, time, logging
 import numpy as np
+from django.conf import settings
 from sklearn.metrics.pairwise import cosine_similarity
 
 log = logging.getLogger(__name__)
@@ -27,7 +28,7 @@ class FeatureStore:
             data = np.load(path, allow_pickle=True, mmap_mode="r")
             # Load the audio features matrix and track metadata into memory
             self.feature_matrix = data["feature_matrix"]
-            self.feature_matrix_raw = data["feature_matrix_raw"]
+            self.feature_matrix_raw = data["feature_matrix_raw"] if settings.DEBUG else None
             self.feature_names = data["feature_names"]
             self.mbid_to_idx = data["mbids"]
             self.years = data["years"]  # release year
@@ -44,6 +45,8 @@ class FeatureStore:
                 self.genre_dortmund,
                 self.genre_rosamerica,
             ):
+                if arr is None:
+                    continue
                 try:
                     arr.setflags(write=False)
                 except ValueError:

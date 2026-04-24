@@ -81,7 +81,7 @@ class GenreResponseSerializer(serializers.Serializer):
 class TrackFeaturesResponseSerializer(serializers.Serializer):
     track = TrackSerializer()
     features = serializers.DictField()
-    raw_features = serializers.DictField()
+    raw_features = serializers.DictField(required=False)
 
 
 class AlbumTrackSerializer(TrackSerializer):
