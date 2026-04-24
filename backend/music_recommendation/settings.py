@@ -40,8 +40,7 @@ SECRET_KEY = env_get("DJANGO_SECRET_KEY", "django-insecure-jb4&(vsla6+72a&1le(m)
 DEBUG = env_get("DJANGO_DEBUG", "False") == "True"
 
 if not DEBUG and "test" not in sys.argv:
-    # Temporarily disable until set up Certbot/Let's Encrypt
-    #SECURE_SSL_REDIRECT = True  # Force HTTPS
+    SECURE_SSL_REDIRECT = True  # Force HTTPS
     SESSION_COOKIE_SECURE = True  # HTTPS-only cookies
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
@@ -119,9 +118,7 @@ DATABASES = {
     # },
     "default": dj_database_url.config(
         default=env_get("DATABASE_URL"),
-        conn_max_age=600,
-        # TODO: check if this is needed when running on DO / dev
-        ssl_require=not DEBUG  # enable SSL for managed Postgres in production
+        conn_max_age=600
     )
 }
 
