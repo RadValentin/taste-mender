@@ -33,11 +33,8 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
     def features(self, request, *args, **kwargs):
         track: Track = self.get_object()
         mbid = track.musicbrainz_recordingid
-        index = np.where(rec.STORE.mbid_to_idx == mbid)[0]
-        features = rec.STORE.feature_matrix[index][0]
-        raw_features = None
-        if rec.STORE.feature_matrix_raw is not None:
-            raw_features = rec.STORE.feature_matrix_raw[index][0]
+        features = rec.STORE.get_track_features(mbid)
+        raw_features = rec.STORE.get_track_features_raw(mbid)
 
         features_dict = {}
         raw_features_dict = {}

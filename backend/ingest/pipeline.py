@@ -425,6 +425,13 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
         np.linalg.norm(feature_matrix_scaled, axis=1, keepdims=True) + 1e-8
     )
 
+    # Store MBIDs as bytes representation of the equivalent UUIDs.
+    # NOTE: MBID strings were validated as correct UUIDs when data was extracted from JSON.
+    mbids_v16 = np.frombuffer(
+        b"".join(uuid.UUID(mbid).bytes for mbid in df["mbid"].to_numpy()),
+        dtype="V16",
+    )
+
     filename = os.path.join(os.path.dirname(__file__), "..", "features_and_index.npz")
     np.savez_compressed(
         filename,
@@ -434,7 +441,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
         feature_matrix_raw=feature_matrix_raw,
         feature_names=np.array(DF_FEATURE_FIELDS, dtype=object),
         # save mapping from MusicBrainz ID to indexes in feature matrix
-        mbids=df["mbid"].to_numpy(),
+        mbids=mbids_v16,
         years=df["year"].to_numpy(np.int16),
         genre_dortmund=df["genre_dortmund"].to_numpy(),
         genre_rosamerica=df["genre_rosamerica"].to_numpy(),
