@@ -1,6 +1,6 @@
 import numpy as np
+import uuid
 from unittest.mock import patch
-from django.test import override_settings
 from django.urls import reverse
 from rest_framework.test import APITestCase
 from recommend_api.services.youtube_sources import YTSource
@@ -11,7 +11,12 @@ from recommend_api.tests.factories import TrackFactory, AlbumFactory
 class TrackAPITests(APITestCase):
     @classmethod
     def setUpTestData(cls):
-        cls.track_tuples = [("A", "Song A"), ("B", "Song B"), ("C", "Song C"), ("D", "Song D")]
+        cls.track_tuples = [
+            (str(uuid.uuid4()), "Song A"),
+            (str(uuid.uuid4()), "Song B"),
+            (str(uuid.uuid4()), "Song C"),
+            (str(uuid.uuid4()), "Song D"),
+        ]
         cls.tracks: list[Track] = []
         for mbid, title in cls.track_tuples:
             cls.tracks.append(TrackFactory.create(musicbrainz_recordingid=mbid, title=title))
@@ -40,10 +45,9 @@ class TrackAPITests(APITestCase):
         with patch("recommend_api.api.track.rec") as mock_rec:
             features = np.array([0.5, 0.2])
             features_raw = np.array([50.0, 20.0])
-            mock_rec.STORE.mbid_to_idx = np.array([mbid for mbid, _ in self.track_tuples])
             mock_rec.STORE.feature_names = ["danceability", "aggressiveness"]
-            mock_rec.STORE.feature_matrix = np.array([features], dtype=object)
-            mock_rec.STORE.feature_matrix_raw = np.array([features_raw], dtype=object)
+            mock_rec.STORE.get_track_features.return_value = features
+            mock_rec.STORE.get_track_features_raw.return_value = features_raw
 
             url = reverse("api:track-features", kwargs={"mbid": mbid})
             resp = self.client.get(url)
@@ -60,10 +64,9 @@ class TrackAPITests(APITestCase):
         mbid = self.track_tuples[0][0]
         with patch("recommend_api.api.track.rec") as mock_rec:
             features = np.array([0.5, 0.2])
-            mock_rec.STORE.mbid_to_idx = np.array([mbid for mbid, _ in self.track_tuples])
             mock_rec.STORE.feature_names = ["danceability", "aggressiveness"]
-            mock_rec.STORE.feature_matrix = np.array([features], dtype=object)
-            mock_rec.STORE.feature_matrix_raw = None
+            mock_rec.STORE.get_track_features.return_value = features
+            mock_rec.STORE.get_track_features_raw.return_value = None
 
             url = reverse("api:track-features", kwargs={"mbid": mbid})
             resp = self.client.get(url)

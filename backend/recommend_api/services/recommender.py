@@ -51,7 +51,7 @@ class FeatureStore:
             self.feature_matrix = data["feature_matrix"]
             self.feature_matrix_raw = data["feature_matrix_raw"] if settings.DEBUG else None
             self.feature_names = data["feature_names"]
-            self.mbid_to_idx = data["mbids"] # MBIDs in UUID bytes representation
+            self.mbid_to_idx: npt.NDArray[np.void] = data["mbids"] # MBIDs in UUID bytes representation
             self.years = data["years"]  # release year
             self.genre_dortmund = data["genre_dortmund"]  # genre classification
             self.genre_rosamerica = data["genre_rosamerica"]  # genre classification
