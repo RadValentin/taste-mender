@@ -1,5 +1,4 @@
 import numpy as np
-import numpy.typing as npt
 import uuid
 from django.test import SimpleTestCase
 from unittest.mock import patch
@@ -30,7 +29,7 @@ class RecommenderTests(SimpleTestCase):
             'C': str(uuid.uuid4()),
             'D': str(uuid.uuid4()),
         }
-        self.mock_store.mbid_to_idx: npt.NDArray[np.void] = np.array(
+        self.mock_store.mbid_to_idx = np.array(
             [
                 uuid.UUID(self.uuids["A"]).bytes,
                 uuid.UUID(self.uuids["B"]).bytes,
