@@ -1,5 +1,5 @@
 import time
-import math
+import numpy as np
 from django.core.management.base import BaseCommand, CommandError
 from recommend_api.models import Track, GenreDortmund, GenreRosamerica
 from recommend_api.services.recommender import RecommendationTrack, RecommendationStats
@@ -79,7 +79,7 @@ def generate_recommendations(target_mbid: str):
             continue
         submissions = track_obj.submissions
         # simple blend: mostly similarity, small nudge from popularity
-        track["final_score"] = 0.9 * track["similarity"] + 0.1 * math.log1p(submissions)
+        track["final_score"] = 0.9 * track["similarity"] + 0.1 * np.log1p(submissions)
 
     # rerank by final score
     top_tracks.sort(key=lambda x: x.get("final_score", -1.0), reverse=True)

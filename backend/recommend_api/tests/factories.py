@@ -48,7 +48,7 @@ class AlbumFactory(DjangoModelFactory):
 class GenreDortmundFactory(DjangoModelFactory):
     class Meta:
         model = GenreDortmund
-        django_get_or_create = ("label",)
+        django_get_or_create = ("code", "label")
         exclude = ["_data"]
 
     _data = factory.LazyFunction(lambda: choice(DORTMUND_GENRES))
@@ -59,7 +59,7 @@ class GenreDortmundFactory(DjangoModelFactory):
 class GenreRosamericaFactory(DjangoModelFactory):
     class Meta:
         model = GenreRosamerica
-        django_get_or_create = ("label",)
+        django_get_or_create = ("code", "label")
         exclude = ["_data"]
 
     _data = factory.LazyFunction(lambda: choice(ROSAMERICA_GENRES))
