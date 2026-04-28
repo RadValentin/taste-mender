@@ -41,9 +41,10 @@ class RecommenderTests(SimpleTestCase):
         )
         # A,B,C in 1990s decade; D in 1980s
         self.mock_store.years = np.array([1991, 1992, 1994, 1983])
-        # Put A,B,C in same Rosamerica genre, D different
-        self.mock_store.genre_rosamerica = np.array(['alt', 'alt', 'alt', 'roc'])
-        self.mock_store.genre_dortmund = np.array(['metal', 'jazz', 'metal', 'metal'])
+        # Put A,B,C in same Rosamerica genre (code=1), D different (code=2)
+        self.mock_store.genre_rosamerica = np.array([1, 1, 1, 2], dtype=np.uint16)
+        # A,C,D in same Dortmund genre (code=10), B different (code=11)
+        self.mock_store.genre_dortmund = np.array([10, 11, 10, 10], dtype=np.uint16)
         self.mock_store.feature_names = np.array(['danceability', 'aggressiveness', 'brightness'])
 
     def test_recommend_rosamerica(self):

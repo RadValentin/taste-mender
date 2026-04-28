@@ -36,6 +36,22 @@ class AlbumArtist(models.Model):
         unique_together = [("artist", "album")]
 
 
+class GenreDortmund(models.Model):
+    code = models.PositiveSmallIntegerField(primary_key=True)
+    label = models.CharField(max_length=64, unique=True)
+
+    def __str__(self):
+        return self.label
+
+
+class GenreRosamerica(models.Model):
+    code = models.PositiveSmallIntegerField(primary_key=True)
+    label = models.CharField(max_length=64, unique=True)
+
+    def __str__(self):
+        return self.label
+
+
 class Track(models.Model):
     musicbrainz_recordingid = models.CharField(primary_key=True, max_length=36)
     album = models.ForeignKey(Album, on_delete=models.CASCADE, null=True, blank=True)
@@ -44,8 +60,8 @@ class Track(models.Model):
     )
     title = models.TextField()
     duration = models.FloatField()
-    genre_dortmund = models.CharField(max_length=255)
-    genre_rosamerica = models.CharField(max_length=255)
+    genre_dortmund = models.ForeignKey(GenreDortmund, on_delete=models.PROTECT)
+    genre_rosamerica = models.ForeignKey(GenreRosamerica, on_delete=models.PROTECT)
     submissions = models.IntegerField()
     artists_text = models.TextField(default="", blank=True)
     search_vector = SearchVectorField(null=True)

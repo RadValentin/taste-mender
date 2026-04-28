@@ -1,8 +1,31 @@
-import factory
+import factory # type: ignore[import-untyped]
 from django.contrib.postgres.search import SearchVector
 from factory.django import DjangoModelFactory
 from random import randint, choice
-from recommend_api.models import Artist, Album, Track
+
+DORTMUND_GENRES = [
+    {"code": 0, "label": "electronic"},
+    {"code": 1, "label": "folkcountry"},
+    {"code": 2, "label": "blues"},
+    {"code": 3, "label": "jazz"},
+    {"code": 4, "label": "alternative"},
+    {"code": 5, "label": "rock"},
+    {"code": 6, "label": "raphiphop"},
+    {"code": 7, "label": "pop"},
+    {"code": 8, "label": "funksoulrnb"},
+]
+
+ROSAMERICA_GENRES = [
+    {"code": 0, "label": "rhy"},
+    {"code": 1, "label": "dan"},
+    {"code": 2, "label": "pop"},
+    {"code": 3, "label": "roc"},
+    {"code": 4, "label": "cla"},
+    {"code": 5, "label": "hip"},
+    {"code": 6, "label": "jaz"},
+    {"code": 7, "label": "spe"},
+]
+from recommend_api.models import Artist, Album, Track, GenreDortmund, GenreRosamerica
 
 
 class ArtistFactory(DjangoModelFactory):
@@ -22,6 +45,28 @@ class AlbumFactory(DjangoModelFactory):
     date = factory.Faker("date")
 
 
+class GenreDortmundFactory(DjangoModelFactory):
+    class Meta:
+        model = GenreDortmund
+        django_get_or_create = ("label",)
+        exclude = ["_data"]
+
+    _data = factory.LazyFunction(lambda: choice(DORTMUND_GENRES))
+    code = factory.LazyAttribute(lambda o: o._data["code"])
+    label = factory.LazyAttribute(lambda o: o._data["label"])
+
+
+class GenreRosamericaFactory(DjangoModelFactory):
+    class Meta:
+        model = GenreRosamerica
+        django_get_or_create = ("label",)
+        exclude = ["_data"]
+
+    _data = factory.LazyFunction(lambda: choice(ROSAMERICA_GENRES))
+    code = factory.LazyAttribute(lambda o: o._data["code"])
+    label = factory.LazyAttribute(lambda o: o._data["label"])
+
+
 class TrackFactory(DjangoModelFactory):
     class Meta:
         model = Track
@@ -30,13 +75,8 @@ class TrackFactory(DjangoModelFactory):
     album = factory.SubFactory(AlbumFactory)
     title = factory.Faker("sentence", nb_words=2)
     duration = factory.LazyAttribute(lambda o: randint(1, 1000))
-    genre_dortmund = factory.LazyAttribute(lambda o: choice([
-        "electronic", "folkcountry", "blues", "jazz", "alternative", "rock", "raphiphop", "pop",
-        "funksoulrnb",
-    ]))
-    genre_rosamerica =  factory.LazyAttribute(lambda o: choice([
-        "rhy", "dan", "pop", "roc", "cla", "hip", "jaz", "spe"
-    ]))
+    genre_dortmund = factory.SubFactory(GenreDortmundFactory)
+    genre_rosamerica = factory.SubFactory(GenreRosamericaFactory)
     submissions = factory.LazyAttribute(lambda o: randint(1, 100))
 
     # NOTE: These are used for full-text search logic.

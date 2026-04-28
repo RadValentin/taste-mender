@@ -7,9 +7,27 @@ import numpy as np
 import numpy.typing as npt
 from django.conf import settings
 from sklearn.metrics.pairwise import cosine_similarity
+from typing import NotRequired, TypedDict
 
 log = logging.getLogger(__name__)
 
+# Return types
+class RecommendationTrack(TypedDict):
+    mbid: str
+    similarity: float
+    year: int
+    genre_dortmund: int
+    genre_rosamerica: int
+    final_score: NotRequired[float]
+
+
+class RecommendationStats(TypedDict):
+    candidate_count: int
+    search_time: float
+    mean: float
+    std: float
+    p95: float
+    max: float
 
 class FeatureStore:
     """
@@ -48,13 +66,13 @@ class FeatureStore:
         try:
             data = np.load(path, allow_pickle=True, mmap_mode="r")
             # Load the audio features matrix and track metadata into memory
-            self.feature_matrix = data["feature_matrix"]
-            self.feature_matrix_raw = data["feature_matrix_raw"] if settings.DEBUG else None
-            self.feature_names = data["feature_names"]
+            self.feature_matrix: npt.NDArray[np.float32] = data["feature_matrix"]
+            self.feature_matrix_raw: npt.NDArray[np.float32] | None = data["feature_matrix_raw"] if settings.DEBUG else None
+            self.feature_names: npt.NDArray[np.object_] = data["feature_names"]
             self.mbid_to_idx: npt.NDArray[np.void] = data["mbids"] # MBIDs in UUID bytes representation
-            self.years = data["years"]  # release year
-            self.genre_dortmund = data["genre_dortmund"]  # genre classification
-            self.genre_rosamerica = data["genre_rosamerica"]  # genre classification
+            self.years: npt.NDArray[np.int16] = data["years"]  # release year
+            self.genre_dortmund: npt.NDArray[np.uint16] = data["genre_dortmund"]  # genre classification
+            self.genre_rosamerica: npt.NDArray[np.uint16] = data["genre_rosamerica"]  # genre classification
 
             # Ensure data is read-only
             for arr in (
@@ -192,7 +210,7 @@ def recommend(target_mbid, options=None):
     end = time.perf_counter()
 
     # build a list of the top most similar tracks and their metadata
-    top_tracks = []
+    top_tracks: list[RecommendationTrack] = []
     for index in top_indexes:
         mbid_bytes: bytes = mb[index].tobytes()
         mbid_str: str = str(uuid.UUID(bytes=mbid_bytes))
@@ -200,10 +218,10 @@ def recommend(target_mbid, options=None):
         top_tracks.append(
             {
                 "mbid": mbid_str,
-                "similarity": similarities[index],
-                "year": yrs[index],
-                "genre_dortmund": gd[index],
-                "genre_rosamerica": gr[index],
+                "similarity": float(similarities[index]),
+                "year": int(yrs[index]),
+                "genre_dortmund": int(gd[index]),
+                "genre_rosamerica": int(gr[index]),
             }
         )
 

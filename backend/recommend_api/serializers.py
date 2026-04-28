@@ -46,6 +46,8 @@ class TrackSerializer(serializers.ModelSerializer):
     mbid = serializers.CharField(source="musicbrainz_recordingid")
     artists = ArtistSerializer(many=True)
     album = AlbumSerializer(many=False, required=False, allow_null=True)
+    genre_dortmund = serializers.CharField(source="genre_dortmund.label", read_only=True)
+    genre_rosamerica = serializers.CharField(source="genre_rosamerica.label", read_only=True)
     links = serializers.SerializerMethodField()
 
     class Meta:
