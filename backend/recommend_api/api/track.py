@@ -33,15 +33,20 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
     def features(self, request, *args, **kwargs):
         track: Track = self.get_object()
         mbid = track.musicbrainz_recordingid
-        features = rec.STORE.get_track_features(mbid)
-        raw_features = rec.STORE.get_track_features_raw(mbid)
 
         features_dict = {}
         raw_features_dict = {}
-        for i, feature in enumerate(features):
-            features_dict[rec.STORE.feature_names[i]] = feature
-            if raw_features is not None:
-                raw_features_dict[rec.STORE.feature_names[i]] = raw_features[i]
+
+        # Handle unlikely case that MBID doesn't have associated audio features.
+        try:
+            features = rec.STORE.get_track_features(mbid)
+            raw_features = rec.STORE.get_track_features_raw(mbid)
+            for i, feature in enumerate(features):
+                features_dict[rec.STORE.feature_names[i]] = feature
+                if raw_features is not None:
+                    raw_features_dict[rec.STORE.feature_names[i]] = raw_features[i]
+        except Exception as e:
+            log.exception(f"Failed to get track metadata, {e}")
 
         serializer = TrackFeaturesResponseSerializer({
             "track": track,

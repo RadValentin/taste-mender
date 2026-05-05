@@ -44,6 +44,10 @@ class FeatureStoreTests(SimpleTestCase):
         features = self.store.get_track_features(self.uuids["B"])
         np.testing.assert_allclose(features, self.store.feature_matrix[1])
 
+    def test_get_track_features_not_found(self):
+        with self.assertRaises(ValueError):
+            self.store.get_track_features(str(uuid.uuid4()))
+
     def test_get_track_features_raw(self):
         features_raw = self.store.get_track_features_raw(self.uuids["C"])
         if features_raw is None:
@@ -53,3 +57,7 @@ class FeatureStoreTests(SimpleTestCase):
     def test_get_track_features_raw_returns_none_when_raw_missing(self):
         self.store.feature_matrix_raw = None
         self.assertIsNone(self.store.get_track_features_raw(self.uuids["A"]))
+
+    def test_get_track_features_raw_not_found(self):
+        with self.assertRaises(ValueError):
+            self.store.get_track_features_raw(str(uuid.uuid4()))

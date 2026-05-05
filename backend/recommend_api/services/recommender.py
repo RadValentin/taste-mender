@@ -97,16 +97,20 @@ class FeatureStore:
 
     def get_track_features(self, mbid: str) -> npt.NDArray[np.float32]:
         mbid_v16 = np.frombuffer(uuid.UUID(mbid).bytes, dtype="V16", count=1)[0]
-        index = np.where(self.mbid_to_idx == mbid_v16)[0]
-        return self.feature_matrix[index][0]
+        indexes = np.where(self.mbid_to_idx == mbid_v16)[0]
+        if indexes.size == 0:
+            raise ValueError(f"Track MBID not found in feature index: {mbid}")
+        return self.feature_matrix[indexes[0]]
 
     def get_track_features_raw(self, mbid: str) -> npt.NDArray[np.float32] | None:
         if self.feature_matrix_raw is None:
             return None
 
         mbid_v16 = np.frombuffer(uuid.UUID(mbid).bytes, dtype="V16", count=1)[0]
-        index = np.where(self.mbid_to_idx == mbid_v16)[0]
-        return self.feature_matrix_raw[index][0]
+        indexes = np.where(self.mbid_to_idx == mbid_v16)[0]
+        if indexes.size == 0:
+            raise ValueError(f"Track MBID not found in raw feature index: {mbid}")
+        return self.feature_matrix_raw[indexes[0]]
 
 
 STORE = FeatureStore(os.path.join(os.path.dirname(__file__), "../..", "features_and_index.npz"))
