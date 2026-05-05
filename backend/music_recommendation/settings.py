@@ -42,6 +42,9 @@ DEBUG = env_get("DJANGO_DEBUG", "False") == "True"
 if not DEBUG and "test" not in sys.argv:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
     SECURE_SSL_REDIRECT = True  # Force HTTPS
+    # Some reverse-proxy static routes may omit forwarded proto headers.
+    # Keep static/assets available to avoid redirecting asset requests to localhost.
+    SECURE_REDIRECT_EXEMPT = [r"^static/", r"^assets/"]
     SESSION_COOKIE_SECURE = True  # HTTPS-only cookies
     CSRF_COOKIE_SECURE = True
     SECURE_BROWSER_XSS_FILTER = True
@@ -155,7 +158,7 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
-STATIC_URL = "static/"
+STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 # Serve the built front-end
 STATICFILES_DIRS = [BASE_DIR.parent / "frontend" / "dist"]
