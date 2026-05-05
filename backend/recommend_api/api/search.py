@@ -122,7 +122,7 @@ class SearchView(APIView):
                 results = (
                     Track.objects
                     .filter(pk__in=final_ids)
-                    .select_related("album")
+                    .select_related("album", "genre_dortmund", "genre_rosamerica")
                     .prefetch_related("artists")
                 )
                 # Preserve order of results, FTS ones should come before trgm backfill.

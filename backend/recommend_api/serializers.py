@@ -98,7 +98,10 @@ class AlbumResponseSerializer(AlbumSerializer):
         fields = AlbumSerializer.Meta.fields + ["tracks"]
 
     def get_tracks(self, obj):
-        qs = Track.objects.filter(album=obj).prefetch_related("artists")
+        qs = Track.objects.filter(album=obj).select_related(
+            "genre_dortmund",
+            "genre_rosamerica",
+        ).prefetch_related("artists")
         return AlbumTrackSerializer(qs, many=True, context=self.context).data
 
 

@@ -42,7 +42,11 @@ class RecommendView(GenericAPIView):
         same_decade: bool = filters.get("same_decade", True)
 
         try:
-            target_track: Track = Track.objects.get(musicbrainz_recordingid=target_mbid)
+            target_track: Track = Track.objects.select_related(
+                "album",
+                "genre_dortmund",
+                "genre_rosamerica",
+            ).prefetch_related("artists").get(musicbrainz_recordingid=target_mbid)
             target_artist: Artist = target_track.artists.first()
         except Track.DoesNotExist:
             return Response(
@@ -56,8 +60,8 @@ class RecommendView(GenericAPIView):
             recommendations = rec.recommend(
                 target_mbid=target_mbid,
                 options={
-                    "k": limit*10, 
-                    "use_ros": use_ros, 
+                    "k": limit*10,
+                    "use_ros": use_ros,
                     "exclude_mbids": listened_mbids,
                     "match_genre": same_genre,
                     "match_decade": same_decade,
@@ -87,7 +91,11 @@ class RecommendView(GenericAPIView):
             t.musicbrainz_recordingid: t
             for t in Track.objects.filter(
                 musicbrainz_recordingid__in=top_mbids
-            ).select_related("album").prefetch_related("artists")
+            ).select_related(
+                "album",
+                "genre_dortmund",
+                "genre_rosamerica",
+            ).prefetch_related("artists")
         }
 
         # add popularity and combined score
@@ -97,7 +105,7 @@ class RecommendView(GenericAPIView):
             submissions = track_map.get(track["mbid"]).submissions
             # simple blend: mostly similarity, small nudge from popularity
             track["final_score"] = (
-                similarity_weight * track["similarity"] + 
+                similarity_weight * track["similarity"] +
                 popularity_weight * math.log1p(submissions)
             )
 
@@ -124,7 +132,7 @@ class RecommendView(GenericAPIView):
             # Skip if it's the same song by the same artist as the target track
             if (artist_name == target_artist.name and track_obj.title == target_track.title):
                 continue
-            
+
             # Only allow 1 track per artist
             if artist in seen_artists:
                 continue

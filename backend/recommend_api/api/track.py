@@ -16,7 +16,11 @@ log = logging.getLogger(__name__)
 
 class TrackViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TrackSerializer
-    queryset = Track.objects.select_related("album").prefetch_related("artists")
+    queryset = Track.objects.select_related(
+        "album",
+        "genre_dortmund",
+        "genre_rosamerica",
+    ).prefetch_related("artists")
     lookup_field = "musicbrainz_recordingid"
     lookup_url_kwarg = "mbid"
     filter_backends = [OrderingFilter]
