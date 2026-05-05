@@ -40,6 +40,8 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
 
         features_dict = {}
         raw_features_dict = {}
+        features = None
+        raw_features = None
 
         # Handle unlikely case that MBID doesn't have associated audio features.
         try:
@@ -49,7 +51,7 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
                 features_dict[rec.STORE.feature_names[i]] = feature
                 if raw_features is not None:
                     raw_features_dict[rec.STORE.feature_names[i]] = raw_features[i]
-        except Exception as e:
+        except ValueError as e:
             log.exception(f"Failed to get track metadata, {e}")
 
         serializer = TrackFeaturesResponseSerializer({
