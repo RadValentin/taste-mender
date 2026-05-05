@@ -23,7 +23,7 @@ MIN_YEAR = 1000
 
 # Fields that are audio features, stored in a Numpy array
 FEATURE_FIELDS = [
-    "danceability", "aggressiveness", "happiness", "sadness", "relaxedness", "partyness", 
+    "danceability", "aggressiveness", "happiness", "sadness", "relaxedness", "partyness",
     "acousticness", "electronicness", "instrumentalness", "tonality", "brightness",
 ]
 FEATURE_INDEX = {name: i for i, name in enumerate(FEATURE_FIELDS)}
@@ -130,7 +130,7 @@ def extract_artist_info(tags: dict) -> list[tuple[str, str]]:
         artist_key = "artists"
     else:
         return []
-    
+
     if len(artist_ids) != len(tags[artist_key]):
         return []
 
@@ -163,7 +163,7 @@ def extract_album_info(tags: dict) -> tuple[str | None, str | None, str | None] 
 
     if not release_date:
         invalid_date_count += 1
-    
+
     # TODO: Normalize MBID
     if not (album_id and is_mbid(album_id)) and not album_name and not release_date:
         return None
@@ -183,7 +183,7 @@ def extract_prob_vector(highlevel: dict, parent_key: str, order: list[str]) -> l
     vec = [float(probs.get(key, 0.0)) for key in order]
     s = sum(vec)
     return [x / s for x in vec] if s > 0 else vec
-    
+
 
 def extract_data_from_json_str(json_str: str, file_path: str | None = None) -> dict | None:
     """
@@ -218,14 +218,14 @@ def extract_data_from_json_str(json_str: str, file_path: str | None = None) -> d
         elif not is_mbid(mbid):
             invalid_mbid_count += 1
             raise ValueError(f"bad MBID: {mbid}")
-        
+
         # TODO: Strip leading and trailing single/double quotes
         title = tags.get("title", [None])[0]
         if not title:
             missing_title_count += 1
             raise ValueError("missing title")
 
-        # High-level features     
+        # High-level features
         numeric_features = [
             float(highlevel["danceability"]["all"]["danceable"]),
             float(highlevel["mood_aggressive"]["all"]["aggressive"]),
@@ -239,7 +239,7 @@ def extract_data_from_json_str(json_str: str, file_path: str | None = None) -> d
             float(highlevel["tonal_atonal"]["all"]["tonal"]),
             float(highlevel["timbre"]["all"]["bright"]),
         ]
-        
+
         # Create a new track entry using the data from JSON
         return {
             # Associate artists and album with the track
@@ -249,8 +249,6 @@ def extract_data_from_json_str(json_str: str, file_path: str | None = None) -> d
             "musicbrainz_recordingid": str(uuid.UUID(mbid)),
             "title": title,
             "duration": float(metadata["audio_properties"]["length"] or 0),
-            # TODO: Store these as references to an enum instead of strings since we're 
-            # dealing with a small subset of values.
             "genre_dortmund": highlevel["genre_dortmund"]["value"],
             "genre_rosamerica": highlevel["genre_rosamerica"]["value"],
             "numeric_features": numeric_features,
@@ -293,7 +291,7 @@ def merge_album_info(tracks: list[dict]) -> tuple[str, str, str] | None:
             name_counter[album_id].append(album_name)
         if release_date:
             date_counter[album_id].append(release_date)
-    
+
     if not id_counter:
         return None
 
@@ -309,7 +307,7 @@ def merge_album_info(tracks: list[dict]) -> tuple[str, str, str] | None:
 
 def merge_artist_pairs(tracks: list[dict]) -> list[tuple[str, str]]:
     """
-    Given a list of duplicate tracks, extract a list of tuples from each (artist_id, artist_name) 
+    Given a list of duplicate tracks, extract a list of tuples from each (artist_id, artist_name)
     and merge the tracks by selecting the most common tuple combination.
     """
     # Count each unique, sorted artist pair combination
@@ -376,7 +374,7 @@ def stream_json_from_tar_zst(path: str, read_size=2*1024*1024):
                             data = fileobj.read().decode("utf-8", errors="replace")
                             yield member.name, data
                     except Exception as e:
-                        log.warning(f"Failed reading archive {member.name}: {e}")                  
+                        log.warning(f"Failed reading archive {member.name}: {e}")
 
 def iter_archive(archive_path: str, limit: int | None = None):
     print(f"Loading {os.path.normpath(archive_path)}", end="", flush=True)
@@ -389,4 +387,4 @@ def iter_archive(archive_path: str, limit: int | None = None):
             if limit is not None and count >= limit:
                 break
 
-    print("", flush=True)     
+    print("", flush=True)

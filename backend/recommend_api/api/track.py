@@ -16,7 +16,11 @@ log = logging.getLogger(__name__)
 
 class TrackViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = TrackSerializer
-    queryset = Track.objects.select_related("album").prefetch_related("artists")
+    queryset = Track.objects.select_related(
+        "album",
+        "genre_dortmund",
+        "genre_rosamerica",
+    ).prefetch_related("artists")
     lookup_field = "musicbrainz_recordingid"
     lookup_url_kwarg = "mbid"
     filter_backends = [OrderingFilter]
@@ -33,20 +37,27 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
     def features(self, request, *args, **kwargs):
         track: Track = self.get_object()
         mbid = track.musicbrainz_recordingid
-        index = np.where(rec.STORE.mbid_to_idx == mbid)[0]
-        features = rec.STORE.feature_matrix[index][0]
-        raw_features = rec.STORE.feature_matrix_raw[index][0]
 
         features_dict = {}
         raw_features_dict = {}
-        for i, feature in enumerate(features):
-            features_dict[rec.STORE.feature_names[i]] = feature
-            raw_features_dict[rec.STORE.feature_names[i]] = raw_features[i]
+        features = None
+        raw_features = None
+
+        # Handle unlikely case that MBID doesn't have associated audio features.
+        try:
+            features = rec.STORE.get_track_features(mbid)
+            raw_features = rec.STORE.get_track_features_raw(mbid)
+            for i, feature in enumerate(features):
+                features_dict[rec.STORE.feature_names[i]] = feature
+                if raw_features is not None:
+                    raw_features_dict[rec.STORE.feature_names[i]] = raw_features[i]
+        except ValueError as e:
+            log.exception(f"Failed to get track metadata, {e}")
 
         serializer = TrackFeaturesResponseSerializer({
             "track": track,
             "features": features_dict,
-            "raw_features": raw_features_dict
+            **({"raw_features": raw_features_dict} if raw_features is not None else {}),
         })
         return Response(serializer.data)
 

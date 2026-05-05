@@ -9,7 +9,15 @@ from django.db import transaction, connection
 from dotenv import dotenv_values
 from pathlib import Path
 from sklearn.preprocessing import StandardScaler
-from recommend_api.models import Track, Artist, TrackArtist, Album, AlbumArtist
+from recommend_api.models import (
+    Track,
+    Artist,
+    TrackArtist,
+    Album,
+    AlbumArtist,
+    GenreDortmund,
+    GenreRosamerica,
+)
 from pympler import asizeof
 from typing import List, Set, Tuple
 from ingest import track_processing_helpers as tph
@@ -74,6 +82,8 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
     Album.objects.all().delete()
     TrackArtist.objects.all().delete()
     Track.objects.all().delete()
+    GenreDortmund.objects.all().delete()
+    GenreRosamerica.objects.all().delete()
     Artist.objects.all().delete()
 
     # If the user downloaded the AB dataset parts archives then store a list of the files,
@@ -232,6 +242,8 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
 
     album_index = {}  # keep track of unique album names, indexed by MBID
     artist_index = defaultdict(list)  # keep track of unique artist names, indexed by MBID
+    genre_dortmund_codes = {}  # map genre label -> compact numeric code
+    genre_rosamerica_codes = {}  # map genre label -> compact numeric code
     trackartist_set: Set[Tuple[bytes, str]] = set() # set of all Track-Artist M2M pairings, to avoid duplication
     albumartist_set = set()  # set of all Album-Artist M2M pairings
     track_features_list = []  # list of feature values for each track
@@ -245,12 +257,23 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
         artist_pairs = track["artist_pairs"]
         album_info = track["album_info"]
 
+        genre_dortmund_label = track["genre_dortmund"]
+        genre_rosamerica_label = track["genre_rosamerica"]
+
+        if genre_dortmund_label not in genre_dortmund_codes:
+            genre_dortmund_codes[genre_dortmund_label] = len(genre_dortmund_codes)
+        if genre_rosamerica_label not in genre_rosamerica_codes:
+            genre_rosamerica_codes[genre_rosamerica_label] = len(genre_rosamerica_codes)
+
+        genre_dortmund_code = genre_dortmund_codes[genre_dortmund_label]
+        genre_rosamerica_code = genre_rosamerica_codes[genre_rosamerica_label]
+
         track_obj = Track(
             musicbrainz_recordingid=track["musicbrainz_recordingid"],
             title=track["title"],
             duration=track["duration"],
-            genre_dortmund=track["genre_dortmund"],
-            genre_rosamerica=track["genre_rosamerica"],
+            genre_dortmund_id=genre_dortmund_code,
+            genre_rosamerica_id=genre_rosamerica_code,
             submissions=track["submissions"],
             # TODO: Handle this after the duplicate artist names are merged.
             artists_text=" ".join(dict.fromkeys(name for _, name in artist_pairs if name))
@@ -300,8 +323,8 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
         track_features_list.append(
             [
                 track["musicbrainz_recordingid"],
-                track["genre_dortmund"],
-                track["genre_rosamerica"],
+                genre_dortmund_code,
+                genre_rosamerica_code,
                 year # release year
             ]
             + track_features
@@ -342,6 +365,16 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
                 musicbrainz_artistid=artist_id, name=merged_name
             )
         del artist_index
+
+        GenreDortmund.objects.bulk_create(
+            [GenreDortmund(code=code, label=label) for label, code in genre_dortmund_codes.items()],
+            batch_size=BATCH_SIZE,
+        )
+        GenreRosamerica.objects.bulk_create(
+            [GenreRosamerica(code=code, label=label) for label, code in genre_rosamerica_codes.items()],
+            batch_size=BATCH_SIZE,
+        )
+
         Album.objects.bulk_create(album_index.values(), batch_size=BATCH_SIZE)
         Artist.objects.bulk_create(merged_artist_index.values(), batch_size=BATCH_SIZE)
         end = time.time()
@@ -425,6 +458,13 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
         np.linalg.norm(feature_matrix_scaled, axis=1, keepdims=True) + 1e-8
     )
 
+    # Store MBIDs as bytes representation of the equivalent UUIDs.
+    # NOTE: MBID strings were validated as correct UUIDs when data was extracted from JSON.
+    mbids_v16 = np.frombuffer(
+        b"".join(uuid.UUID(mbid).bytes for mbid in df["mbid"].to_numpy()),
+        dtype="V16",
+    )
+
     filename = os.path.join(os.path.dirname(__file__), "..", "features_and_index.npz")
     np.savez_compressed(
         filename,
@@ -434,10 +474,10 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
         feature_matrix_raw=feature_matrix_raw,
         feature_names=np.array(DF_FEATURE_FIELDS, dtype=object),
         # save mapping from MusicBrainz ID to indexes in feature matrix
-        mbids=df["mbid"].to_numpy(),
+        mbids=mbids_v16,
         years=df["year"].to_numpy(np.int16),
-        genre_dortmund=df["genre_dortmund"].to_numpy(),
-        genre_rosamerica=df["genre_rosamerica"].to_numpy(),
+        genre_dortmund=df["genre_dortmund"].to_numpy(np.uint16),
+        genre_rosamerica=df["genre_rosamerica"].to_numpy(np.uint16),
     )
 
     end = time.time()

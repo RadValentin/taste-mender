@@ -1,7 +1,8 @@
 import time
-import numpy as math
+import numpy as np
 from django.core.management.base import BaseCommand, CommandError
-from recommend_api.models import Track
+from recommend_api.models import Track, GenreDortmund, GenreRosamerica
+from recommend_api.services.recommender import RecommendationTrack, RecommendationStats
 import recommend_api.services.recommender as rec
 
 
@@ -23,7 +24,7 @@ class Command(BaseCommand):
             )
         except Exception as e:
             raise CommandError(str(e))
-        
+
         self.stdout.write(self.style.SUCCESS("Done."))
 
 
@@ -33,6 +34,7 @@ def generate_recommendations(target_mbid: str):
     # Select a track from the database by its MBID
     target_track = Track.objects.get(musicbrainz_recordingid=target_mbid)
     target_artist = target_track.artists.first()
+    target_artist_name = target_artist.name if target_artist else "Unknown Artist"
 
     # Display stats about feature matrix
     feature_stats = rec.get_feature_stats()
@@ -44,17 +46,17 @@ def generate_recommendations(target_mbid: str):
 
     # Display recommendations
     recommendations = rec.recommend(
-        target_mbid=target_mbid, 
+        target_mbid=target_mbid,
         options={
             "k": 100,
             "use_ros": True
         }
     )
     target_year = recommendations["target_year"]
-    target_genre_dortmund = recommendations["target_genre_dortmund"]
-    target_genre_rosamerica = recommendations["target_genre_rosamerica"]
-    top_tracks = recommendations["top_tracks"]
-    stats = recommendations["stats"]
+    target_genre_dortmund = GenreDortmund.objects.get(code=recommendations["target_genre_dortmund"]).label
+    target_genre_rosamerica = GenreRosamerica.objects.get(code=recommendations["target_genre_rosamerica"]).label
+    top_tracks: list[RecommendationTrack] = recommendations["top_tracks"]
+    stats: RecommendationStats = recommendations["stats"]
 
     print(
         f'Cosine similarity search took {stats["search_time"]:.5f} seconds,',
@@ -63,7 +65,7 @@ def generate_recommendations(target_mbid: str):
 
     # create a hashmap of the Track objects by mbid
     top_mbids = [t["mbid"] for t in top_tracks]
-    track_map = {
+    track_map: dict[str, Track] = {
         t.musicbrainz_recordingid: t
         for t in Track.objects.filter(
             musicbrainz_recordingid__in=top_mbids
@@ -72,15 +74,18 @@ def generate_recommendations(target_mbid: str):
 
     # add popularity and combined score
     for track in top_tracks:
-        submissions = track_map.get(track["mbid"]).submissions
+        track_obj = track_map.get(track["mbid"])
+        if track_obj is None:
+            continue
+        submissions = track_obj.submissions
         # simple blend: mostly similarity, small nudge from popularity
-        track["final_score"] = 0.9 * track["similarity"] + 0.1 * math.log1p(submissions)
+        track["final_score"] = 0.9 * track["similarity"] + 0.1 * np.log1p(submissions)
 
     # rerank by final score
-    top_tracks.sort(key=lambda x: x["final_score"], reverse=True)
+    top_tracks.sort(key=lambda x: x.get("final_score", -1.0), reverse=True)
 
     print(
-        f"Tracks similar to: {target_artist.name} - {target_track.title} ({target_year}) [{target_genre_dortmund}] [{target_genre_rosamerica}] [{target_mbid}]:"
+        f"Tracks similar to: {target_artist_name} - {target_track.title} ({target_year}) [{target_genre_dortmund}] [{target_genre_rosamerica}] [{target_mbid}]:"
     )
 
     print("\nRecommendations:")
@@ -90,9 +95,11 @@ def generate_recommendations(target_mbid: str):
 
     # Display the tracks in order by going through top_mbids list and extracting track data from a dict.
     seen_artists = set()
-    unique_tracks = []
+    unique_tracks: list[RecommendationTrack] = []
     for track in top_tracks:
         track_obj = track_map.get(track["mbid"])
+        if track_obj is None:
+            continue
         artist = track_obj.artists.first()
         artist_name = artist.name if artist else "Unknown Artist"
 
@@ -103,17 +110,20 @@ def generate_recommendations(target_mbid: str):
         elif track["mbid"] == target_mbid:
             # Skip is target track is encountered again somehow
             continue
-        elif artist_name == target_artist.name and track_obj.title == target_track.title:
+        elif artist_name == target_artist_name and track_obj.title == target_track.title:
             # Skip if it's the same song by the same artist as the target track
             continue
 
         seen_artists.add(artist)
         unique_tracks.append(track)
 
+        genre_dortmund = GenreDortmund.objects.get(code=track["genre_dortmund"]).label
+        genre_rosamerica = GenreRosamerica.objects.get(code=track["genre_rosamerica"]).label
+
         print(
             f'{artist_name[:20]:20} | {track_obj.title[:30]:30} | {str(track["year"]):6} | '
-            f'{track["genre_dortmund"][:6]:6} | {track["genre_rosamerica"][:4]:4} | '
-            f'{track["similarity"]:2.3f} | {track_obj.submissions:3d} | {track["final_score"]:1.3f} | '
+            f'{genre_dortmund[:6]:6} | {genre_rosamerica[:4]:4} | '
+            f'{track["similarity"]:2.3f} | {track_obj.submissions:3d} | {track.get("final_score", 0.0):1.3f} | '
             f'{track["mbid"]}'
         )
 

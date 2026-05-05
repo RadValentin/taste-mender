@@ -31,6 +31,13 @@ class ArtistViewSet(viewsets.ReadOnlyModelViewSet):
         else:
             tracks = Model.objects.filter(artists=artist)
 
+        if Model is Track:
+            tracks = tracks.select_related(
+                "album",
+                "genre_dortmund",
+                "genre_rosamerica",
+            ).prefetch_related("artists")
+
         page = self.paginate_queryset(tracks)
         if page is not None:
             serializer = Serializer(page, many=True)

@@ -2,14 +2,54 @@
 # Note: This file loads the feature matrix into memory, make sure to import it only once
 # Note: MBID - MusicBrainz unique IDs
 
-import os, time, logging
+import os, time, logging, uuid
 import numpy as np
+import numpy.typing as npt
+from django.conf import settings
 from sklearn.metrics.pairwise import cosine_similarity
+from typing import NotRequired, TypedDict
 
 log = logging.getLogger(__name__)
 
+# Return types
+class RecommendationTrack(TypedDict):
+    mbid: str
+    similarity: float
+    year: int
+    genre_dortmund: int
+    genre_rosamerica: int
+    final_score: NotRequired[float]
+
+
+class RecommendationStats(TypedDict):
+    candidate_count: int
+    search_time: float
+    mean: float
+    std: float
+    p95: float
+    max: float
 
 class FeatureStore:
+    """
+    Singleton container for recommendation artifacts loaded from `features_and_index.npz`.
+
+    Purpose:
+    - Load large NumPy arrays once per process and reuse them across requests.
+    - Keep feature and metadata arrays read-only to avoid accidental mutation.
+
+    Stored arrays:
+    - feature_matrix: normalized feature vectors used for cosine similarity.
+    - feature_matrix_raw: unscaled raw features (only loaded when DEBUG is enabled).
+    - feature_names: ordered list of feature names aligned with feature_matrix columns.
+    - mbid_to_idx: NumPy array of V16 values, one 16-byte MusicBrainz recording ID per row.
+    - years: release year per track index.
+    - genre_dortmund: Dortmund genre label per track index.
+    - genre_rosamerica: Rosamerica genre label per track index.
+
+    Notes:
+    - MBIDs are represented as V16 (void, 16 bytes). Comparisons must use V16 scalars.
+    - The class enforces a single initialization path; reinitializing with a different file path raises ValueError.
+    """
     _instance = None
 
     def __new__(cls, path):
@@ -26,13 +66,13 @@ class FeatureStore:
         try:
             data = np.load(path, allow_pickle=True, mmap_mode="r")
             # Load the audio features matrix and track metadata into memory
-            self.feature_matrix = data["feature_matrix"]
-            self.feature_matrix_raw = data["feature_matrix_raw"]
-            self.feature_names = data["feature_names"]
-            self.mbid_to_idx = data["mbids"]
-            self.years = data["years"]  # release year
-            self.genre_dortmund = data["genre_dortmund"]  # genre classification
-            self.genre_rosamerica = data["genre_rosamerica"]  # genre classification
+            self.feature_matrix: npt.NDArray[np.float32] = data["feature_matrix"]
+            self.feature_matrix_raw: npt.NDArray[np.float32] | None = data["feature_matrix_raw"] if settings.DEBUG else None
+            self.feature_names: npt.NDArray[np.object_] = data["feature_names"]
+            self.mbid_to_idx: npt.NDArray[np.void] = data["mbids"] # MBIDs in UUID bytes representation
+            self.years: npt.NDArray[np.int16] = data["years"]  # release year
+            self.genre_dortmund: npt.NDArray[np.uint16] = data["genre_dortmund"]  # genre classification
+            self.genre_rosamerica: npt.NDArray[np.uint16] = data["genre_rosamerica"]  # genre classification
 
             # Ensure data is read-only
             for arr in (
@@ -44,6 +84,8 @@ class FeatureStore:
                 self.genre_dortmund,
                 self.genre_rosamerica,
             ):
+                if arr is None:
+                    continue
                 try:
                     arr.setflags(write=False)
                 except ValueError:
@@ -52,6 +94,23 @@ class FeatureStore:
             self._loaded = True
         except FileNotFoundError as ex:
             log.warning(f"Feature file not found at {path}")
+
+    def get_track_features(self, mbid: str) -> npt.NDArray[np.float32]:
+        mbid_v16 = np.frombuffer(uuid.UUID(mbid).bytes, dtype="V16", count=1)[0]
+        indexes = np.where(self.mbid_to_idx == mbid_v16)[0]
+        if indexes.size == 0:
+            raise ValueError(f"Track MBID not found in feature index: {mbid}")
+        return self.feature_matrix[indexes[0]]
+
+    def get_track_features_raw(self, mbid: str) -> npt.NDArray[np.float32] | None:
+        if self.feature_matrix_raw is None:
+            return None
+
+        mbid_v16 = np.frombuffer(uuid.UUID(mbid).bytes, dtype="V16", count=1)[0]
+        indexes = np.where(self.mbid_to_idx == mbid_v16)[0]
+        if indexes.size == 0:
+            raise ValueError(f"Track MBID not found in raw feature index: {mbid}")
+        return self.feature_matrix_raw[indexes[0]]
 
 
 STORE = FeatureStore(os.path.join(os.path.dirname(__file__), "../..", "features_and_index.npz"))
@@ -94,8 +153,11 @@ def recommend(target_mbid, options=None):
     match_decade = options.get("match_decade", True)
     feature_weights = options.get("feature_weights", {})
 
+    # Convert target MBID string to UUID bytes
+    target_mbid_v16 = np.frombuffer(uuid.UUID(target_mbid).bytes, dtype="V16", count=1)[0]
+
     # Identify the index, year and genre of the targeted track
-    idxs = np.where(STORE.mbid_to_idx == target_mbid)[0]
+    idxs = np.where(STORE.mbid_to_idx == target_mbid_v16)[0]
     if idxs.size == 0:
         raise ValueError(f"Target MBID not found: {target_mbid}")
     target_index = int(idxs[0])
@@ -119,10 +181,14 @@ def recommend(target_mbid, options=None):
 
     if exclude_mbids:
         # exclude list of provided mbids and target track
-        mask &= ~np.isin(STORE.mbid_to_idx, exclude_mbids + [target_mbid])
+        exclude_mbids_v16 = np.array(
+            [np.frombuffer(uuid.UUID(mbid).bytes, dtype="V16", count=1)[0] for mbid in exclude_mbids],
+            dtype="V16",
+        )
+        mask &= ~np.isin(STORE.mbid_to_idx, np.append(exclude_mbids_v16, target_mbid_v16))
     else:
         # always exclude the target
-        mask &= ~np.isin(STORE.mbid_to_idx, [target_mbid])
+        mask &= ~np.isin(STORE.mbid_to_idx, target_mbid_v16)
 
     # build a weight vector for the features, determines feature impact on similarity score
     weights = np.ones(len(STORE.feature_names))
@@ -148,17 +214,18 @@ def recommend(target_mbid, options=None):
     end = time.perf_counter()
 
     # build a list of the top most similar tracks and their metadata
-    top_tracks = []
+    top_tracks: list[RecommendationTrack] = []
     for index in top_indexes:
-        mbid = mb[index]
+        mbid_bytes: bytes = mb[index].tobytes()
+        mbid_str: str = str(uuid.UUID(bytes=mbid_bytes))
 
         top_tracks.append(
             {
-                "mbid": mbid,
-                "similarity": similarities[index],
-                "year": yrs[index],
-                "genre_dortmund": gd[index],
-                "genre_rosamerica": gr[index],
+                "mbid": mbid_str,
+                "similarity": float(similarities[index]),
+                "year": int(yrs[index]),
+                "genre_dortmund": int(gd[index]),
+                "genre_rosamerica": int(gr[index]),
             }
         )
 

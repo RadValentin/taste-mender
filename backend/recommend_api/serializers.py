@@ -46,6 +46,8 @@ class TrackSerializer(serializers.ModelSerializer):
     mbid = serializers.CharField(source="musicbrainz_recordingid")
     artists = ArtistSerializer(many=True)
     album = AlbumSerializer(many=False, required=False, allow_null=True)
+    genre_dortmund = serializers.CharField(source="genre_dortmund.label", read_only=True)
+    genre_rosamerica = serializers.CharField(source="genre_rosamerica.label", read_only=True)
     links = serializers.SerializerMethodField()
 
     class Meta:
@@ -81,7 +83,7 @@ class GenreResponseSerializer(serializers.Serializer):
 class TrackFeaturesResponseSerializer(serializers.Serializer):
     track = TrackSerializer()
     features = serializers.DictField()
-    raw_features = serializers.DictField()
+    raw_features = serializers.DictField(required=False)
 
 
 class AlbumTrackSerializer(TrackSerializer):
@@ -96,7 +98,10 @@ class AlbumResponseSerializer(AlbumSerializer):
         fields = AlbumSerializer.Meta.fields + ["tracks"]
 
     def get_tracks(self, obj):
-        qs = Track.objects.filter(album=obj).prefetch_related("artists")
+        qs = Track.objects.filter(album=obj).select_related(
+            "genre_dortmund",
+            "genre_rosamerica",
+        ).prefetch_related("artists")
         return AlbumTrackSerializer(qs, many=True, context=self.context).data
 
 

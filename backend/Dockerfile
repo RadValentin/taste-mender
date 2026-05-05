@@ -50,7 +50,6 @@ RUN python manage.py collectstatic --noinput
 # Expose Django dev server port
 EXPOSE 8000
 
-# TODO: Increase number of workers after validating app in production and once we get real traffic
 # Run Django
 # CMD ["python", "manage.py", "runserver", "0.0.0.0:8000"]
-CMD ["gunicorn", "music_recommendation.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "1", "--timeout", "300", "--preload", "--access-logfile", "-", "--error-logfile", "-"]
+CMD ["gunicorn", "music_recommendation.wsgi:application", "--bind", "0.0.0.0:8000", "--workers", "2", "--timeout", "300", "--preload", "--access-logfile", "-", "--error-logfile", "-"]
