@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.urls import path, include, re_path
+from django.conf.urls.static import static
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 from rest_framework.response import Response
 from rest_framework.routers import DefaultRouter, Route
@@ -23,11 +24,11 @@ urlpatterns = [
     path("api/v1/redoc/", SpectacularRedocView.as_view(url_name="api:schema"), name="redoc"),
 ]
 
-if settings.DEBUG:
-    from django.contrib.staticfiles.urls import staticfiles_urlpatterns
-    urlpatterns += staticfiles_urlpatterns()
+# Always serve static files with explicit URL patterns to prevent trailing slash issues
+# This ensures static files bypass Django's URL routing system entirely
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
-# Redirect requests to SPA view unless the're for the API or static files
+# Redirect requests to SPA view unless they're for the API or static files
 urlpatterns += [
     re_path(r"^(?!api/|assets/|static/).*$", views.SPAView.as_view(), name="spa"),
 ]
