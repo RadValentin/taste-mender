@@ -7,7 +7,7 @@
 
 ## Installation
 
-1. Install required software: `Python@3.12.4`, `PostgreSQL@17.6`, `Node.js@v20.17.0 `
+1. Install required software: `Python@3.13.13`, `PostgreSQL@17.6`, `Node.js@v24.15.0`
 
 2. Create a config file in `backend/.env` with DB login information, see `.env.example`
 
@@ -48,7 +48,7 @@ npm run dev
 ```
 
 ## Building the database from scratch
-Ideally you should have access to the already-built database in SQLite format and the features NPZ file. If this isn't the case you can replicate the DB from scratch using the instructions below. For development, the **sample** data should be enough.
+Ideally you should have access to a backup of the DB in `pg_dump` format and to the features .NPZ file. If this isn't the case you can replicate the DB from scratch using the instructions below. For development, the **sample** data should be enough.
 
 The first step is to download the dataset dumps from AcousticBrainz, these contain track metadata and the audio features used to determine song similarity, link: https://acousticbrainz.org/download. I recommend using a structure like this:
 
