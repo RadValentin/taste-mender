@@ -130,6 +130,14 @@ a {
   padding: 0.15rem 0.5rem;
   border-radius: 1rem;
   box-shadow: 1px 1px 1px var(--bg-secondary-dark);
+
+  &.badge-rosa {
+    color: var(--accent-cyan);
+  }
+
+  &.badge-dort {
+    color: var(--accent-orange);
+  }
 }
 
 #root {

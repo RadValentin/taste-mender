@@ -64,8 +64,8 @@ export default function TrackItem({ track, onPlay, disabled }: TrackItemProps) {
           {year && <> • <span className="year">{year}</span></>}
         </div>
         <div className="badges">
-          <span className="badge" title="Genre in Rosamerica system">{getRosamericaLabel(track.genre_rosamerica)} &middot; r</span>
-          <span className="badge" title="Genre in Dortmund system">{getDortmundLabel(track.genre_dortmund)} &middot; d</span>
+          <span className="badge badge-rosa" title="Genre in Rosamerica system">{getRosamericaLabel(track.genre_rosamerica)}</span>
+          <span className="badge badge-dort" title="Genre in Dortmund system">{getDortmundLabel(track.genre_dortmund)}</span>
           <span className="badge" title="Submissions">{track.submissions} subs</span>
         </div>
       </div>
