@@ -15,7 +15,10 @@ export default function Header({onSearch}: { onSearch: (query: string) => void }
 
   return (
     <div className="header">
-      <a className="logo" href="/">TasteMender</a>
+      <a className="logo" href="/" aria-label="TasteMender">
+        <span className="logo-line">Taste</span>
+        <span className="logo-line">Mender</span>
+      </a>
       <div className="search-box">
         <input
           name="search"
