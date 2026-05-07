@@ -3,8 +3,8 @@
 
   & .button {
     background-color: var(--bg-secondary-light);
-    color: var(--accent-orange);
-    border: 1px solid var(--accent-orange);
+    color: var(--led-orange);
+    border: 1px solid var(--led-orange);
     border-radius: 6px;
     padding: .5em .8em;
   }
@@ -52,7 +52,7 @@
 
     & input {
       margin: .5em 0 0;
-      accent-color: var(--accent-orange);
+      accent-color: var(--led-orange);
     }
 
     & .slider {
@@ -61,8 +61,8 @@
 
     & select {
       background-color: var(--bg-secondary-light);
-      color: var(--accent-orange);
-      border: 1px solid var(--accent-orange);
+      color: var(--led-orange);
+      border: 1px solid var(--led-orange);
       border-radius: 6px;
       padding: .3em;
     }

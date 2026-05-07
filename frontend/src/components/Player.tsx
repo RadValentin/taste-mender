@@ -252,16 +252,16 @@ export default function Player({ ref }: PlayerProps) {
         </div>
 
         <div>
-          <button type="button" className="button" aria-label="Play/Pause" onClick={togglePlayback}>
+          <button type="button" className="btn btn-metal" aria-label="Play/Pause" onClick={togglePlayback}>
             { playerState.isPlaying
               ? <i className="fa-solid fa-pause"></i>
               : <i className="fa-solid fa-play"></i>
             }
           </button>
-          <button type="button" className="button" aria-label="Next Track" onClick={() => { playTrack(recListRef.current[0]) }}>
+          <button type="button" className="btn btn-amber" aria-label="Next Track" onClick={() => { playTrack(recListRef.current[0]) }}>
             <i className="fa-solid fa-forward"></i>
           </button>
-          <button type="button" className="button" aria-label="Minimize/Maximize" onClick={toggleMaximize}>
+          <button type="button" className="btn btn-dark" aria-label="Minimize/Maximize" onClick={toggleMaximize}>
             { playerState.isMaximized
               ? <i className="fa-solid fa-caret-down"></i>
               : <i className="fa-solid fa-caret-up"></i>

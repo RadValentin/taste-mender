@@ -5,15 +5,23 @@
   --bg-secondary-light: rgb(77, 81, 86); /* Inputs */
   --bg-secondary-dark: #12151b; /* Sidebar */
 
-  /* Accent colors */
-  --accent-cyan: #2ED3E6; /* Main highlight */
-  --accent-cyan-light: #7CE7F2; /* Hover / glow */
-  --accent-orange: #F3A23A; /* Secondary highlight */
+  /* LED display colors */
+  --led-cyan: #2ED3E6; /* Main highlight */
+  --led-cyan-muted: rgba(46, 211, 230, 0.5); /* Input placeholder */
+  --led-cyan-light: #7CE7F2; /* Hover / glow */
+  --led-orange: #F3A23A; /* Secondary highlight */
 
-  /* Text colors */
+  /* Body text colors */
   --text-primary: #E6E6E6; /* Main text */
   --text-secondary: #9CA3AF; /* Secondary text */
   --text-heading: #c7e6f7; /* Headings */
+
+  /* Panel text colors */
+  --text-engraved: #2a2a28;
+  --text-engraved-soft: #4a4a48;
+  --text-on-display: #cfe9f2;
+  --text-on-metal: #1a1a18;
+  --text-label: #3a3a38;
 
   /* Font sizes */
   --font-size-app-title: 1.5rem; /* 24px - App Title */
@@ -24,11 +32,22 @@
 
   /* Effects */
   --shadow-glow: 0 0 8px rgba(46, 211, 230, 0.5);
+  --shadow-glow-inset: inset 0 0 3px 4px #2ED3E6;
   --shadow-outline: 0 0 0 .25rem rgba(46, 211, 230, 0.8);
 
   /* UI element sizes */
   --header-height-lg: 80px;
   --player-height-lg: 80px;
+
+  /* Fonts */
+  --font-display: 'Inter', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Radius */
+  --r-panel: 6px;
+  --r-button: 4px;
+  --r-knob: 50%;
+  --r-recess: 3px;
 }
 
 * {
@@ -41,7 +60,7 @@ html, body {
   font-family: "Inter", sans-serif;
   color: var(--text-primary);
   scrollbar-width: thin;
-  scrollbar-color: var(--accent-orange) var(--bg-secondary);
+  scrollbar-color: var(--led-orange) var(--bg-secondary);
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -56,7 +75,7 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--accent-orange);
+  background: var(--led-orange);
   border-radius: 4px;
 }
 
@@ -75,50 +94,104 @@ input {
   }
 }
 
-button {
-  color: var(--text-primary);
-}
-
 input:focus {
-  outline: 2px solid var(--accent-cyan);
+  outline: 2px solid var(--led-cyan);
   outline-offset: 2px;
 }
 
 a {
-  color: var(--accent-cyan);
+  color: var(--led-cyan);
   text-decoration: none;
 
   &:hover {
-    color: var(--accent-cyan-light);
+    color: var(--led-cyan-light);
   }
 }
 
 /* Reusable styles */
 
-.button {
-  cursor: pointer;
-  background-color: transparent;
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 8px 16px;
+  border-radius: var(--r-button);
   border: none;
-  font-size: 1rem;
-  font-weight: 600;
-  transition: background-color 120ms ease,
-              transform 60ms ease,
-              box-shadow 120ms ease;
-
-  &:focus-visible {
-    outline: none;
-    box-shadow: var(--shadow-outline);
-  }
-
-  &:active {
-    transform: translateY(1px);
-  }
+  cursor: pointer;
+  user-select: none;
 
   &[disabled] {
     opacity: .55;
     cursor: not-allowed;
     box-shadow: none;
     transform: none;
+  }
+}
+
+.btn-metal {
+  background: linear-gradient(180deg, #d8d8d4 0%, #a8a8a4 50%, #8a8a86 100%);
+  color: var(--text-on-metal);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.7),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+    0 2px 3px rgba(0, 0, 0, 0.5),
+    0 0 0 1px #2a2a28;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
+
+  &:hover {
+    color: var(--text-on-metal);
+    background: linear-gradient(180deg, #e8e8e4 0%, #b8b8b4 50%, #9a9a96 100%);
+  }
+
+  &:active,
+  &.pressed {
+    color: var(--text-on-metal);
+    background: linear-gradient(180deg, #6a6a66 0%, #8a8a86 50%, #b8b8b4 100%);
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.5),
+                inset 0 -1px 0 rgba(255, 255, 255, 0.3),
+                0 0 0 1px #2a2a28;
+  }
+}
+
+.btn-amber {
+  background: linear-gradient(180deg, #ffd47a 0%, #ffb347 50%, #d68a20 100%);
+  color: #3a1d05;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.6),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.3),
+              0 2px 3px rgba(0, 0, 0, 0.5),
+              0 0 0 1px #4a2a08,
+              0 0 12px rgba(255, 179, 71, 0.35);
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
+  font-weight: 700;
+
+  &:hover {
+    color: #3a1d05;
+  }
+}
+
+.btn-dark {
+  background: linear-gradient(180deg, #4a4d52 0%, #2e3136 50%, #1a1c1f 100%);
+  color: #d8d8d4;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18),
+              inset 0 -1px 0 rgba(0, 0, 0, 0.5),
+              0 2px 3px rgba(0, 0, 0, 0.5),
+              0 0 0 1px #0a0c0e;
+  &:active {
+    text-shadow: 0 0 8px var(--led-cyan-glow);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7),
+                0 0 0 1px #0a0c0e;
+  }
+
+  &.pressed {
+    color: var(--led-cyan);
+    text-shadow: 0 0 8px var(--led-cyan-glow);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7),
+                inset 0 0 0 1px rgba(77, 217, 255, 0.3),
+                0 0 0 1px #0a0c0e;
   }
 }
 
@@ -132,11 +205,11 @@ a {
   box-shadow: 1px 1px 1px var(--bg-secondary-dark);
 
   &.badge-rosa {
-    color: var(--accent-cyan);
+    color: var(--led-cyan);
   }
 
   &.badge-dort {
-    color: var(--accent-orange);
+    color: var(--led-orange);
   }
 }
 
