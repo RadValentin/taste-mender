@@ -1,6 +1,6 @@
 .player {
   position: relative;
-  background-color: var(--bg-secondary);
+  background: linear-gradient(180deg, #b8b3a8 0%, #8a847a 55%, #5a564e 100%);
   flex: 0 0 var(--player-height-lg);
 
   &.empty {
@@ -18,7 +18,7 @@
     left: 0;
     right: 0;
     bottom: 100%;
-    background-color: var(--bg-primary);
+    background: linear-gradient(180deg, #4a4d52 0%, #2e3136 50%, #1a1c1f 100%);
     transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: hidden;
   }

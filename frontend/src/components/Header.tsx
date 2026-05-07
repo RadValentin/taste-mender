@@ -17,7 +17,7 @@ export default function Header({onSearch}: { onSearch: (query: string) => void }
     <div className="header">
       <a className="logo" href="/" aria-label="TasteMender">
         <span className="logo-line">Taste</span>
-        <span className="logo-line">Mender</span>
+        <span className="logo-line logo-mender">Mender</span>
       </a>
       <div className="search-box">
         <input
@@ -30,7 +30,7 @@ export default function Header({onSearch}: { onSearch: (query: string) => void }
         />
         <button
           type="button"
-          className="button button-search"
+          className="btn btn-metal btn-search"
           aria-label="Search"
           onClick={() => {onSearch(searchQuery)}}
         >
@@ -38,7 +38,7 @@ export default function Header({onSearch}: { onSearch: (query: string) => void }
         </button>
       </div>
       <div className="links">
-        <a href={API_BASE_URL}>API</a>
+        <a className="btn btn-amber" href={API_BASE_URL}>API</a>
         {/* <a href="#">About</a> */}
       </div>
     </div>

@@ -2,7 +2,7 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background-color: var(--bg-secondary-dark);
+    background: linear-gradient(180deg, #c9c9c4 0%, #a8a8a4 50%, #6e6e6a 100%);
     flex: 0 0 var(--header-height-lg);
     gap: 1em;
     padding: 0.5em 2em;
@@ -23,55 +23,61 @@
 
   & .logo {
     display: inline-block;
-    color: var(--text-primary);
+    color: var(--text-engraved);
     font-family: "Orbitron", sans-serif;
     font-size: var(--font-size-app-title);
     font-weight: 700;
     letter-spacing: 0.05em;
-    text-shadow: 0 0 20px var(--accent-cyan-light);
+    text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
     text-decoration: none;
 
     & .logo-line {
       display: inline;
+    }
+
+    & .logo-mender {
+      color: #006289;
     }
   }
 
   & .search-box {
     flex: 0 1 600px;
     display: flex;
+    height: 2.6rem;
+    background: var(--bg-secondary);
+    border: 1px solid var(--bg-secondary-light);
+    border-radius: var(--r-panel);
 
     & input {
+      color: var(--led-cyan);
+      width: 100%;
       flex: 1;
-      height: 2.6rem;
+      height: 100%;
       padding: 0.5em 1em;
-      border: 1px solid var(--bg-secondary-light);
-      border-radius: 6px 0 0 6px;
-      font-size: 1em;
-      background: var(--bg-secondary-light);
+      border: none;
+      border-radius: var(--r-panel);
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1rem;
+      background-color: transparent;
       transition: border-color 0.2s, box-shadow 0.2s;
+    }
+
+    & input::placeholder {
+      color: var(--led-cyan-muted);
+    }
+
+    & input:placeholder-shown {
+      text-overflow: ellipsis;
     }
 
     & input:focus {
       outline: none;
-      box-shadow: var(--shadow-outline);
+      box-shadow: var(--shadow-glow-inset);
     }
 
-    & .button-search {
-      height: 2.6rem;
-      padding: 0.45rem 0.7rem;
-      border: 1px solid var(--bg-secondary);
-      border-radius: 0 6px 6px 0;
-      background: var(--bg-secondary);
-    }
-
-    & .button-search:hover {
-      border-color: var(--bg-secondary-light);
-      background: var(--bg-secondary-light);
-    }
-
-    & .button-search:focus {
-      outline: none;
-      box-shadow: var(--shadow-outline);
+    & .btn-search {
+      margin: 3px;
+      box-shadow: none;
     }
   }
 
