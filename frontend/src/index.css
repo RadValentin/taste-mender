@@ -40,8 +40,9 @@
   --player-height-lg: 80px;
 
   /* Fonts */
-  --font-display: 'Inter', sans-serif;
-  --font-mono: 'JetBrains Mono', monospace;
+  --font-display: "Inter", sans-serif;
+  --font-headings: "Orbitron", sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
 
   /* Radius */
   --r-panel: 6px;
@@ -57,7 +58,7 @@
 html, body {
   margin: 0;
   padding: 0;
-  font-family: "Inter", sans-serif;
+  font-family: var(--font-display);
   color: var(--text-primary);
   scrollbar-width: thin;
   scrollbar-color: var(--led-orange) var(--bg-secondary);

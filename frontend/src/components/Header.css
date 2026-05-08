@@ -24,7 +24,7 @@
   & .logo {
     display: inline-block;
     color: var(--text-engraved);
-    font-family: "Orbitron", sans-serif;
+    font-family: var(--font-headings);
     font-size: var(--font-size-app-title);
     font-weight: 700;
     letter-spacing: 0.05em;
@@ -56,7 +56,7 @@
       padding: 0.5em 1em;
       border: none;
       border-radius: var(--r-panel);
-      font-family: "JetBrains Mono", monospace;
+      font-family: var(--font-mono);
       font-size: 1rem;
       background-color: transparent;
       transition: border-color 0.2s, box-shadow 0.2s;
