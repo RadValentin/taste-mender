@@ -9,7 +9,7 @@
 
     border-style: solid;
     border-width: 0 0 1px;
-    border-bottom-color: #4a4a46;
+    border-bottom-color: var(--text-engraved-soft);
 
   & > * {
     min-width: 12%;
