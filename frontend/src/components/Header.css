@@ -71,6 +71,7 @@
 
     & .btn-search {
       margin: 3px;
+      font-size: 1rem;
       box-shadow: none;
     }
   }
