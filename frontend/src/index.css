@@ -7,7 +7,8 @@
 
   /* LED display colors */
   --led-cyan: #2ED3E6; /* Main highlight */
-  --led-cyan-muted: rgba(46, 211, 230, 0.5); /* Input placeholder */
+  --led-cyan-dim: rgba(46, 211, 230, 0.5); /* Input placeholder */
+  --led-cyan-glow: rgba(77, 217, 255, 0.55);
   --led-cyan-light: #7CE7F2; /* Hover / glow */
   --led-orange: #F3A23A; /* Secondary highlight */
 
@@ -65,6 +66,7 @@ html, body {
 }
 
 h1, h2, h3, h4, h5, h6 {
+  font-family: var(--font-headings);
   color: var(--text-heading);
   margin: 0 0 .5em;
   padding: 0;
@@ -109,7 +111,9 @@ a {
   }
 }
 
-/* Reusable styles */
+/* Reusable style classes */
+
+/* Buttons */
 
 .btn {
   display: inline-flex;
@@ -171,6 +175,21 @@ a {
 
   &:hover {
     color: #3a1d05;
+    background: linear-gradient(180deg, #ffe49a 0%, #ffc36a 50%, #e69a30 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.7),
+                inset 0 -1px 0 rgba(0,0,0,0.3),
+                0 2px 3px rgba(0,0,0,0.5),
+                0 0 0 1px #4a2a08,
+                0 0 18px rgba(255,179,71,0.55);
+  }
+
+  &:active, &.pressed {
+    background: linear-gradient(180deg, #b07020 0%, #d68a20 50%, #ffb347 100%);
+    color: #2a1404;
+    box-shadow: inset 0 2px 4px rgba(0,0,0,0.55),
+                inset 0 -1px 0 rgba(255,255,255,0.25),
+                0 0 0 1px #4a2a08,
+                0 0 8px rgba(255,179,71,0.25);
   }
 }
 
@@ -181,13 +200,20 @@ a {
               inset 0 -1px 0 rgba(0, 0, 0, 0.5),
               0 2px 3px rgba(0, 0, 0, 0.5),
               0 0 0 1px #0a0c0e;
+
+  &:hover {
+    background: linear-gradient(180deg, #5a5d62 0%, #3e4146 50%, #25272a 100%);
+    color: #f0f0ec;
+  }
+
   &:active {
-    text-shadow: 0 0 8px var(--led-cyan-glow);
+    background: linear-gradient(180deg, #15171a 0%, #2a2d31 50%, #3a3d42 100%);
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7),
                 0 0 0 1px #0a0c0e;
   }
 
   &.pressed {
+    background: linear-gradient(180deg, #15171a 0%, #2a2d31 50%, #3a3d42 100%);
     color: var(--led-cyan);
     text-shadow: 0 0 8px var(--led-cyan-glow);
     box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.7),
@@ -196,6 +222,7 @@ a {
   }
 }
 
+/* Badges */
 .badge {
   cursor: default;
   font-size: 0.75rem;
