@@ -238,7 +238,7 @@ export default function Player({ ref }: PlayerProps) {
     const fallbackText = track.title?.charAt(0)?.toUpperCase() ?? "♪"
 
     return (
-      <div className="content">
+      <div className="footer-bar">
         <div className="coverart" aria-hidden="true">
           <ImageLoader src={artUrl} alt="cover art" fallback={fallbackText} />
         </div>
@@ -251,7 +251,7 @@ export default function Player({ ref }: PlayerProps) {
           </div>
         </div>
 
-        <div>
+        <div className="controls">
           <button type="button" className="btn btn-metal" aria-label="Play/Pause" onClick={togglePlayback}>
             { playerState.isPlaying
               ? <i className="fa-solid fa-pause"></i>
