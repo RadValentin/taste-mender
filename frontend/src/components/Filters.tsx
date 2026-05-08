@@ -213,7 +213,7 @@ export default function Filters({ onChange }: FiltersProps) {
         ))}
       </div>
 
-      <button className="button" onClick={resetState}>RESET</button>
+      <button className="btn btn-amber" onClick={resetState}>RESET</button>
     </div>
   )
 }

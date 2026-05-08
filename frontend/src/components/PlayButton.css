@@ -1,7 +1,6 @@
 .button-play {
-  --play-button-glow: rgba(46,211,230,0.5);
-
   cursor: pointer;
+  color: var(--text-primary);
 
   display: flex;
   align-items: center;
@@ -12,14 +11,14 @@
   border-radius: 50%;
 
   background: radial-gradient(circle at 30% 30%, #2b3138, #1b2026);
-  border: 2px solid var(--accent-cyan);
-  box-shadow: 0 0 8px var(--play-button-glow);
+  border: 2px solid var(--led-cyan);
+  box-shadow: 0 0 8px var(--led-cyan-dim);
   transition: all 0.2s ease;
 
   &:hover {
     transform: scale(1.08);
-    box-shadow: 0 0 8px var(--accent-cyan),
-                0 0 10px var(--play-button-glow);
+    box-shadow: 0 0 8px var(--led-cyan),
+                0 0 10px var(--led-cyan-dim);
   }
 
   &:focus {
@@ -30,6 +29,6 @@
   &:active {
     outline: none;
     transform: scale(0.95);
-    box-shadow: 0 0 6px var(--play-button-glow);
+    box-shadow: 0 0 6px var(--led-cyan-dim);
   }
 }
