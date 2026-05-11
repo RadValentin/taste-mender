@@ -1,9 +1,15 @@
 .header {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--header-height);
+    z-index: 1;
+
     display: flex;
     align-items: center;
     justify-content: space-between;
     background: linear-gradient(180deg, #c9c9c4 0%, #a8a8a4 50%, #6e6e6a 100%);
-    flex: 0 0 var(--header-height-lg);
     gap: 1em;
     padding: 0.5em 2em;
 

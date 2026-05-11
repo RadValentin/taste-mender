@@ -1,7 +1,10 @@
 .player {
-  position: relative;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height:  var(--player-height);
   background: linear-gradient(180deg, #b8b3a8 0%, #8a847a 55%, #5a564e 100%);
-  flex: 0 0 var(--player-height-lg);
 
   &.empty {
     flex: 0 0 0;
@@ -24,7 +27,7 @@
   }
 
   & .overlay.maximized {
-    height: calc(100vh - var(--header-height-lg) - var(--player-height-lg));
+    height: calc(100vh - var(--header-height) - var(--player-height));
   }
 
   & .overlay.minimized {

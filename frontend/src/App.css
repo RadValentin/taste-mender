@@ -1,8 +1,6 @@
 .main {
   position: relative;
-  flex: 1;
-  overflow-y: auto;
-  background-color: var(--bg-primary);
+  margin: var(--header-height) 0 var(--player-height);
 
   & .content {
     max-width: 1200px;

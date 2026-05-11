@@ -37,8 +37,8 @@
   --shadow-outline: 0 0 0 .25rem rgba(46, 211, 230, 0.8);
 
   /* UI element sizes */
-  --header-height-lg: 80px;
-  --player-height-lg: 80px;
+  --header-height: 80px;
+  --player-height: 80px;
 
   /* Fonts */
   --font-display: "Inter", sans-serif;
@@ -59,6 +59,7 @@
 html, body {
   margin: 0;
   padding: 0;
+  background-color: var(--bg-primary);
   font-family: var(--font-display);
   color: var(--text-primary);
   scrollbar-width: thin;
@@ -240,10 +241,4 @@ a {
   &.badge-dort {
     color: var(--led-orange);
   }
-}
-
-#root {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
 }
