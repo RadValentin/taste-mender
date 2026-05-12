@@ -18,7 +18,7 @@ inflection==0.5.1
 joblib==1.5.2
 jsonschema==4.25.1
 jsonschema-specifications==2025.9.1
-lmdb==1.7.3
+lmdb==1.7.5
 numpy==2.3.3
 orjson==3.11.3
 pandas==2.3.3
