@@ -18,7 +18,7 @@ type ResultsState = {
 function App() {
   const [results, setResults] = useState<ResultsState>({ data: [], status: "TOP" });
   const [isLoading, setLoading] = useState(false);
-  const {dispatch} = usePlayerContext();
+  const {state: playerState, dispatch} = usePlayerContext();
   const playerRef = useRef<PlayerRef>(null);
 
   function onSearch(query: string) {
@@ -71,6 +71,21 @@ function App() {
     loadTopTracks();
   }, []);
 
+  // Disable scrolling on body when the player drawer is maximized
+  useEffect(() => {
+    const bodyClassName = "scroll-locked";
+
+    if (playerState.isMaximized) {
+      document.body.classList.add(bodyClassName);
+    } else {
+      document.body.classList.remove(bodyClassName);
+    }
+
+    return () => {
+      document.body.classList.remove(bodyClassName);
+    };
+  }, [playerState.isMaximized]);
+
   const renderContent = () => {
     if (isLoading) {
       return <div className="content"><LoadingSpinner /></div>;
@@ -105,7 +120,7 @@ function App() {
   return (
     <>
       <Header onSearch={onSearch} />
-      <main className="main">
+      <main className="main" inert={playerState.isMaximized}>
         {renderContent()}
       </main>
       <Player ref={playerRef} />

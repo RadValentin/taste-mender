@@ -1,4 +1,6 @@
 :root {
+  --scrollbar-gutter: auto;
+
   /* Background colors */
   --bg-primary: #1C1F23; /* Main app background */
   --bg-secondary: #262A2F; /* Cards, containers */
@@ -62,8 +64,17 @@ html, body {
   background-color: var(--bg-primary);
   font-family: var(--font-display);
   color: var(--text-primary);
-  scrollbar-width: thin;
   scrollbar-color: var(--led-orange) var(--bg-secondary);
+}
+
+body {
+  overflow: visible;
+}
+
+body.scroll-locked {
+  --scrollbar-gutter: stable;
+
+  overflow: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -246,6 +257,10 @@ a {
 /* Root layout */
 /* Adjust vertical space based on player visibility */
 .main {
+  /* Allocate space for scrollbar even if it's not visible to prevent h-shift */
+  overflow: auto;
+  scrollbar-gutter: var(--scrollbar-gutter);
+
   margin: var(--header-height) 0 var(--player-height);
   min-height: calc(100vh - (var(--header-height) + var(--player-height)));
 }

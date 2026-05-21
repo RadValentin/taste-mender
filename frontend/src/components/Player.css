@@ -113,6 +113,9 @@
     border-width: 1px 0 0;
     border-top-color: var(--text-engraved-soft);
 
+    overflow: auto;
+    scrollbar-gutter: var(--scrollbar-gutter);
+
     & .coverart {
       display: flex;
       align-items: center;

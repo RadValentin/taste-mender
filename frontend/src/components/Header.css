@@ -17,6 +17,9 @@
     border-width: 0 0 1px;
     border-bottom-color: var(--text-engraved-soft);
 
+    overflow: auto;
+    scrollbar-gutter: var(--scrollbar-gutter);
+
   & > * {
     min-width: 12%;
   }
