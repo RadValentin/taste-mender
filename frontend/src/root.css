@@ -242,3 +242,15 @@ a {
     color: var(--led-orange);
   }
 }
+
+/* Root layout */
+/* Adjust vertical space based on player visibility */
+.main {
+  margin: var(--header-height) 0 var(--player-height);
+  min-height: calc(100vh - (var(--header-height) + var(--player-height)));
+}
+
+.main:has(+ .player.empty) {
+  margin: var(--header-height) 0 0;
+  min-height: calc(100vh - var(--header-height));
+}

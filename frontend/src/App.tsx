@@ -105,9 +105,9 @@ function App() {
   return (
     <>
       <Header onSearch={onSearch} />
-      <div className="main">
+      <main className="main">
         {renderContent()}
-      </div>
+      </main>
       <Player ref={playerRef} />
     </>
   )

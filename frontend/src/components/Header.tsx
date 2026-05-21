@@ -14,7 +14,7 @@ export default function Header({onSearch}: { onSearch: (query: string) => void }
   }
 
   return (
-    <div className="header">
+    <header className="header">
       <a className="logo" href="/" aria-label="TasteMender">
         <span className="logo-line">Taste</span>
         <span className="logo-line logo-mender">Mender</span>
@@ -41,6 +41,6 @@ export default function Header({onSearch}: { onSearch: (query: string) => void }
         <a className="btn btn-amber" href={API_BASE_URL}>API</a>
         {/* <a href="#">About</a> */}
       </div>
-    </div>
+    </header>
   );
 }
