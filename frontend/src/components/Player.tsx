@@ -186,6 +186,7 @@ export default function Player({ ref }: PlayerProps) {
       }
 
       iframeRef.current.loadVideoById({ videoId: sources[0].id });
+      setPlayerState(playerState => ({ ...playerState, track }));
       dispatch({type: "open"});
 
       setRecState(recState => ({...recState, isLoading: true}));
