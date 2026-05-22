@@ -45,7 +45,7 @@ export const usePlayerContext = () => {
   const dispatch = useContext(PlayerDispatchContext);
 
   if (!state || !dispatch) {
-    throw new Error("usePlayer must be used within PlayerProvider");
+    throw new Error("usePlayerContext must be used within PlayerProvider");
   }
 
   return { state, dispatch };
