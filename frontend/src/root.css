@@ -84,21 +84,6 @@ h1, h2, h3, h4, h5, h6 {
   padding: 0;
 }
 
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--led-orange);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
-  border-radius: 4px;
-}
-
 input {
   background: var(--bg-secondary-light);
   border: 1px solid var(--bg-secondary-light);
