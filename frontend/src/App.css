@@ -1,8 +1,5 @@
 .main {
   position: relative;
-  flex: 1;
-  overflow-y: auto;
-  background-color: var(--bg-primary);
 
   & .content {
     max-width: 1200px;

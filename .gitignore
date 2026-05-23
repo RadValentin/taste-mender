@@ -173,6 +173,9 @@ cython_debug/
 # PyPI configuration file
 .pypirc
 
+# OS artifacts
+.DS_Store
+
 # Project-specific files
 staticfiles/
 lmdb_data/

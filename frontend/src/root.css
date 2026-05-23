@@ -1,4 +1,6 @@
 :root {
+  --scrollbar-gutter: auto;
+
   /* Background colors */
   --bg-primary: #1C1F23; /* Main app background */
   --bg-secondary: #262A2F; /* Cards, containers */
@@ -37,8 +39,8 @@
   --shadow-outline: 0 0 0 .25rem rgba(46, 211, 230, 0.8);
 
   /* UI element sizes */
-  --header-height-lg: 80px;
-  --player-height-lg: 80px;
+  --header-height: 80px;
+  --player-height: 80px;
 
   /* Fonts */
   --font-display: "Inter", sans-serif;
@@ -59,10 +61,20 @@
 html, body {
   margin: 0;
   padding: 0;
+  background-color: var(--bg-primary);
   font-family: var(--font-display);
   color: var(--text-primary);
-  scrollbar-width: thin;
   scrollbar-color: var(--led-orange) var(--bg-secondary);
+}
+
+body {
+  overflow: visible;
+}
+
+body.scroll-locked {
+  --scrollbar-gutter: stable;
+
+  overflow: hidden;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -70,21 +82,6 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--text-heading);
   margin: 0 0 .5em;
   padding: 0;
-}
-
-::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--led-orange);
-  border-radius: 4px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--bg-secondary);
-  border-radius: 4px;
 }
 
 input {
@@ -242,8 +239,18 @@ a {
   }
 }
 
-#root {
-  display: flex;
-  flex-direction: column;
-  height: 100vh;
+/* Root layout */
+/* Adjust vertical space based on player visibility */
+.main {
+  /* Allocate space for scrollbar even if it's not visible to prevent h-shift */
+  overflow: auto;
+  scrollbar-gutter: var(--scrollbar-gutter);
+
+  margin: var(--header-height) 0 var(--player-height);
+  min-height: calc(100vh - (var(--header-height) + var(--player-height)));
+}
+
+.main:has(+ .player.empty) {
+  margin: var(--header-height) 0 0;
+  min-height: calc(100vh - var(--header-height));
 }

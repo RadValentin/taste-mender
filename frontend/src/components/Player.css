@@ -1,10 +1,14 @@
 .player {
-  position: relative;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height:  var(--player-height);
   background: linear-gradient(180deg, #b8b3a8 0%, #8a847a 55%, #5a564e 100%);
-  flex: 0 0 var(--player-height-lg);
+  transition: bottom .3s;
 
   &.empty {
-    flex: 0 0 0;
+    bottom: calc(var(--player-height) * -1);
   }
 
   & .heading {
@@ -24,7 +28,7 @@
   }
 
   & .overlay.maximized {
-    height: calc(100vh - var(--header-height-lg) - var(--player-height-lg));
+    height: calc(100vh - var(--header-height) - var(--player-height));
   }
 
   & .overlay.minimized {
@@ -108,6 +112,9 @@
     border-style: solid;
     border-width: 1px 0 0;
     border-top-color: var(--text-engraved-soft);
+
+    overflow: auto;
+    scrollbar-gutter: var(--scrollbar-gutter);
 
     & .coverart {
       display: flex;

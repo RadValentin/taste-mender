@@ -3,6 +3,7 @@ import "./App.css"
 import type { Track } from "./types";
 import { searchTracks, getTracks } from "./api";
 import Player, { type PlayerRef } from "./components/Player";
+import { usePlayerContext } from "./PlayerContext";
 import Header from "./components/Header";
 import TrackList from "./components/TrackList";
 import LoadingSpinner from "./components/LoadingSpinner";
@@ -17,6 +18,7 @@ type ResultsState = {
 function App() {
   const [results, setResults] = useState<ResultsState>({ data: [], status: "TOP" });
   const [isLoading, setLoading] = useState(false);
+  const {state: playerState, dispatch} = usePlayerContext();
   const playerRef = useRef<PlayerRef>(null);
 
   function onSearch(query: string) {
@@ -28,7 +30,8 @@ function App() {
       return;
     }
 
-    playerRef.current?.minimize();
+    // Close the player after user search
+    dispatch({type: "close"});
     setLoading(true);
 
     searchTracks(query)
@@ -68,6 +71,21 @@ function App() {
     loadTopTracks();
   }, []);
 
+  // Disable scrolling on body when the player drawer is maximized
+  useEffect(() => {
+    const bodyClassName = "scroll-locked";
+
+    if (playerState.isMaximized) {
+      document.body.classList.add(bodyClassName);
+    } else {
+      document.body.classList.remove(bodyClassName);
+    }
+
+    return () => {
+      document.body.classList.remove(bodyClassName);
+    };
+  }, [playerState.isMaximized]);
+
   const renderContent = () => {
     if (isLoading) {
       return <div className="content"><LoadingSpinner /></div>;
@@ -102,9 +120,9 @@ function App() {
   return (
     <>
       <Header onSearch={onSearch} />
-      <div className="main">
+      <main className="main" inert={playerState.isMaximized}>
         {renderContent()}
-      </div>
+      </main>
       <Player ref={playerRef} />
     </>
   )
