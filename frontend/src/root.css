@@ -247,10 +247,10 @@ a {
   scrollbar-gutter: var(--scrollbar-gutter);
 
   margin: var(--header-height) 0 var(--player-height);
-  min-height: calc(100vh - (var(--header-height) + var(--player-height)));
+  min-height: calc(100dvh - (var(--header-height) + var(--player-height)));
 }
 
 .main:has(+ .player.empty) {
   margin: var(--header-height) 0 0;
-  min-height: calc(100vh - var(--header-height));
+  min-height: calc(100dvh - var(--header-height));
 }

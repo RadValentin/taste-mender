@@ -28,7 +28,7 @@
   }
 
   & .overlay.maximized {
-    height: calc(100vh - var(--header-height) - var(--player-height));
+    height: calc(100dvh - var(--header-height) - var(--player-height));
   }
 
   & .overlay.minimized {
