@@ -3,7 +3,7 @@
   bottom: 0;
   left: 0;
   right: 0;
-  height:  var(--player-height);
+  height: var(--player-height);
   background: linear-gradient(180deg, #b8b3a8 0%, #8a847a 55%, #5a564e 100%);
   transition: bottom .3s;
 
@@ -103,6 +103,7 @@
   }
 
   & .footer-bar {
+    width: calc(100dvw - var(--scrollbar-width));
     padding: 10px;
     display: flex;
     gap: 1rem;
@@ -112,9 +113,6 @@
     border-style: solid;
     border-width: 1px 0 0;
     border-top-color: var(--text-engraved-soft);
-
-    overflow: auto;
-    scrollbar-gutter: var(--scrollbar-gutter);
 
     & .coverart {
       display: flex;
