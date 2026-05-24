@@ -1,5 +1,6 @@
 :root {
   --scrollbar-gutter: auto;
+  --scrollbar-width: 0px;
 
   /* Background colors */
   --bg-primary: #1C1F23; /* Main app background */

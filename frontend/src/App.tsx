@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import "./App.css"
 import type { Track } from "./types";
 import { searchTracks, getTracks } from "./api";
+import { getScrollbarWidth } from "./layout";
 import Player, { type PlayerRef } from "./components/Player";
 import { usePlayerContext } from "./PlayerContext";
 import Header from "./components/Header";
@@ -69,6 +70,8 @@ function App() {
   useEffect(() => {
     // Display top track only once on mount
     loadTopTracks();
+    // Set global CSS properties which need to be pre-calculated
+    document.documentElement.style.setProperty("--scrollbar-width", `${getScrollbarWidth()}px`);
   }, []);
 
   // Disable scrolling on body when the player drawer is maximized
