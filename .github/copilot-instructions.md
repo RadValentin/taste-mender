@@ -9,6 +9,8 @@ TasteMender is a music recommendation web app with two parts:
 
 All track/artist/album identifiers are [MusicBrainz UUIDs](https://musicbrainz.org/doc/MusicBrainz_Identifier) (referred to as "MBIDs" throughout the codebase).
 
+For code review tasks, repository context is sufficient. Do not require app startup, database bootstrap, or frontend dev server unless the task explicitly needs runtime verification.
+
 ---
 
 ## Repository Structure
