@@ -21,7 +21,7 @@
     width: calc(100dvw - var(--scrollbar-width));
   }
 
-  & .header-inner>* {
+  & .header-inner > * {
     min-width: 12%;
   }
 
@@ -109,10 +109,12 @@
 
 @media (width < 768px) {
   .header {
-    gap: .5em;
-    padding: 0.5em 1em;
+    & .header-inner {
+      gap: .5em;
+      padding: 0.5em 1em;
+    }
 
-    &>* {
+    & .header-inner > * {
       min-width: initial;
     }
 
