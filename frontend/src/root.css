@@ -1,5 +1,5 @@
 :root {
-  --scrollbar-gutter: auto;
+  --scrollbar-width: 0px;
 
   /* Background colors */
   --bg-primary: #1C1F23; /* Main app background */
@@ -72,8 +72,6 @@ body {
 }
 
 body.scroll-locked {
-  --scrollbar-gutter: stable;
-
   overflow: hidden;
 }
 
@@ -242,15 +240,12 @@ a {
 /* Root layout */
 /* Adjust vertical space based on player visibility */
 .main {
-  /* Allocate space for scrollbar even if it's not visible to prevent h-shift */
-  overflow: auto;
-  scrollbar-gutter: var(--scrollbar-gutter);
-
+  max-width: calc(100dvw - var(--scrollbar-width));
   margin: var(--header-height) 0 var(--player-height);
-  min-height: calc(100vh - (var(--header-height) + var(--player-height)));
+  min-height: calc(100dvh - (var(--header-height) + var(--player-height)));
 }
 
 .main:has(+ .player.empty) {
   margin: var(--header-height) 0 0;
-  min-height: calc(100vh - var(--header-height));
+  min-height: calc(100dvh - var(--header-height));
 }

@@ -1,7 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import "./App.css"
 import type { Track } from "./types";
 import { searchTracks, getTracks } from "./api";
+import { getScrollbarWidth } from "./layout";
 import Player, { type PlayerRef } from "./components/Player";
 import { usePlayerContext } from "./PlayerContext";
 import Header from "./components/Header";
@@ -65,6 +66,11 @@ function App() {
         setLoading(false);
       });
   }
+
+  useLayoutEffect(() => {
+    // Set global CSS properties which need to be pre-calculated before first paint
+    document.documentElement.style.setProperty("--scrollbar-width", `${getScrollbarWidth()}px`);
+  }, []);
 
   useEffect(() => {
     // Display top track only once on mount
