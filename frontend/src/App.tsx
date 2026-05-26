@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useLayoutEffect } from "react";
 import "./App.css"
 import type { Track } from "./types";
 import { searchTracks, getTracks } from "./api";
@@ -67,11 +67,14 @@ function App() {
       });
   }
 
+  useLayoutEffect(() => {
+    // Set global CSS properties which need to be pre-calculated before first paint
+    document.documentElement.style.setProperty("--scrollbar-width", `${getScrollbarWidth()}px`);
+  }, []);
+
   useEffect(() => {
     // Display top track only once on mount
     loadTopTracks();
-    // Set global CSS properties which need to be pre-calculated
-    document.documentElement.style.setProperty("--scrollbar-width", `${getScrollbarWidth()}px`);
   }, []);
 
   // Disable scrolling on body when the player drawer is maximized
