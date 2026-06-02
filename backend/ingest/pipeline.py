@@ -6,8 +6,6 @@ from collections import Counter, defaultdict
 from datetime import date
 from django.contrib.postgres.search import SearchVector
 from django.db import transaction, connection
-from dotenv import dotenv_values
-from pathlib import Path
 from sklearn.preprocessing import StandardScaler
 from recommend_api.models import (
     Track,
@@ -21,6 +19,7 @@ from recommend_api.models import (
 from pympler import asizeof
 from typing import List, Set, Tuple
 from ingest import track_processing_helpers as tph
+from config import get_config
 from ingest.lmdb_index import LMDBTrackIndex
 
 log = logging.getLogger(__name__)
@@ -52,8 +51,6 @@ def show_progress_bar(done: int, total: int, step=10000, message: str = ""):
 def build_database(use_sample: bool, num_parts: int = None, parts_list: list = None):
     # Size of on-disk track index, set an arbitrary default 2GB
     MAP_SIZE = 1024 * 1024 * 1024 * 2
-    BASE_DIR = Path(__file__).resolve().parent.parent
-    config = dotenv_values(BASE_DIR / ".env")
     # Globals used to track how many records are skipped while processing
     counters = {"missing_artist": 0, "processing": 0}
     # Don't show logs in console, they'll be logged to a file, clear the file at the start
@@ -71,10 +68,10 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
     # Different directories where AcousticBrainz data is stored
     if use_sample:
         # 100k records
-        dataset_path = config.get("AB_SAMPLE_ROOT")
+        dataset_path = get_config("AB_SAMPLE_ROOT")
     else:
         # 1M records
-        dataset_path = config.get("AB_HIGHLEVEL_ROOT")
+        dataset_path = get_config("AB_HIGHLEVEL_ROOT")
 
     # Clean old records
     print("Cleaning up old records", flush=True)

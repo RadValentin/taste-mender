@@ -10,22 +10,17 @@ For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.2/ref/settings/
 """
 
-import os
 import sys, logging, dj_database_url
 from pathlib import Path
-from dotenv import dotenv_values
+from config import get_config
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-ENV_CONFIG = dotenv_values(BASE_DIR / ".env")
 
-def env_get(key, default=None):
-    # Prefer real environment variables (CI, container, runtime) over .env values.
-    return os.getenv(key, ENV_CONFIG.get(key, default))
 
 if "test" not in sys.argv:
     REQUIRED_ENV_VARS = ["DJANGO_SECRET_KEY", "DATABASE_URL", "YOUTUBE_API_KEY"]
-    missing_vars = [var for var in REQUIRED_ENV_VARS if not env_get(var)]
+    missing_vars = [var for var in REQUIRED_ENV_VARS if not get_config(var)]
     if missing_vars:
         raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
 
@@ -34,10 +29,10 @@ if "test" not in sys.argv:
 # See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
 
 # SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = env_get("DJANGO_SECRET_KEY", "django-insecure-jb4&(vsla6+72a&1le(m)30*qmp)k60oihb-s-js%0sc0e8r)8")
+SECRET_KEY = get_config("DJANGO_SECRET_KEY", "django-insecure-jb4&(vsla6+72a&1le(m)30*qmp)k60oihb-s-js%0sc0e8r)8")
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = env_get("DJANGO_DEBUG", "False") == "True"
+DEBUG = get_config("DJANGO_DEBUG", "False") == "True"
 
 if not DEBUG and "test" not in sys.argv:
     SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
@@ -54,7 +49,7 @@ if not DEBUG and "test" not in sys.argv:
     SECURE_HSTS_PRELOAD = True
 
 
-ALLOWED_HOSTS = env_get("DJANGO_ALLOWED_HOSTS", "localhost").split(",")
+ALLOWED_HOSTS = get_config("DJANGO_ALLOWED_HOSTS", "localhost").split(",")
 
 
 # Application definition
@@ -121,7 +116,7 @@ DATABASES = {
     #     "NAME": BASE_DIR / "db.sqlite3",
     # },
     "default": dj_database_url.config(
-        default=env_get("DATABASE_URL"),
+        default=get_config("DATABASE_URL"),
         conn_max_age=600
     )
 }
@@ -188,7 +183,7 @@ SPECTACULAR_SETTINGS = {
 
 # allow Vite dev server to hit API in dev
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = env_get(
+CORS_ALLOWED_ORIGINS = get_config(
     "CORS_ALLOWED_ORIGINS",
     "http://localhost:5173,http://127.0.0.1:5173,http://localhost:8000,http://127.0.0.1:8000"
 ).split(",")
