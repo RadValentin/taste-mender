@@ -13,6 +13,10 @@ jobs:
   copilot-setup-steps:
     runs-on: ubuntu-latest
     env:
+      AB_SAMPLE_ROOT: ${{ github.workspace }}/.cache/acousticbrainz/sample
+      DATABASE_URL: "postgres://postgres:postgres@127.0.0.1:5432/taste_mender_db"
+      DJANGO_SECRET_KEY: "copilot-setup"
+      DJANGO_DEBUG: "True"
       YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
 
     services:
@@ -49,6 +53,22 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements-test.txt
 
+      - name: Cache AcousticBrainz sample archive
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.AB_SAMPLE_ROOT }}
+          key: acousticbrainz-sample-20220623-v1
+
+      - name: Download AcousticBrainz sample archive
+        run: |
+          mkdir -p "${AB_SAMPLE_ROOT}"
+          FILE="${AB_SAMPLE_ROOT}/acousticbrainz-highlevel-sample-json-20220623-0.tar.zst"
+          if [ ! -f "${FILE}" ]; then
+            curl -fL --retry 3 --retry-delay 5 \
+              -o "${FILE}" \
+              "https://data.metabrainz.org/pub/musicbrainz/acousticbrainz/dumps/acousticbrainz-sample-json-20220623/acousticbrainz-highlevel-sample-json-20220623-0.tar.zst"
+          fi
+
       - name: Enable pg_trgm extension
         env:
           PGPASSWORD: postgres
@@ -56,12 +76,11 @@ jobs:
 
       - name: Run Django migrations
         working-directory: backend
-        env:
-          DATABASE_URL: "postgres://postgres:postgres@127.0.0.1:5432/taste_mender_db"
-          DJANGO_SECRET_KEY: "copilot-setup"
-          DJANGO_DEBUG: "True"
-          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: python manage.py migrate
+
+      - name: Build database from sample ingest
+        working-directory: backend
+        run: python manage.py build_db --sample --limit 1000
 
       - name: Set up Node.js
         uses: actions/setup-node@v5
