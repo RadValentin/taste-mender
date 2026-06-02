@@ -23,6 +23,12 @@ class Command(BaseCommand):
             default=None,
             help="List of part indexes to process (optional).",
         )
+        parser.add_argument(
+            "--limit",
+            type=int,
+            default=None,
+            help="Maximum number of tracks to ingest per selected input source.",
+        )
 
     def handle(self, *args, **options):
         try:
@@ -33,9 +39,10 @@ class Command(BaseCommand):
             build_database(
                 use_sample=options["sample"],
                 num_parts=options["parts"],
-                parts_list=parts_list
+                parts_list=parts_list,
+                limit=options.get("limit"),
             )
         except Exception as e:
             raise CommandError(str(e))
-        
+
         self.stdout.write(self.style.SUCCESS("Build complete."))

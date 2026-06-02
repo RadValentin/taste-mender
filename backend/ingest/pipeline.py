@@ -48,7 +48,12 @@ def show_progress_bar(done: int, total: int, step=10000, message: str = ""):
             print(f"\r[{bar}] {done}/{total} ({percent*100:5.1f}%)", end="", flush=True)
 
 
-def build_database(use_sample: bool, num_parts: int = None, parts_list: list = None):
+def build_database(
+    use_sample: bool,
+    num_parts: int | None = None,
+    parts_list: list | None = None,
+    limit: int | None = None,
+):
     # Size of on-disk track index, set an arbitrary default 2GB
     MAP_SIZE = 1024 * 1024 * 1024 * 2
     # Globals used to track how many records are skipped while processing
@@ -123,7 +128,9 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
                         print(f"Non-JSON file skipped: {name}")
 
         MAP_SIZE = len(parts_dirs) * 1 * 1024 * 1024 * 1024 # 1GB per 1M files
-        # json_paths = json_paths[0:1000] # use only a subset of the data, for debugging
+        # use only a subset of the data if param is set
+        if limit:
+            json_paths = json_paths[:limit]
         print(f"Will load {len(json_paths):,} records", end="", flush=True)
     else:
         MAP_SIZE = len(archive_paths) * 1 * 1024 * 1024 * 1024 # 1GB per archive
@@ -144,7 +151,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
     else:
         # Process archive-by-archive
         for archive_path in archive_paths:
-            for parsed in tph.iter_archive(archive_path, limit=None):
+            for parsed in tph.iter_archive(archive_path, limit=limit):
                 ingest_parsed_track(parsed, track_index, counters)
 
     # Ensure pending transactions are committed to store
@@ -251,7 +258,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
             continue
 
         track = track_dupes[0]
-        artist_pairs = track["artist_pairs"]
+        artist_pairs: list[tuple[str, str]] = track["artist_pairs"]
         album_info = track["album_info"]
 
         genre_dortmund_label = track["genre_dortmund"]
