@@ -12,6 +12,8 @@ on:
 jobs:
   copilot-setup-steps:
     runs-on: ubuntu-latest
+    env:
+      YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
 
     services:
       postgres:
@@ -58,6 +60,7 @@ jobs:
           DATABASE_URL: "postgres://postgres:postgres@127.0.0.1:5432/taste_mender_db"
           DJANGO_SECRET_KEY: "copilot-setup"
           DJANGO_DEBUG: "True"
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
         run: python manage.py migrate
 
       - name: Set up Node.js
