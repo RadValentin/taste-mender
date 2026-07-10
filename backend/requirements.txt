@@ -17,7 +17,6 @@ django-cors-headers==4.9.0
 django-extensions==4.1
 django-filter==25.2
 djangorestframework==3.16.1
-dotenv==0.9.9
 drf-spectacular==0.28.0
 executing==2.2.0
 factory_boy==3.3.3
