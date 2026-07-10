@@ -7,7 +7,7 @@
 
 ## Installation
 
-1. Install required software: `Python@3.14.6`, `PostgreSQL@17.6`, `Node.js@v24.15.0`
+1. Install required software: `Python@3.14.6`, `PostgreSQL@18.4`, `Node.js@v24.15.0`
 
 2. Create a config file in `backend/.env` with DB login information, see `.env.example`
 
