@@ -22,7 +22,7 @@ lmdb==1.7.5
 numpy==2.3.3
 orjson==3.11.3
 pandas==2.3.3
-psycopg2-binary==2.9.10
+psycopg2-binary==2.9.11
 Pympler==1.1
 python-dateutil==2.9.0.post0
 python-dotenv==1.1.1
