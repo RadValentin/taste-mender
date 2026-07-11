@@ -17,7 +17,7 @@ jobs:
 
     services:
       postgres:
-        image: postgres:17
+        image: postgres:18
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: taste_mender_db
@@ -36,10 +36,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python 3.13.13
+      - name: Set up Python 3.14
         uses: actions/setup-python@v5
         with:
-          python-version: "3.13.13"
+          python-version: "3.14"
 
       - name: Cache pip
         uses: actions/cache@v4

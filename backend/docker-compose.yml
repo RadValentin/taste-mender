@@ -1,7 +1,7 @@
 services:
   postgres:
     container_name: taste-mender-postgres
-    image: postgres:17-alpine
+    image: postgres:18-alpine
     env_file:
       - .env
     environment:
