@@ -1,7 +1,10 @@
-import logging
+import logging, time
 import numpy as np
+from collections import OrderedDict
+from datetime import datetime
 from django.conf import settings
-from drf_spectacular.utils import extend_schema
+from django.urls import reverse
+from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
@@ -28,6 +31,16 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
     ordering_fields = ["title", "album__date", "submissions"]
     # default ordering
     ordering = ["pk"]
+
+    def list(self, request, *args, **kwargs):
+        response: Response = super().list(request, *args, **kwargs)
+        links = {
+            "self": request.build_absolute_uri(reverse("api:track-list")),
+            "daily_picks": request.build_absolute_uri(reverse("api:track-daily-picks")),
+            "on_this_day": request.build_absolute_uri(reverse("api:track-on-this-day")),
+        }
+        response.data = OrderedDict(**response.data or {}, links=links)
+        return response
 
     @extend_schema(
         responses=TrackFeaturesResponseSerializer,
@@ -94,3 +107,36 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
             "track": TrackSerializer(track).data,
             "sources": data
         })
+
+    @extend_schema(
+        description="Random selection of popular tracks seeded by the current date, cached for 24h"
+    )
+    @action(detail=False, methods=["get"], url_path="daily_picks")
+    def daily_picks(self, request, *args, **kwargs):
+        tracks = Track.objects.order_by("pk")[:20]
+        serializer = self.get_serializer(tracks, many=True)
+        return Response(serializer.data)
+
+    @extend_schema(
+        description="Tracks released on today's date across the years",
+        parameters=[
+            OpenApiParameter(name="mmdd", type=str, location=OpenApiParameter.QUERY, required=False, description="The release day and month in mm-dd format.")
+        ]
+    )
+    @action(detail=False, methods=["get"], url_path="on_this_day")
+    def on_this_day(self, request, *args, **kwargs):
+        # Try to parse request date, default to server date if invalid.
+        day: int = datetime.today().day
+        month: int = datetime.today().month
+        mmdd: str = request.GET.get("mmdd", "").strip()
+
+        try:
+            struct_time = time.strptime("mmdd", "%m-%d")
+            day = struct_time.tm_mday
+            month = struct_time.tm_mon
+        except ValueError:
+            log.warning(f"Failed to parse date {mmdd}.")
+
+        tracks = Track.objects.order_by("pk")[:20]
+        serializer = self.get_serializer(tracks, many=True)
+        return Response(serializer.data)

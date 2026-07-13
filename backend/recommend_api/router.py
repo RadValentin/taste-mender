@@ -27,7 +27,7 @@ class CustomAPIRootView(APIRootView):
         info = OrderedDict()
         info["message"] = "Welcome to the TasteMender API"
         info["version"] = "v1"
-        data = OrderedDict(**info, **resp.data)
+        data = OrderedDict(**info, **resp.data or {})
 
         extras = OrderedDict()
         extras["genres"] = request.build_absolute_uri(reverse("api:genre-list"))
