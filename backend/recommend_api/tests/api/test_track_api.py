@@ -111,6 +111,16 @@ class TrackAPITests(APITestCase):
             self.assertEqual(resp.data["track"]["mbid"], mbid)
             self.assertEqual(resp.data["sources"], [])
 
+    def test_get_daily_picks(self):
+        url = reverse("api:track-daily-picks")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+
+    def test_get_on_this_day(self):
+        url = reverse("api:track-on-this-day")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
