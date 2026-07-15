@@ -144,14 +144,12 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
             except ValueError:
                 log.warning(f"Failed to parse date {mmdd}, falling back to server date.")
 
-        queryset = self.filter_queryset(
-            self.get_queryset()
-            .filter(album__date__month=month, album__date__day=day)
-        )
-        page = self.paginate_queryset(queryset)
+        queryset = Track.objects.filter(album__date__month=month, album__date__day=day)[:5000]
+        queryset_objs = sorted(queryset, key=lambda o: o.submissions, reverse=True)
+        page = self.paginate_queryset(queryset_objs)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset, many=True)
+        serializer = self.get_serializer(queryset_objs, many=True)
         return Response(serializer.data)
