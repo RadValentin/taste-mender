@@ -1,5 +1,6 @@
 {
   "python.analysis.diagnosticSeverityOverrides": {
-    "reportAttributeAccessIssue": "warning"
+    "reportAttributeAccessIssue": "warning",
+    "reportPrivateImportUsage":"none"
   }
 }
