@@ -222,12 +222,12 @@ else:
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
             "LOCATION": "unique-snowflake",
-            "TIMEOUT": 600
+            "TIMEOUT": 3600 # 1h
         }
     }
 
     CACHE_MIDDLEWARE_ALIAS = "default"
-    CACHE_MIDDLEWARE_SECONDS = 600
+    CACHE_MIDDLEWARE_SECONDS = 3600
     CACHE_MIDDLEWARE_KEY_PREFIX = ""
 
 # Format logging
