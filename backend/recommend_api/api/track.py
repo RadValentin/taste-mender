@@ -5,7 +5,7 @@ from datetime import datetime
 from django.conf import settings
 from django.urls import reverse
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from rest_framework import viewsets
+from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
@@ -118,10 +118,16 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
     @extend_schema(
-        description="Tracks released on today's date across the years",
+        description="Tracks released on today's date across the years. Defaults to server date for missing/invalid mmdd.",
         parameters=[
-            OpenApiParameter(name="mmdd", type=str, location=OpenApiParameter.QUERY, required=False, description="The release day and month in mm-dd format.")
-        ]
+            OpenApiParameter(
+                name="mmdd",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="Release day and month, mm-dd format",
+            )
+        ],
     )
     @action(detail=False, methods=["get"], url_path="on_this_day")
     def on_this_day(self, request, *args, **kwargs):
@@ -130,13 +136,22 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
         month: int = datetime.today().month
         mmdd: str = request.GET.get("mmdd", "").strip()
 
-        try:
-            struct_time = time.strptime("mmdd", "%m-%d")
-            day = struct_time.tm_mday
-            month = struct_time.tm_mon
-        except ValueError:
-            log.warning(f"Failed to parse date {mmdd}.")
+        if mmdd:
+            try:
+                struct_time = time.strptime(f"1904 {mmdd}", "%Y %m-%d")
+                day = struct_time.tm_mday
+                month = struct_time.tm_mon
+            except ValueError:
+                log.warning(f"Failed to parse date {mmdd}, falling back to server date.")
 
-        tracks = Track.objects.order_by("pk")[:20]
-        serializer = self.get_serializer(tracks, many=True)
+        queryset = self.filter_queryset(
+            self.get_queryset()
+            .filter(album__date__month=month, album__date__day=day)
+        )
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)

@@ -1,5 +1,6 @@
 import numpy as np
 import uuid
+from datetime import datetime, timedelta
 from unittest.mock import patch
 from django.urls import reverse
 from rest_framework.test import APITestCase
@@ -11,15 +12,22 @@ from recommend_api.tests.factories import TrackFactory, AlbumFactory
 class TrackAPITests(APITestCase):
     @classmethod
     def setUpTestData(cls):
+        cls.albums = {
+            "album_today": AlbumFactory.create(date=datetime.today()),
+            "album_feb29": AlbumFactory.create(date=datetime.fromisoformat('2024-02-29')),
+            "album_yesterday": AlbumFactory.create(date=datetime.today() - timedelta(days=1)),
+        }
         cls.track_tuples = [
-            (str(uuid.uuid4()), "Song A"),
-            (str(uuid.uuid4()), "Song B"),
-            (str(uuid.uuid4()), "Song C"),
-            (str(uuid.uuid4()), "Song D"),
+            (str(uuid.uuid4()), "Song A", cls.albums["album_today"]),
+            (str(uuid.uuid4()), "Song B", cls.albums["album_feb29"]),
+            (str(uuid.uuid4()), "Song C", cls.albums["album_today"]),
+            (str(uuid.uuid4()), "Song D", cls.albums["album_yesterday"]),
         ]
         cls.tracks: list[Track] = []
-        for mbid, title in cls.track_tuples:
-            cls.tracks.append(TrackFactory.create(musicbrainz_recordingid=mbid, title=title))
+        for mbid, title, album in cls.track_tuples:
+            cls.tracks.append(
+                TrackFactory.create(musicbrainz_recordingid=mbid, title=title, album=album)
+            )
 
     def test_get_list(self):
         url = reverse("api:track-list")
@@ -29,7 +37,7 @@ class TrackAPITests(APITestCase):
         self.assertEqual(len(resp.data["results"]), len(self.tracks))
         self.assertCountEqual(
             [r["mbid"] for r in resp.data["results"]],
-            [mbid for mbid, _ in self.track_tuples]
+            [mbid for mbid, _, _ in self.track_tuples]
         )
 
     def test_get_detail(self):
@@ -116,10 +124,34 @@ class TrackAPITests(APITestCase):
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
 
-    def test_get_on_this_day(self):
+    def test_get_on_this_day_no_date(self):
         url = reverse("api:track-on-this-day")
         resp = self.client.get(url)
         self.assertEqual(resp.status_code, 200)
+        for result in resp.data["results"]:
+            self.assertEqual(result["album"]["date"], datetime.today().strftime("%Y-%m-%d"))
+
+    def test_get_on_this_day_bad_date(self):
+        url = reverse("api:track-on-this-day", query={"mmdd": "13-32"})
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        for result in resp.data["results"]:
+            self.assertEqual(result["album"]["date"], datetime.today().strftime("%Y-%m-%d"))
+
+    def test_get_on_this_day_yesterday(self):
+        yesterday = datetime.today() - timedelta(days=1)
+        url = reverse("api:track-on-this-day", query={"mmdd": yesterday.strftime("%m-%d")})
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        for result in resp.data["results"]:
+            self.assertTrue(result["album"]["date"].endswith(yesterday.strftime("%m-%d")))
+
+    def test_get_on_this_day_leap_year(self):
+        url = reverse("api:track-on-this-day", query={"mmdd": "02-29"})
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        for result in resp.data["results"]:
+            self.assertTrue(result["album"]["date"].endswith("02-29"))
 
     @classmethod
     def tearDownClass(cls):
