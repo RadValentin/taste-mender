@@ -3,7 +3,12 @@ import numpy as np
 from collections import OrderedDict
 from datetime import datetime
 from django.conf import settings
+from django.db.models import Value, Func
+from django.db.models.functions import Concat
 from django.urls import reverse
+from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
@@ -108,14 +113,34 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
             "sources": data
         })
 
+
     @extend_schema(
-        description="Random selection of popular tracks seeded by the current date, cached for 24h"
+        description="Random selection of popular tracks seeded by the current date, cached for 24h."
     )
+    @method_decorator(cache_page(60 * 60 * 24))
     @action(detail=False, methods=["get"], url_path="daily_picks")
     def daily_picks(self, request, *args, **kwargs):
-        tracks = Track.objects.order_by("pk")[:20]
-        serializer = self.get_serializer(tracks, many=True)
+        seed = timezone.localdate().isoformat()
+        queryset = (
+            self.get_queryset()
+            .filter(submissions__gte=100)
+            .annotate(
+                stable_random_order=Func(
+                    Concat(Value(seed), Value(":"), "musicbrainz_recordingid"),
+                    function="MD5",
+                )
+            )
+            .order_by("stable_random_order", "musicbrainz_recordingid")
+        )
+
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+
+        serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
 
     @extend_schema(
         description="Tracks released on today's date across the years. Defaults to server date for missing/invalid mmdd.",

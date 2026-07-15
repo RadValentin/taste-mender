@@ -6,7 +6,12 @@ from django.urls import reverse
 from rest_framework.test import APITestCase
 from recommend_api.services.youtube_sources import YTSource
 from recommend_api.models import Album, Track
-from recommend_api.tests.factories import TrackFactory, AlbumFactory
+from recommend_api.tests.factories import (
+    TrackFactory,
+    AlbumFactory,
+    GenreDortmundFactory,
+    GenreRosamericaFactory,
+)
 
 
 class TrackAPITests(APITestCase):
@@ -26,7 +31,11 @@ class TrackAPITests(APITestCase):
         cls.tracks: list[Track] = []
         for mbid, title, album in cls.track_tuples:
             cls.tracks.append(
-                TrackFactory.create(musicbrainz_recordingid=mbid, title=title, album=album)
+                TrackFactory.create(
+                    musicbrainz_recordingid=mbid,
+                    title=title,
+                    album=album,
+                )
             )
 
     def test_get_list(self):
@@ -119,11 +128,6 @@ class TrackAPITests(APITestCase):
             self.assertEqual(resp.data["track"]["mbid"], mbid)
             self.assertEqual(resp.data["sources"], [])
 
-    def test_get_daily_picks(self):
-        url = reverse("api:track-daily-picks")
-        resp = self.client.get(url)
-        self.assertEqual(resp.status_code, 200)
-
     def test_get_on_this_day_no_date(self):
         url = reverse("api:track-on-this-day")
         resp = self.client.get(url)
@@ -158,3 +162,69 @@ class TrackAPITests(APITestCase):
         super().tearDownClass()
         AlbumFactory.reset_sequence(0)
         TrackFactory.reset_sequence(0)
+
+
+class TrackAPITests_DailyPicks(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        genre_dortmund = GenreDortmundFactory.create()
+        genre_rosamerica = GenreRosamericaFactory.create()
+
+        cls.track_tuples = []
+        for i in range(100):
+            submissions = 50 if i < 10 else 100 + i
+            cls.track_tuples.append((str(uuid.uuid4()), f"Daily Pick Song {i}", submissions))
+
+        Track.objects.bulk_create([
+            Track(
+                musicbrainz_recordingid=mbid,
+                title=title,
+                duration=180.0,
+                genre_dortmund=genre_dortmund,
+                genre_rosamerica=genre_rosamerica,
+                submissions=subs,
+            )
+            for mbid, title, subs in cls.track_tuples
+        ])
+
+    def test_get_daily_picks(self):
+        url = reverse("api:track-daily-picks")
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["count"], 90)
+        for result in resp.data["results"]:
+            self.assertGreaterEqual(result["submissions"], 100)
+
+    def test_daily_picks_stable_order(self):
+        url = reverse("api:track-daily-picks")
+        first_resp = self.client.get(url)
+        second_resp = self.client.get(url)
+
+        self.assertEqual(first_resp.status_code, 200)
+        self.assertEqual(second_resp.status_code, 200)
+
+        first_mbids = [r["mbid"] for r in first_resp.data["results"]]
+        second_mbids = [r["mbid"] for r in second_resp.data["results"]]
+        self.assertEqual(first_mbids, second_mbids)
+
+    def test_get_daily_picks_random_order(self):
+        first_day = datetime.fromisoformat("2026-01-01").date()
+        second_day = datetime.fromisoformat("2024-03-12").date()
+        url = reverse("api:track-daily-picks")
+
+        with patch("recommend_api.api.track.timezone.localdate", return_value=first_day):
+            first_resp = self.client.get(url)
+
+        with patch("recommend_api.api.track.timezone.localdate", return_value=second_day):
+            second_resp = self.client.get(url)
+
+        self.assertEqual(first_resp.status_code, 200)
+        self.assertEqual(second_resp.status_code, 200)
+
+        first_mbids = [r["mbid"] for r in first_resp.data["results"]]
+        second_mbids = [r["mbid"] for r in second_resp.data["results"]]
+        self.assertNotEqual(first_mbids, second_mbids)
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
