@@ -1,14 +1,19 @@
-import { useState } from 'react';
-import { API_BASE_URL } from '../api';
-import './Header.css'
+import { useState } from "react";
+import { useNavigate } from "react-router";
+import { API_BASE_URL } from "../api";
+import "./Header.css"
 
 export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
-
+  const navigate = useNavigate();
   const inputPlaceholder = `Search for track or artist...`;
 
   function onSearch(query: string) {
-    console.warn("Implement onSearch");
+    if (query.trim()) {
+      navigate(`/search?q=${encodeURIComponent(query.trim())}`);
+    } else {
+      navigate("/");
+    }
   }
 
   function onInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
