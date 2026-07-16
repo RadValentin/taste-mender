@@ -1,10 +1,13 @@
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { useState, useEffect } from "react";
+import { useOutletContext } from "react-router";
 import type { Track } from "./../types";
-import { searchTracks, getTracks } from "./../api";
+import { getTracks } from "./../api";
 import TrackList from "./../components/TrackList";
 import LoadingSpinner from "./../components/LoadingSpinner";
-import Player, { type PlayerRef } from "./../components/Player";
-import { usePlayerContext } from "./../PlayerContext";
+
+type AppLayoutContext = {
+  onPlay: (track: Track) => void;
+};
 
 type HomeResultsStatus = "DONE" | "ERROR"  | "EMPTY";
 type HomeResultsState = {
@@ -15,8 +18,7 @@ type HomeResultsState = {
 export default function HomePage() {
   const [results, setResults] = useState<HomeResultsState>({ data: [], status: "DONE" });
   const [isLoading, setLoading] = useState(false);
-  const {dispatch} = usePlayerContext();
-  const playerRef = useRef<PlayerRef>(null);
+  const { onPlay } = useOutletContext<AppLayoutContext>();
 
   function loadTopTracks() {
     setLoading(true);
@@ -48,7 +50,7 @@ export default function HomePage() {
     return (
       <div className="content">
         <h2>Top tracks</h2>
-        <TrackList tracks={results.data} onPlay={track => { playerRef.current?.loadAndPlay(track) }}></TrackList>
+        <TrackList tracks={results.data} onPlay={onPlay}></TrackList>
       </div>
     );
   }

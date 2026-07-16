@@ -1,12 +1,15 @@
-import { useState, useEffect, useRef, useLayoutEffect } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams } from "react-router";
+import { useOutletContext } from "react-router";
 import type { Track } from "./../types";
-import { searchTracks, getTracks } from "./../api";
-import { getScrollbarWidth } from "./../layout";
+import { searchTracks } from "./../api";
 import TrackList from "./../components/TrackList";
 import LoadingSpinner from "./../components/LoadingSpinner";
-import Player, { type PlayerRef } from "./../components/Player";
 import { usePlayerContext } from "./../PlayerContext";
+
+type AppLayoutContext = {
+  onPlay: (track: Track) => void;
+};
 
 type SearchResultsStatus = "DONE" | "ERROR" | "EMPTY";
 type SearchResultsState = {
@@ -17,8 +20,8 @@ type SearchResultsState = {
 export default function SearchPage() {
   const [results, setResults] = useState<SearchResultsState>({ data: [], status: "DONE" });
   const [isLoading, setLoading] = useState(false);
+  const { onPlay } = useOutletContext<AppLayoutContext>();
   const { dispatch } = usePlayerContext();
-  const playerRef = useRef<PlayerRef>(null);
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
@@ -58,7 +61,7 @@ export default function SearchPage() {
     return (
       <div className="content">
         <h2>Search results</h2>
-        <TrackList tracks={results.data} onPlay={track => { playerRef.current?.loadAndPlay(track) }}></TrackList>
+        <TrackList tracks={results.data} onPlay={onPlay}></TrackList>
       </div>
     );
   }
