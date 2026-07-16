@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, Link } from "react-router";
 import { API_BASE_URL } from "../api";
 import "./Header.css"
 
@@ -25,10 +25,10 @@ export default function Header() {
   return (
     <header className="header">
       <div className="header-inner">
-        <a className="logo" href="/" aria-label="TasteMender">
+        <Link className="logo" to="/" aria-label="TasteMender">
           <span className="logo-line">Taste</span>
           <span className="logo-line logo-mender">Mender</span>
-        </a>
+        </Link>
         <div className="search-box">
           <input
             name="search"
@@ -49,7 +49,6 @@ export default function Header() {
         </div>
         <div className="links">
           <a className="btn btn-amber" href={API_BASE_URL}>API</a>
-          {/* <a href="#">About</a> */}
         </div>
       </div>
     </header>
