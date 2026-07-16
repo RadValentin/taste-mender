@@ -1,16 +1,14 @@
 import logging, time
-import numpy as np
 from collections import OrderedDict
 from datetime import datetime
 from django.conf import settings
+from django.core.cache import cache
 from django.db.models import Value, Func
 from django.db.models.functions import Concat
 from django.urls import reverse
 from django.utils import timezone
-from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from rest_framework import viewsets, status
+from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
@@ -117,10 +115,15 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
     @extend_schema(
         description="Random selection of popular tracks seeded by the current date, cached for 24h."
     )
-    @method_decorator(cache_page(60 * 60 * 24))
     @action(detail=False, methods=["get"], url_path="daily_picks")
     def daily_picks(self, request, *args, **kwargs):
         seed = timezone.localdate().isoformat()
+        cache_key = f"track:daily_picks:{seed}:{request.get_full_path()}"
+        cached = cache.get(cache_key)
+
+        if cached is not None:
+            return Response(cached)
+
         queryset = (
             self.get_queryset()
             .filter(submissions__gte=100)
@@ -136,9 +139,12 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
         page = self.paginate_queryset(queryset)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+            response = self.get_paginated_response(serializer.data)
+            cache.set(cache_key, response.data, timeout=60 * 60 * 24)
+            return response
 
         serializer = self.get_serializer(queryset, many=True)
+        cache.set(cache_key, serializer.data, timeout=60 * 60 * 24)
         return Response(serializer.data)
 
 
@@ -157,8 +163,9 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
     @action(detail=False, methods=["get"], url_path="on_this_day")
     def on_this_day(self, request, *args, **kwargs):
         # Try to parse request date, default to server date if invalid.
-        day: int = datetime.today().day
-        month: int = datetime.today().month
+        server_date = timezone.localdate()
+        day: int = server_date.day
+        month: int = server_date.month
         mmdd: str = request.GET.get("mmdd", "").strip()
 
         if mmdd:
@@ -167,8 +174,10 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
                 day = struct_time.tm_mday
                 month = struct_time.tm_mon
             except ValueError:
-                log.warning(f"Failed to parse date {mmdd}, falling back to server date.")
+                log.warning("Failed to parse date %r, falling back to server date.", mmdd)
 
+        # In the worst case there can be 100K tracks+ released on a certain day.
+        # Doing filter+sort in the QS would tank performance. It's easier to sort a limited subset.
         queryset = Track.objects.filter(album__date__month=month, album__date__day=day)[:5000]
         queryset_objs = sorted(queryset, key=lambda o: o.submissions, reverse=True)
         page = self.paginate_queryset(queryset_objs)
