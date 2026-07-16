@@ -2,10 +2,14 @@ import { useState } from 'react';
 import { API_BASE_URL } from '../api';
 import './Header.css'
 
-export default function Header({onSearch}: { onSearch: (query: string) => void }) {
+export default function Header() {
   const [searchQuery, setSearchQuery] = useState("");
 
   const inputPlaceholder = `Search for track or artist...`;
+
+  function onSearch(query: string) {
+    console.warn("Implement onSearch");
+  }
 
   function onInputKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === "Enter") {

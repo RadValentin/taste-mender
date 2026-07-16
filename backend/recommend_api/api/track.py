@@ -1,6 +1,5 @@
 import logging, time
 from collections import OrderedDict
-from datetime import datetime
 from django.conf import settings
 from django.core.cache import cache
 from django.db.models import Value, Func
