@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+import { useCallback } from "react";
 import { useOutletContext } from "react-router";
 import { getTracks, getTracksDailyPicks, getTracksOnThisDay } from "../api";
 import TrackCarousel from "../components/TrackCarousel";
@@ -11,9 +11,10 @@ type AppLayoutContext = {
 export default function HomePage() {
   const { onPlay } = useOutletContext<AppLayoutContext>();
 
-  const todayFetcher = useMemo(() => () => getTracksOnThisDay(), []);
-  const topFetcher = useMemo(() => () => getTracks("-submissions"), []);
-  const dailyFetcher = useMemo(() => getTracksDailyPicks, []);
+  // Keep function references stable so carousels don't refetch just because HomePage re-rendered.
+  const todayFetcher = useCallback(() => getTracksOnThisDay(), []);
+  const topFetcher = useCallback(() => getTracks("-submissions"), []);
+  const dailyFetcher = getTracksDailyPicks;
 
   return (
     <div className="home-page container">
