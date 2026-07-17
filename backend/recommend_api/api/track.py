@@ -116,6 +116,7 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
     )
     @action(detail=False, methods=["get"], url_path="daily_picks")
     def daily_picks(self, request, *args, **kwargs):
+        min_submissions = settings.DAILY_PICKS_MIN_SUBMISSIONS
         seed = timezone.localdate().isoformat()
         cache_key = f"track:daily_picks:{seed}:{request.get_full_path()}"
         cached = cache.get(cache_key)
@@ -125,7 +126,7 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
 
         queryset = (
             self.get_queryset()
-            .filter(submissions__gte=100)
+            .filter(submissions__gte=min_submissions)
             .annotate(
                 stable_random_order=Func(
                     Concat(Value(seed), Value(":"), "musicbrainz_recordingid"),
