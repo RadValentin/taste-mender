@@ -1,0 +1,5 @@
+.home-page {
+  & .track-item {
+    margin-bottom: 10px;
+  }
+}

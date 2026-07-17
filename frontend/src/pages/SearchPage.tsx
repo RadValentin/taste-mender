@@ -6,6 +6,7 @@ import { searchTracks } from "./../api";
 import TrackList from "./../components/TrackList";
 import LoadingSpinner from "./../components/LoadingSpinner";
 import { usePlayerContext } from "./../PlayerContext";
+import "./SearchPage.css";
 
 type AppLayoutContext = {
   onPlay: (track: Track) => void;
@@ -74,5 +75,9 @@ export default function SearchPage() {
     }
   }
 
-  return <div className="content">{renderContent()}</div>;
+  return (
+    <div className="search-page container">
+      {renderContent()}
+    </div>
+  );
 }

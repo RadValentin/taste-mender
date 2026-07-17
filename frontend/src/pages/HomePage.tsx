@@ -4,6 +4,7 @@ import type { Track } from "./../types";
 import { getTracks } from "./../api";
 import TrackList from "./../components/TrackList";
 import LoadingSpinner from "./../components/LoadingSpinner";
+import "./HomePage.css";
 
 type AppLayoutContext = {
   onPlay: (track: Track) => void;
@@ -46,7 +47,7 @@ export default function HomePage() {
     if (isLoading) {
       return <LoadingSpinner />;
     }
-
+    // All of this will become part of the carousel
     switch (results.status) {
       case "DONE":
         return (
@@ -63,5 +64,9 @@ export default function HomePage() {
     }
   }
 
-  return <div className="content">{renderContent()}</div>;
+  return (
+    <div className="home-page container">
+      {renderContent()}
+    </div>
+  );
 }

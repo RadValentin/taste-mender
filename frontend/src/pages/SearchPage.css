@@ -1,0 +1,5 @@
+.search-page {
+  & .track-item {
+    margin-bottom: 10px;
+  }
+}
