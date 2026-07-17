@@ -68,10 +68,20 @@ export default function SearchPage() {
           </>
         );
       case "ERROR":
-        return <div>There was an error while loading the tracks</div>;
+        return (
+          <div className="search-state search-state-error" role="status" aria-live="polite">
+            <h2>Search unavailable</h2>
+            <p>There was an error while loading tracks. Please try again.</p>
+          </div>
+        );
       case "EMPTY":
       default:
-        return <div>No results</div>;
+        return (
+          <div className="search-state search-state-empty" role="status" aria-live="polite">
+            <h2>No matches found</h2>
+            <p>Try a different track title or artist name.</p>
+          </div>
+        );
     }
   }
 
