@@ -53,22 +53,26 @@ export default function SearchPage() {
       });
   }, [searchParams]);
 
-  if (isLoading) {
-    return <div className="content"><LoadingSpinner /></div>;
+  function renderContent() {
+    if (isLoading) {
+      return <LoadingSpinner />;
+    }
+
+    switch (results.status) {
+      case "DONE":
+        return (
+          <>
+            <h2>Search results</h2>
+            <TrackList tracks={results.data} onPlay={onPlay}></TrackList>
+          </>
+        );
+      case "ERROR":
+        return <div>There was an error while loading the tracks</div>;
+      case "EMPTY":
+      default:
+        return <div>No results</div>;
+    }
   }
 
-  if (results.status === "DONE") {
-    return (
-      <div className="content">
-        <h2>Search results</h2>
-        <TrackList tracks={results.data} onPlay={onPlay}></TrackList>
-      </div>
-    );
-  }
-
-  if (results.status === "ERROR") {
-    return <div className="content">There was an error while loading the tracks</div>;
-  }
-
-  return <div className="content">No results</div>;
+  return <div className="content">{renderContent()}</div>;
 }
