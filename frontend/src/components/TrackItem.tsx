@@ -7,6 +7,7 @@ type TrackItemProps = {
   track: Track;
   onPlay?: (track: Track) => void;
   disabled?: boolean;
+  variant?: "list" | "card";
 };
 
 function getDortmundLabel(str: string): string {
@@ -40,7 +41,7 @@ function getRosamericaLabel(str: string): string {
   return (labels[str] ?? str).toLowerCase();
 }
 
-export default function TrackItem({ track, onPlay, disabled }: TrackItemProps) {
+export default function TrackItem({ track, onPlay, disabled, variant = "list" }: TrackItemProps) {
   const artists = track.artists?.map(a => a.name).join(", ") || "Unknown artist";
   const album = track.album?.name ?? null;
   const year = track.album?.date ? new Date(track.album.date).getFullYear() : null;
@@ -49,7 +50,7 @@ export default function TrackItem({ track, onPlay, disabled }: TrackItemProps) {
 
   return (
     <div
-      className={"track-item"}
+      className={`track-item track-item--${variant}`}
       aria-label={`${track.title} by ${artists}`}
     >
       <div className="coverart" aria-hidden="true">

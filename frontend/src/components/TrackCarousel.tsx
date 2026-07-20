@@ -11,11 +11,12 @@ type TrackCarouselProps = {
   fetchTracks: TrackFetcher;
   onPlay?: (track: Track) => void;
   limit?: number;
+  variant?: "list" | "card";
 };
 
 type LoadState = "idle" | "loading" | "success" | "empty" | "error";
 
-export default function TrackCarousel({ title, fetchTracks, onPlay, limit = 5 }: TrackCarouselProps) {
+export default function TrackCarousel({ title, fetchTracks, onPlay, limit = 10, variant = "list" }: TrackCarouselProps) {
   const [state, setState] = useState<LoadState>("idle");
   const [tracks, setTracks] = useState<Track[]>([]);
   const visibleTracks = tracks.slice(0, limit);
@@ -47,7 +48,7 @@ export default function TrackCarousel({ title, fetchTracks, onPlay, limit = 5 }:
       {state === "loading" && <LoadingSpinner />}
       {state === "error" && <div>There was an error while loading tracks</div>}
       {state === "empty" && <div>No results</div>}
-      {state === "success" && <TrackList tracks={visibleTracks} onPlay={onPlay} />}
+      {state === "success" && <TrackList tracks={visibleTracks} onPlay={onPlay} variant={variant} />}
     </section>
   );
 }

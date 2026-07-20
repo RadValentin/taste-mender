@@ -18,9 +18,9 @@ export default function HomePage() {
 
   return (
     <div className="home-page container">
-      <TrackCarousel title="Top tracks" fetchTracks={topFetcher} onPlay={onPlay} />
-      <TrackCarousel title="Daily picks" fetchTracks={dailyFetcher} onPlay={onPlay} />
-      <TrackCarousel title="On this day" fetchTracks={todayFetcher} onPlay={onPlay} />
+      <TrackCarousel title="Top tracks" fetchTracks={topFetcher} onPlay={onPlay} variant="card" />
+      <TrackCarousel title="Daily picks" fetchTracks={dailyFetcher} onPlay={onPlay} variant="card" />
+      <TrackCarousel title="On this day" fetchTracks={todayFetcher} onPlay={onPlay} variant="card" />
     </div>
   );
 }
