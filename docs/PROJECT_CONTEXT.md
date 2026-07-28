@@ -1,6 +1,6 @@
 # TasteMender – Project Context
 
-> **This document is a map, not the source of truth.**  
+> **This document is a map, not the source of truth.**
 > Verify behavioural details (algorithm steps, field names, response shapes) against
 > the implementation and tests before acting on them. When this document conflicts with
 > the code, trust the code.
@@ -9,7 +9,7 @@
 
 ## What Is TasteMender?
 
-TasteMender is a **music discovery web application** that recommends songs based on audio
+TasteMender is a stateless **music discovery web application** that recommends songs based on audio
 similarity. Given a seed track, it finds other tracks that *sound* like it — matching on
 acoustic properties such as danceability, energy, mood, and genre — rather than relying
 on listening history, social data, or collaborative filtering.
@@ -24,9 +24,10 @@ London, and is being evolved into a fully deployable music discovery web app.
 
 ## Core Features
 
-1. **Track search** – Find tracks by title using full-text and trigram similarity search.
+1. **Track search** – Find tracks by title or artist using full-text and trigram similarity search.
 2. **Audio-feature-based recommendations** – Given a seed track, return the most
-   acoustically similar tracks from the database, with optional genre and decade filtering.
+   acoustically similar tracks from the database, with genre and decade guardrails,
+   popularity vs similarity re-ranking, and re-ranking by targeting certain features: danceability, aggressiveness, etc.
 3. **YouTube playback** – Each track is resolved to a playable YouTube video via the
    YouTube Data API. The player is embedded in the UI using the YouTube IFrame API.
 4. **Auto-play queue** – When a video ends, the top recommendation is automatically
@@ -163,7 +164,7 @@ taste-mender/
 
 ## Data Models
 
-All primary keys are **MusicBrainz IDs (MBIDs)** — 36-character UUID strings used by the
+All primary keys are [**MusicBrainz IDs (MBIDs)**](https://musicbrainz.org/doc/MusicBrainz_Identifier) — 36-character UUID strings used by the
 MusicBrainz open music encyclopedia.
 
 ### `Track`
@@ -334,8 +335,8 @@ Auto-generated docs:
 }
 ```
 
-All list responses: `{ count, next, previous, results }`.  
-All error responses: `{ "error": { "code": "...", "message": "..." } }`.  
+All list responses: `{ count, next, previous, results }`.
+All error responses: `{ "error": { "code": "...", "message": "..." } }`.
 All resource objects include a `links` field (HATEOAS).
 
 ---

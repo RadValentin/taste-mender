@@ -25,7 +25,7 @@ energy, mood, genre) rather than listening history or collaborative filtering.
 For the full architecture, data models, API reference, and algorithm details see
 **[`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md)**.
 
-For planned work and non-goals see **[`docs/ROADMAP.md`](docs/ROADMAP.md)**.
+For planned work and goals first check [GitHub issues](https://github.com/RadValentin/taste-mender/issues) then **[`docs/ROADMAP.md`](docs/ROADMAP.md)**.
 
 ---
 
@@ -60,8 +60,7 @@ docker-compose exec django python manage.py migrate
   regardless of whether they identify a track, artist, or album.
 - API responses expose `mbid` (not the raw DB column name `musicbrainz_recordingid`);
   the serializer performs the mapping.
-- The frontend is a pure SPA with no routing library; all state lives in React component
-  state and context.
+- All state lives in React component state and context for now.
 - The feature matrix (`features_and_index.npz`) is resolved relative to `recommender.py`,
   not the Django project root. It is **not** committed to the repository.
 - Error responses follow `{ "error": { "code": "...", "message": "..." } }`.

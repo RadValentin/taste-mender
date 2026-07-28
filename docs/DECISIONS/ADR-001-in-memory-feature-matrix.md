@@ -1,6 +1,6 @@
 # ADR-001: In-memory NumPy feature matrix for recommendations
 
-**Date:** 2025  
+**Date:** 2025
 **Status:** Accepted
 
 ---
@@ -8,8 +8,9 @@
 ## Context
 
 The recommendation engine must compare a seed track's audio-feature vector against every
-candidate in the dataset (up to ~85k tracks for the sample dataset, potentially millions
-for the full dataset). The two main options considered were:
+candidate in the dataset. The production dataset has 5M tracks which results in ~200k candidates with "same genre" and "same decade" filters on, 1M candidates with only one of the filters, and the full 5M candidates with no filters applied.
+
+The two main options considered were:
 
 1. **Store feature vectors in PostgreSQL** (e.g., `pgvector` or a `float[]` column) and
    compute similarity with a SQL query.
@@ -29,12 +30,13 @@ Cosine similarity is computed with
 ## Rationale
 
 - **Speed.** For 85k tracks × 16 features, the full cosine similarity pass takes under
-  10 ms in RAM. A PostgreSQL `pgvector` scan over the same data would be measurably
-  slower and would add round-trip latency.
+  10 ms in RAM. This scales to 42ms for 166k candidates, 221ms for 1M candidates, 2000ms for 5M
+  candidates (measurements taken on app deployed in production). A PostgreSQL `pgvector` scan over
+  the same data would be measurably slower and would add round-trip latency.
 - **Simplicity.** NumPy + scikit-learn are already in the stack for other reasons; no
   additional PostgreSQL extension is needed.
 - **Controlled memory footprint.** An 85k × 16 `float32` matrix is ~5 MB — negligible
-  on a modern VPS. Even the full 30M-track dataset would be manageable (~2 GB) on a
+  on a modern VPS. Even the full 5M-track deduplicated dataset would be manageable (<1 GB) on a
   memory-optimised instance.
 - **Immutability.** The dataset is frozen (AcousticBrainz, June 2022 dump), so
   the matrix never needs to be updated at runtime.
