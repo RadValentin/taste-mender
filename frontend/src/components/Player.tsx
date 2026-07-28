@@ -68,6 +68,12 @@ const defaultRecState: RecState = {
   filtersPayload: {}
 }
 
+/**
+ * Bottom-drawer player. Manages the YouTube IFrame player lifecycle, fetches and displays
+ * recommendations for the currently playing track, and renders the Filters panel, stats,
+ * "Up Next", and "Other Recommendations" lists. Exposed via `PlayerRef` for imperative
+ * `loadAndPlay` and `reset` calls from the parent.
+ */
 export default function Player({ ref }: PlayerProps) {
   // Child refs
   const iframeRef = useRef<any>(null);

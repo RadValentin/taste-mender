@@ -6,6 +6,7 @@ type TrackListProps = {
   onPlay?: (track: Track) => void;
 };
 
+/** Renders a scrollable list of TrackItem rows. */
 export default function TrackList({tracks, onPlay}: TrackListProps) {
   return (
     <>

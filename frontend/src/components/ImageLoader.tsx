@@ -6,6 +6,8 @@ type ImageLoaderProps = {
   fallback?: string
 }
 
+/** Renders an image from `src`. Falls back to a text placeholder (e.g. album initial)
+ *  when the image is null or fails to load. Used for album cover art. */
 export default function ImageLoader({ src, alt, fallback }: ImageLoaderProps) {
   const [imgError, setImgError] = useState(false);
 

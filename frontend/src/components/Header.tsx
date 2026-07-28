@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { API_BASE_URL } from '../api';
 import './Header.css'
 
+/** App header: TasteMender logo, search bar (fires `onSearch` on Enter or button click),
+ *  and a link to the REST API docs. */
 export default function Header({onSearch}: { onSearch: (query: string) => void }) {
   const [searchQuery, setSearchQuery] = useState("");
 

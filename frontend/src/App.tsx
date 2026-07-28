@@ -16,6 +16,11 @@ type ResultsState = {
   status: ResultsStatus;
 }
 
+/**
+ * Root component. Manages the main content area (top tracks or search results), wires up
+ * the Header search bar, and renders the Player drawer. Coordinates between the track list
+ * and the Player via a ref so that clicking a track imperatively calls `loadAndPlay`.
+ */
 function App() {
   const [results, setResults] = useState<ResultsState>({ data: [], status: "TOP" });
   const [isLoading, setLoading] = useState(false);
