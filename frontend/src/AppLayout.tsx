@@ -7,6 +7,9 @@ import { usePlayerContext } from "./PlayerContext";
 import "./AppLayout.css";
 import type { Track } from "./types";
 
+/**
+ * Root component which manages the main content area.
+ */
 export default function AppLayout() {
   const { state: playerState } = usePlayerContext();
   const playerRef = useRef<PlayerRef>(null);
