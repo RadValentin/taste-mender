@@ -52,6 +52,11 @@ const defaultTotalWeightsState = {
   similarity: 0.7, popularity: 0.3
 }
 
+/**
+ * Recommendation settings panel. Exposes controls for genre and decade guardrails,
+ * the similarity/popularity ranking balance, and per-feature audio weight sliders.
+ * Calls `onChange` whenever any setting changes so the parent can re-fetch recommendations.
+ */
 export default function Filters({ onChange }: FiltersProps) {
   const [filters, setFilters] = useState(defaultFiltersState);
   const [totalWeights, setTotalWeights] = useState(defaultTotalWeightsState);

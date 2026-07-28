@@ -8,6 +8,7 @@ type TrackListProps = {
   variant?: "list" | "card";
 };
 
+/** Renders a scrollable list of TrackItem rows. */
 export default function TrackList({ tracks, onPlay, variant = "list" }: TrackListProps) {
   return (
     <div className={`track-list track-list--${variant}`}>

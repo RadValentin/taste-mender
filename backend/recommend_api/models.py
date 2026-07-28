@@ -62,10 +62,13 @@ class Track(models.Model):
     duration = models.FloatField()
     genre_dortmund = models.ForeignKey(GenreDortmund, on_delete=models.PROTECT)
     genre_rosamerica = models.ForeignKey(GenreRosamerica, on_delete=models.PROTECT)
+    # Number of times this track appears in the AcousticBrainz dataset; used as a
+    # popularity proxy and blended into re-ranking via math.log1p(submissions).
     submissions = models.IntegerField()
+    # Denormalized plain-text artist names kept in sync for fast full-text search queries.
     artists_text = models.TextField(default="", blank=True)
     search_vector = SearchVectorField(null=True)
-
+    # Tracks how often a YouTube video source was successfully resolved for this track.
     source_found_count = models.IntegerField(default=0)
     source_not_found_count = models.IntegerField(default=0)
 

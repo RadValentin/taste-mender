@@ -7,6 +7,8 @@ type PlayButtonProps = {
   disabled?: boolean;
 }
 
+/** Reusable circular play button. Renders a Font Awesome play icon by default; accepts
+ *  optional children to override the icon. */
 export default function PlayButton({ children,  onClick, disabled}: PlayButtonProps) {
   return(
     <button
