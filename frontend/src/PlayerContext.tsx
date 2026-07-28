@@ -1,6 +1,8 @@
 import { createContext, useContext } from "react";
 import type { Dispatch } from "react";
 
+/** Context that tracks whether the Player overlay is maximized (full-screen) or minimized
+ *  (footer bar only). Consumed via `usePlayerContext`; provided by `PlayerContextProvider`. */
 export type PlayerState = {
   isMaximized: boolean
 }

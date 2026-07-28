@@ -9,6 +9,9 @@ type TrackItemProps = {
   disabled?: boolean;
 };
 
+/** Single track row displaying cover art, title, artist, album, year, genre badges, and
+ *  submission count. Renders a PlayButton when `onPlay` is provided. */
+
 function getDortmundLabel(str: string): string {
   const labels: Record<string, string> = {
     alternative: "Alternative",

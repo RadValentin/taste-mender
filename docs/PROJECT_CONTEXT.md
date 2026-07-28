@@ -147,15 +147,7 @@ taste-mender/
 │   │   ├── types.ts              # TypeScript interfaces for all API types
 │   │   ├── PlayerContext.tsx     # React context for player open/close state
 │   │   ├── PlayerProvider.tsx    # Context provider wrapper
-│   │   └── components/
-│   │       ├── Player.tsx        # YouTube player + recommendations + stats
-│   │       ├── Filters.tsx       # Recommendation settings panel
-│   │       ├── Header.tsx        # App header with search bar
-│   │       ├── TrackList.tsx     # Renders a list of TrackItem
-│   │       ├── TrackItem.tsx     # Single track row with play button
-│   │       ├── PlayButton.tsx    # Reusable play button
-│   │       ├── ImageLoader.tsx   # Album art with fallback
-│   │       └── LoadingSpinner.tsx
+│   │   └── components/           # UI components (see individual files for details)
 │   └── package.json
 └── docs/                         # Architecture docs, API design notes, ERD
 ```
@@ -165,58 +157,66 @@ taste-mender/
 ## Data Models
 
 All primary keys are [**MusicBrainz IDs (MBIDs)**](https://musicbrainz.org/doc/MusicBrainz_Identifier) — 36-character UUID strings used by the
-MusicBrainz open music encyclopedia.
+MusicBrainz open music encyclopedia. See `backend/recommend_api/models.py` for the
+canonical field definitions.
 
-### `Track`
-- `musicbrainz_recordingid` (PK) – unique recording ID
-- `title` – track title
-- `duration` – in seconds
-- `album` (FK → `Album`, nullable)
-- `artists` (M2M → `Artist` via `TrackArtist`)
-- `genre_dortmund` (FK → `GenreDortmund`)
-- `genre_rosamerica` (FK → `GenreRosamerica`)
-- `submissions` – how many times this track appears in the AcousticBrainz dataset (proxy
-  for popularity; used in re-ranking via `math.log1p(submissions)`)
-- `artists_text` – denormalized plain-text artist names for fast full-text search
-- `search_vector` – PostgreSQL `tsvector` for full-text search
-- `source_found_count` / `source_not_found_count` – tracks YouTube source resolution
-  success rate
+- **`Track`** – the core entity; stores title, duration, genre classifications,
+  submission count (used as a popularity proxy), and search vectors.
+- **`Artist`** – name keyed by MusicBrainz artist ID; linked to tracks via `TrackArtist`.
+- **`Album`** – name and optional release date; linked to artists via `AlbumArtist`.
+- **`TrackArtist`** / **`AlbumArtist`** – many-to-many join tables.
+- **`GenreDortmund`** / **`GenreRosamerica`** – lookup tables mapping a numeric code to a
+  genre label string.
 
-### `Artist`
-- `musicbrainz_artistid` (PK)
-- `name`
+## Genre Classification
 
-### `Album`
-- `musicbrainz_albumid` (PK)
-- `name`
-- `date` (nullable release date)
-- `artists` (M2M → `Artist` via `AlbumArtist`)
+Two AcousticBrainz genre classifiers are stored for each track:
 
-### `GenreDortmund` / `GenreRosamerica`
-- `code` (numeric PK)
-- `label` (genre name string)
+| System | Accuracy | Notes |
+|---|---|---|
+| **Rosamerica** | 87.56% | 8 broad classes (cla, dan, hip, jaz, pop, rhy, roc, spe). Default for filtering. |
+| **Dortmund** | 60.25% | 9 more granular classes. Present for comparison; less reliable. |
 
-There are two genre classification systems: **Rosamerica** (fewer, broader classes) and
-**Dortmund** (more granular). Both are stored and either can be used for filtering
-recommendations.
+[Source: AcousticBrainz datasets accuracy page](https://acousticbrainz.org/datasets/accuracy)
+
+**Rosamerica should be treated as the default** for genre-based filtering. Dortmund is
+stored for comparison but its lower accuracy means it may misclassify tracks — for
+example, it frequently labels rock tracks as electronic.
 
 ---
 
 ## Audio Features
 
 Each track has a 16-dimensional feature vector stored in the NumPy feature matrix. The
-features are extracted by the AcousticBrainz analysis pipeline from raw audio:
+features are extracted by the AcousticBrainz analysis pipeline from raw audio.
 
 **Perceptual / mood features (11):**
-- danceability, aggressiveness, happiness, sadness, relaxedness, partyness, acousticness,
-  electronicness, instrumentalness, tonality, brightness
+
+| Feature | AcousticBrainz model | Accuracy |
+|---|---|---|
+| danceability | `danceability` | 92.41% |
+| aggressiveness | `mood_aggressive` | 97.50% |
+| happiness | `mood_happy` | 83.27% |
+| sadness | `mood_sad` | 87.83% |
+| relaxedness | `mood_relaxed` | 93.20% |
+| partyness | `mood_party` | 88.38% |
+| acousticness | `mood_acoustic` | 92.98% |
+| electronicness | `mood_electronic` | 86.38% |
+| instrumentalness | `voice_instrumental` | 93.80% |
+| tonality | `tonal_atonal` | 97.67% |
+| brightness | `timbre` | 94.32% |
 
 **MIREX mood categories (5):**
-- moods_mirex_1: Passionate / Cheerful / Rowdy
-- moods_mirex_2: Poignant / Sad / Bittersweet
-- moods_mirex_3: Humorous / Silly / Witty
-- moods_mirex_4: Aggressive / Fiery / Intense
-- moods_mirex_5: Peaceful / Relaxed / Calming
+
+| Feature | Description | Accuracy |
+|---|---|---|
+| moods_mirex_1 | Passionate / Cheerful / Rowdy | 57.09% (combined) |
+| moods_mirex_2 | Poignant / Sad / Bittersweet | 57.09% (combined) |
+| moods_mirex_3 | Humorous / Silly / Witty | 57.09% (combined) |
+| moods_mirex_4 | Aggressive / Fiery / Intense | 57.09% (combined) |
+| moods_mirex_5 | Peaceful / Relaxed / Calming | 57.09% (combined) |
+
+[Source: AcousticBrainz datasets accuracy page](https://acousticbrainz.org/datasets/accuracy)
 
 Features are **min-max normalized** to [0, 1] before storage. Cosine similarity is
 computed between the normalized feature vectors.
