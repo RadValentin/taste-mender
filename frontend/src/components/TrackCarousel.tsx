@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import type { Paginated, Track } from "../types";
 import TrackList from "./TrackList";
-import LoadingSpinner from "./LoadingSpinner";
+import TrackListSkeleton from "./TrackListSkeleton.tsx";
 import "./TrackCarousel.css";
 
 type TrackFetcher = () => Promise<Paginated<Track>>;
@@ -45,7 +45,7 @@ export default function TrackCarousel({ title, fetchTracks, onPlay, limit = 10, 
   return (
     <section className="track-carousel">
       <h2>{title}</h2>
-      {state === "loading" && <LoadingSpinner />}
+      {state === "loading" && <TrackListSkeleton count={limit} variant={variant} />}
       {state === "error" && <div>There was an error while loading tracks</div>}
       {state === "empty" && <div>No results</div>}
       {state === "success" && <TrackList tracks={visibleTracks} onPlay={onPlay} variant={variant} />}
