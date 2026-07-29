@@ -4,7 +4,7 @@ import { useOutletContext } from "react-router";
 import type { Track } from "./../types";
 import { searchTracks } from "./../api";
 import TrackList from "./../components/TrackList";
-import LoadingSpinner from "./../components/LoadingSpinner";
+import TrackListSkeleton from "./../components/TrackListSkeleton.tsx";
 import { usePlayerContext } from "./../PlayerContext";
 import "./SearchPage.css";
 
@@ -56,7 +56,12 @@ export default function SearchPage() {
 
   function renderContent() {
     if (isLoading) {
-      return <LoadingSpinner />;
+      return (
+        <>
+          <h2>Search results</h2>
+          <TrackListSkeleton count={10} variant="list" />
+        </>
+      );
     }
 
     switch (results.status) {
