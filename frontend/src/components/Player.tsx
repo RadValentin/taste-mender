@@ -3,9 +3,9 @@ import React, { useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { Track, SimilarTrack, RecommendRequest } from "../types";
 import { getTrackSources, getRecommendations } from "../api.ts"
 import TrackItem from "./TrackItem.tsx";
+import TrackItemSkeleton from "./TrackItemSkeleton.tsx";
 import Filters, {type FiltersPayload} from "./Filters.tsx";
 import ImageLoader from "./ImageLoader.tsx";
-import LoadingSpinner from "./LoadingSpinner.tsx";
 import { usePlayerContext } from "../PlayerContext.tsx";
 import "./Player.css";
 
@@ -276,7 +276,9 @@ export default function Player({ ref }: PlayerProps) {
   };
 
   const renderRecommendations = () => {
-    if (!recState.similarList || recState.similarList.length < 1) {
+    const hasRecommendations = !!recState.similarList && recState.similarList.length > 0;
+
+    if (!hasRecommendations && !recState.isLoading) {
       return;
     }
 
@@ -285,21 +287,34 @@ export default function Player({ ref }: PlayerProps) {
 
     return (
       <div className="player-recommendations">
-        {recState.isLoading && <LoadingSpinner />}
         <div className="recommendations-content">
           <h4 className="heading">Up Next:</h4>
-          <TrackItem
-            key={firstRec.mbid}
-            track={firstRec}
-            onPlay={() => { playTrack(firstRec) }}
-            disabled={recState.isLoading} />
-          <h4 className="heading">Other Recommendations:</h4>
-          {otherRec.map(track =>
+          {recState.isLoading ? (
+            <TrackItemSkeleton variant="list" />
+          ) : (
             <TrackItem
-              key={track.mbid}
-              track={track}
-              onPlay={() => { playTrack(track) }}
+              key={firstRec.mbid}
+              track={firstRec}
+              onPlay={() => { playTrack(firstRec) }}
               disabled={recState.isLoading} />
+          )}
+          <h4 className="heading">Other Recommendations:</h4>
+          {recState.isLoading ? (
+            <>
+              <TrackItemSkeleton variant="list" />
+              <TrackItemSkeleton variant="list" />
+              <TrackItemSkeleton variant="list" />
+              <TrackItemSkeleton variant="list" />
+              <TrackItemSkeleton variant="list" />
+            </>
+          ) : (
+            otherRec.map(track =>
+              <TrackItem
+                key={track.mbid}
+                track={track}
+                onPlay={() => { playTrack(track) }}
+                disabled={recState.isLoading} />
+            )
           )}
         </div>
       </div>
