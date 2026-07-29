@@ -14,10 +14,10 @@ type TrackCarouselProps = {
   variant?: "list" | "card";
 };
 
-type LoadState = "idle" | "loading" | "success" | "empty" | "error";
+type LoadState = "loading" | "success" | "empty" | "error";
 
 export default function TrackCarousel({ title, fetchTracks, onPlay, limit = 10, variant = "list" }: TrackCarouselProps) {
-  const [state, setState] = useState<LoadState>("idle");
+  const [state, setState] = useState<LoadState>("loading");
   const [tracks, setTracks] = useState<Track[]>([]);
   const visibleTracks = tracks.slice(0, limit);
 
