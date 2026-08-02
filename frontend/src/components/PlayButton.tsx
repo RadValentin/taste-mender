@@ -12,7 +12,7 @@ type PlayButtonProps = {
 export default function PlayButton({ children,  onClick, disabled}: PlayButtonProps) {
   return(
     <button
-      className="button-play"
+      className="play-button"
       type="button"
       aria-label="Play"
       onClick={onClick}
