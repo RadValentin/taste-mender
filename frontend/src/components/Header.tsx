@@ -26,12 +26,12 @@ export default function Header() {
 
   return (
     <header className="header">
-      <div className="header-inner">
-        <Link className="logo" to="/" aria-label="TasteMender">
-          <span className="logo-line">Taste</span>
-          <span className="logo-line logo-mender">Mender</span>
+      <div className="header__inner">
+        <Link className="header__logo" to="/" aria-label="TasteMender">
+          <span className="header__logo-line">Taste</span>
+          <span className="header__logo-line header__logo-accent">Mender</span>
         </Link>
-        <div className="search-box">
+        <div className="header__search-box">
           <input
             name="search"
             type="search"
@@ -42,14 +42,14 @@ export default function Header() {
           />
           <button
             type="button"
-            className="btn btn-metal btn-search"
+            className="btn btn-metal"
             aria-label="Search"
             onClick={() => {onSearch(searchQuery)}}
           >
             <i className="fa-solid fa-magnifying-glass"></i>
           </button>
         </div>
-        <div className="links">
+        <div className="header__links">
           <a className="btn btn-amber" href={API_BASE_URL}>API</a>
         </div>
       </div>
