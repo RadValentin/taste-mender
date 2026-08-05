@@ -35,8 +35,8 @@ export default function TrackItemSkeleton({ variant = "list" }: TrackItemSkeleto
       <div className="track-item__actions" style={{ pointerEvents: "none" }}>
         <Skeleton
           circle
-          width={variant === "card" ? "2rem" : "2.2rem"}
-          height={variant === "card" ? "2rem" : "2.2rem"}
+          width="2.7rem"
+          height="2.7rem"
         />
       </div>
     </div>
