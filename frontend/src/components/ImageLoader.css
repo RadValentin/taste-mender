@@ -1,8 +1,18 @@
 .image-loader {
   opacity: 0;
-  transition: opacity 300ms ease;
 
-  &.image-loader--fallback {
+  &.image-loader--fallback,
+  &.image-loader--loaded {
+    animation: image-loader-fade-in 200ms ease forwards;
+  }
+}
+
+@keyframes image-loader-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
     opacity: 1;
   }
 }

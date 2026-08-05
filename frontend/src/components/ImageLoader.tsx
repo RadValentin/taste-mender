@@ -14,15 +14,16 @@ export default function ImageLoader({ src, alt, fallback }: ImageLoaderProps) {
   const [imgLoaded, setImgLoaded] = useState(false);
 
   if (src && !imgError) {
+    const imgClass = `image-loader ${imgLoaded ? "image-loader--loaded" : ""}`;
+
     return (
       <img
-        className="image-loader"
+        className={imgClass}
         src={src}
         alt={alt}
         loading="lazy"
         onError={() => setImgError(true)}
         onLoad={() => setImgLoaded(true)}
-        style={{opacity: imgLoaded ? 1 : 0}}
       />
     );
   } else {
