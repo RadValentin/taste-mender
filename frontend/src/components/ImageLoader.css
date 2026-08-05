@@ -1,0 +1,8 @@
+.image-loader {
+  opacity: 0;
+  transition: opacity 300ms ease;
+
+  &.image-loader--fallback {
+    opacity: 1;
+  }
+}
