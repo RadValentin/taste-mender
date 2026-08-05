@@ -284,6 +284,7 @@ export default function Player({ ref }: PlayerProps) {
 
     const firstRecList = recState.similarList.slice(0, 1);
     const otherRec = recState.similarList.slice(1);
+    const numSkeletons = recState.similarList.length || 9;
 
     return (
       <div className="player__recommendations">
@@ -300,7 +301,7 @@ export default function Player({ ref }: PlayerProps) {
           )}
           <h4 className="heading">Other Recommendations:</h4>
           {recState.isLoading ? (
-            <TrackListSkeleton count={5} variant="list" />
+            <TrackListSkeleton count={numSkeletons} variant="list" />
           ) : (
             <TrackList
               tracks={otherRec}
