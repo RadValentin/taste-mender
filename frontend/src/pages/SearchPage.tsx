@@ -5,6 +5,8 @@ import type { Track } from "./../types";
 import { searchTracks } from "./../api";
 import TrackList from "./../components/TrackList";
 import TrackListSkeleton from "./../components/TrackListSkeleton.tsx";
+import StatusMessage from "./../components/StatusMessage";
+import "./../components/StatusMessage.css";
 import { usePlayerContext } from "./../PlayerContext";
 import "./SearchPage.css";
 
@@ -74,18 +76,20 @@ export default function SearchPage() {
         );
       case "ERROR":
         return (
-          <div className="search-state search-state-error" role="status" aria-live="polite">
-            <h2>Search unavailable</h2>
-            <p>There was an error while loading tracks. Please try again.</p>
-          </div>
+          <StatusMessage
+            title="Search unavailable"
+            description="There was an error while loading tracks. Please try again."
+            variant="error"
+          />
         );
       case "EMPTY":
       default:
         return (
-          <div className="search-state search-state-empty" role="status" aria-live="polite">
-            <h2>No matches found</h2>
-            <p>Try a different track title or artist name.</p>
-          </div>
+          <StatusMessage
+            title="No matches found"
+            description="Try a different track title or artist name."
+            variant="info"
+          />
         );
     }
   }
