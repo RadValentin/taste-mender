@@ -1,4 +1,35 @@
 .track-carousel {
   position: relative;
-  min-height: 4rem;
+}
+
+.track-carousel__items {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 0.75rem;
+  width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-gutter: stable;
+  padding-bottom: var(--scrollbar-width);
+
+  & > * {
+    width: var(--carousel-item-base-width);
+  }
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  &:hover,
+  &:focus-within {
+    scrollbar-width: auto;
+    -ms-overflow-style: auto;
+    padding-bottom: 0;
+  }
+
+  &:hover::-webkit-scrollbar,
+  &:focus-within::-webkit-scrollbar {
+    display: block;
+  }
 }

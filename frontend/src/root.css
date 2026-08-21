@@ -41,6 +41,7 @@
   /* UI element sizes */
   --header-height: 80px;
   --player-height: 80px;
+  --carousel-item-base-width: 180px;
 
   /* Fonts */
   --font-display: "Inter", sans-serif;
