@@ -3,6 +3,7 @@ import { useOutletContext } from "react-router";
 import { getTracks, getTracksDailyPicks, getTracksOnThisDay } from "../api";
 import TrackCarousel from "../components/TrackCarousel";
 import type { Track } from "../types";
+import "./HomePage.css";
 
 type AppLayoutContext = {
   onPlay: (track: Track) => void;

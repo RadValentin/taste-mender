@@ -1,5 +1,5 @@
 .home-page {
-  & .track-item {
-    margin-bottom: 10px;
+  & .track-carousel {
+    margin-bottom: 1rem;
   }
 }
