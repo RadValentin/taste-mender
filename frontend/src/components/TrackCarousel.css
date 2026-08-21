@@ -2,20 +2,23 @@
   position: relative;
 }
 
-.track-carousel__items {
-  display: flex;
-  flex-wrap: nowrap;
+.track-carousel__items,
+.track-carousel__loading {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--carousel-item-base-width);
   gap: 0.75rem;
   width: 100%;
   overflow-x: auto;
+}
+
+.track-carousel__items {
+  /* Hide the scrollbar by default, show it on hover on desktop. */
   scrollbar-width: none;
   -ms-overflow-style: none;
   scrollbar-gutter: stable;
-  padding-bottom: var(--scrollbar-width);
-
-  & > * {
-    width: var(--carousel-item-base-width);
-  }
+  scrollbar-color: var(--led-orange) var(--bg-primary);
+  padding-bottom: calc(var(--scrollbar-width) + 1rem );
 
   &::-webkit-scrollbar {
     display: none;
@@ -25,11 +28,15 @@
   &:focus-within {
     scrollbar-width: auto;
     -ms-overflow-style: auto;
-    padding-bottom: 0;
+    padding-bottom: 1rem;
   }
 
   &:hover::-webkit-scrollbar,
   &:focus-within::-webkit-scrollbar {
     display: block;
   }
+}
+
+.track-carousel__loading {
+  overflow: hidden;
 }

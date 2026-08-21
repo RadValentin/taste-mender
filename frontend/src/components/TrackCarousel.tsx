@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
+import { SkeletonTheme } from "react-loading-skeleton";
 import type { Paginated, Track } from "../types";
 import StatusMessage from "./StatusMessage";
 import TrackItem from "./TrackItem.tsx";
-import TrackListSkeleton from "./TrackListSkeleton.tsx";
+import TrackItemSkeleton from "./TrackItemSkeleton.tsx";
 import "./StatusMessage.css";
 import "./TrackCarousel.css";
 
@@ -57,10 +58,26 @@ export default function TrackCarousel({ title, fetchTracks, onPlay, variant = "l
     );
   }
 
+  function renderLoading() {
+    return (
+      <SkeletonTheme
+        baseColor="var(--bg-secondary-light)"
+        highlightColor="color-mix(in srgb, var(--bg-secondary-light) 72%, white)"
+        duration={1.3}
+      >
+        <div className="track-carousel__loading" aria-hidden="true">
+          {Array.from({ length: 6 }, (_, idx) => (
+            <TrackItemSkeleton key={idx} variant={variant} />
+          ))}
+        </div>
+      </SkeletonTheme>
+    );
+  }
+
   return (
     <section className="track-carousel">
       <h2>{title}</h2>
-      {state === "LOADING" && <TrackListSkeleton count={10} variant={variant} />}
+      {state === "LOADING" && renderLoading()}
       {state === "ERROR" && (
         <StatusMessage
           title="Unable to load tracks"
