@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { SkeletonTheme } from "react-loading-skeleton";
 import type { Paginated, Track } from "../types";
 import StatusMessage from "./StatusMessage";
@@ -21,7 +21,12 @@ type LoadState = "LOADING" | "SUCCESS" | "EMPTY" | "ERROR";
 export default function TrackCarousel({ title, fetchTracks, onPlay, variant = "list" }: TrackCarouselProps) {
   const [state, setState] = useState<LoadState>("LOADING");
   const [tracks, setTracks] = useState<Track[]>([]);
+  const [isAtStart, setIsAtStart] = useState(true);
+  const [isAtEnd, setIsAtEnd] = useState(false);
 
+  const carouselRef = useRef<HTMLDivElement>(null);
+
+  // Load data
   useEffect(() => {
     let cancelled = false;
     setState("LOADING");
@@ -43,9 +48,39 @@ export default function TrackCarousel({ title, fetchTracks, onPlay, variant = "l
     };
   }, [fetchTracks]);
 
+  /** Enables/disables the previous and next button based on the carousel's scroll position. */
+  const updateScrollState = () => {
+    const element = carouselRef.current;
+    if (!element) return;
+
+    const maxScrollLeft = element.scrollWidth - element.offsetWidth;
+    const tolerance = 5;
+
+    setIsAtStart(element.scrollLeft <= tolerance);
+    setIsAtEnd(element.scrollLeft >= maxScrollLeft - tolerance);
+  };
+
+  // Ensure scroll state is updated after data load.
+  useEffect(() => {
+    updateScrollState();
+  }, [tracks]);
+
+  // Ensure scroll state when window is resized.
+  useEffect(() => {
+    const handleResize = () => {
+      updateScrollState();
+    };
+    window.addEventListener("resize", handleResize);
+
+    return () => {
+      window.removeEventListener("resize", handleResize);
+    };
+  }, []);
+
+  // Render methods
   function renderCarousel() {
     return (
-      <div className="track-carousel__items">
+      <div ref={carouselRef} className="track-carousel__items" onScroll={updateScrollState}>
         {tracks.map((track: Track) => (
           <TrackItem
             key={track.mbid}
@@ -76,7 +111,17 @@ export default function TrackCarousel({ title, fetchTracks, onPlay, variant = "l
 
   return (
     <section className="track-carousel">
-      <h2>{title}</h2>
+      <div className="track-carousel__header">
+        <h2>{title}</h2>
+        <div className="track-carousel__controls">
+          <button className="btn track-carousel__prev" disabled={isAtStart}>
+            <i className="fa-solid fa-chevron-left"></i>
+          </button>
+          <button className="btn track-carousel__next" disabled={isAtEnd}>
+            <i className="fa-solid fa-chevron-right"></i>
+          </button>
+        </div>
+      </div>
       {state === "LOADING" && renderLoading()}
       {state === "ERROR" && (
         <StatusMessage

@@ -40,3 +40,8 @@
 .track-carousel__loading {
   overflow: hidden;
 }
+
+.track-carousel__header {
+  display: flex;
+  justify-content: space-between;
+}
