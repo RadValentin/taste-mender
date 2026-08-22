@@ -47,6 +47,7 @@ class AlbumAPITests(APITestCase):
         self.assertRedirects(
             resp,
             f"https://coverartarchive.org/release/{album_id}/front-250",
+            status_code=301,
             fetch_redirect_response=False,
         )
 
