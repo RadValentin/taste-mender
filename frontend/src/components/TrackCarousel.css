@@ -45,3 +45,9 @@
   display: flex;
   justify-content: space-between;
 }
+
+.track-carousel__controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}

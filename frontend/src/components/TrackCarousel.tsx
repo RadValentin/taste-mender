@@ -136,10 +136,10 @@ export default function TrackCarousel({ title, fetchTracks, onPlay, variant = "l
       <div className="track-carousel__header">
         <h2>{title}</h2>
         <div className="track-carousel__controls">
-          <button className="btn track-carousel__prev" disabled={isAtStart} onClick={handlePrev}>
+          <button className="btn btn-neon track-carousel__prev" disabled={isAtStart} onClick={handlePrev}>
             <i className="fa-solid fa-chevron-left"></i>
           </button>
-          <button className="btn track-carousel__next" disabled={isAtEnd} onClick={handleNext}>
+          <button className="btn btn-neon track-carousel__next" disabled={isAtEnd} onClick={handleNext}>
             <i className="fa-solid fa-chevron-right"></i>
           </button>
         </div>
