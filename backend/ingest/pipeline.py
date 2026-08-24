@@ -50,7 +50,7 @@ def show_progress_bar(done: int, total: int, step=10000, message: str = ""):
             print(f"\r[{bar}] {done}/{total} ({percent*100:5.1f}%)", end="", flush=True)
 
 
-def build_database(use_sample: bool, num_parts: int = None, parts_list: list = None):
+def build_database(use_sample: bool, num_parts: int | None = None, parts_list: list | None = None):
     if use_sample:
         dataset_desc = "the sample dataset (~100k records)"
     elif parts_list:
@@ -86,7 +86,8 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
     )
 
     ## NOTE: Phase 1 - Load JSON data about tracks into memory
-    # TODO: Inform the user when a phase of the pipeline begins
+
+    print("\n=== Phase 1: Loading track data ===", flush=True)
 
     # Different directories where AcousticBrainz data is stored
     if use_sample:
@@ -184,7 +185,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
     ## NOTE: Phase 2 - Merge duplicate entries for tracks by selecting the most common value for each field
     ## The goal is to have the most representative values for each feature among the duplicates of a track.
 
-    print("Will merge duplicate tracks.", flush=True)
+    print("\n=== Phase 2: Merging duplicate tracks ===", flush=True)
     start = time.time()
 
     # Categorical fields for which we'll select the most common value between duplicates
@@ -257,7 +258,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
 
     ## NOTE: Phase 3 - Build the DB models
 
-    print("Will build DB models.")
+    print("\n=== Phase 3: Building DB models ===", flush=True)
     start = time.time()
 
     album_index = {}  # keep track of unique album names, indexed by MBID
@@ -370,6 +371,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
 
     ## NOTE: Phase 4 - Insert data into DB
 
+    print("\n=== Phase 4: Inserting data into DB ===", flush=True)
     with transaction.atomic():
         with connection.cursor() as c:
             c.execute("SET LOCAL synchronous_commit = OFF;")
@@ -460,7 +462,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
 
     ## NOTE: Phase 5 - Save data about audio features into vector files
 
-    # TODO: Inform the user that audio feature matrix is being built.
+    print("\n=== Phase 5: Exporting audio feature matrix ===", flush=True)
     start = time.time()
     # Load the track audio features into a DataFrame and then export, keeping track
     # of how MBIS map to indexes in the feature matrix.
