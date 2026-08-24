@@ -22,7 +22,7 @@ from pympler import asizeof
 from typing import List, Set, Tuple
 from ingest import track_processing_helpers as tph
 from ingest.lmdb_index import LMDBTrackIndex
-from ingest.cli_helpers import print_banner, confirm
+from ingest.cli_helpers import print_banner, confirm, spinner, show_progress_bar
 
 log = logging.getLogger(__name__)
 
@@ -37,17 +37,6 @@ def ingest_parsed_track(result: dict, track_index: LMDBTrackIndex, counters):
     counters["processing"] += 1
     if counters["processing"] % 1000 == 0:
         print(".", end="", flush=True)
-
-
-def show_progress_bar(done: int, total: int, step=10000, message: str = ""):
-    if ((done % step) == 0) or (done == total):
-        percent = done / total
-        filled = int(percent * 30)
-        bar = "#" * filled + "-" * (30 - filled)
-        if message:
-            print(f"\r{message} [{bar}] {done}/{total} ({percent*100:5.1f}%)", end="", flush=True)
-        else:
-            print(f"\r[{bar}] {done}/{total} ({percent*100:5.1f}%)", end="", flush=True)
 
 
 def build_database(use_sample: bool, num_parts: int | None = None, parts_list: list | None = None):
@@ -407,16 +396,14 @@ def build_database(use_sample: bool, num_parts: int | None = None, parts_list: l
             Track.objects.bulk_create(
                 track_list[i : i + BATCH_SIZE], batch_size=BATCH_SIZE
             )
-            # TODO: Fix this stopping at 2440000/2452048 ( 99.5%)
-            show_progress_bar(i, len(track_list), BATCH_SIZE, message="Inserting Tracks:")
+            show_progress_bar(i + BATCH_SIZE, len(track_list), BATCH_SIZE, message="Inserting Tracks:")
 
-        # TODO: Add progress bar for this if possible
-        print(f"\nBuilding search vectors for tracks")
         search_vector = (
             SearchVector("title", config="simple", weight="A") +
             SearchVector("artists_text", config="simple", weight="B")
         )
-        Track.objects.update(search_vector=search_vector)
+        with spinner("Building search vectors for tracks"):
+            Track.objects.update(search_vector=search_vector)
 
         end = time.time()
         print(f"Inserted {len(track_list)} Tracks in {end - start:.2f} seconds")
@@ -443,22 +430,21 @@ def build_database(use_sample: bool, num_parts: int | None = None, parts_list: l
 
         for i in range(0, len(trackartist_list), BATCH_SIZE):
             TrackArtist.objects.bulk_create(trackartist_list[i:i+BATCH_SIZE], batch_size=BATCH_SIZE)
-            # TODO: Fix this stopping at 2460000/2464035 ( 99.8%)
-            show_progress_bar(i, len(trackartist_list), BATCH_SIZE, message="Inserting TrackArtist:")
+            show_progress_bar(i + BATCH_SIZE, len(trackartist_list), BATCH_SIZE, message="Inserting TrackArtist:")
         print("")
         for i in range(0, len(albumartist_list), BATCH_SIZE):
             AlbumArtist.objects.bulk_create(albumartist_list[i:i+BATCH_SIZE], batch_size=BATCH_SIZE)
-            # TODO: Fix this stopping at 580000/589937 ( 98.3%)
-            show_progress_bar(i, len(albumartist_list), BATCH_SIZE, message="Inserting AlbumArtist:")
+            show_progress_bar(i + BATCH_SIZE, len(albumartist_list), BATCH_SIZE, message="Inserting AlbumArtist:")
 
         end = time.time()
         print(f"\nInserted M2M pairings for TrackArtist and AlbumArtist in {end - start:.2f} seconds")
-        # TODO: Inform the user DB was built and redundant objects are being cleaned from memory
+
+        print("Database built, cleaning up in-memory objects", flush=True)
         del trackartist_list
         del albumartist_list
         del album_index
         del merged_artist_index
-        # TODO: add gc.collect() here?
+        gc.collect()
 
     ## NOTE: Phase 5 - Save data about audio features into vector files
 
