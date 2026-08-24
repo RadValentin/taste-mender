@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 from datetime import date
 from django.contrib.postgres.search import SearchVector
 from django.db import transaction, connection
+from django.conf import settings as django_settings
 from dotenv import dotenv_values
 from pathlib import Path
 from sklearn.preprocessing import StandardScaler
@@ -480,7 +481,7 @@ def build_database(use_sample: bool, num_parts: int | None = None, parts_list: l
         dtype="V16",
     )
 
-    filename = os.path.join(os.path.dirname(__file__), "..", "features_and_index.npz")
+    filename = os.path.join(os.path.dirname(__file__), "..", django_settings.FEATURE_MATRIX_FILENAME)
     np.savez_compressed(
         filename,
         # save vectors with values for audio features of tracks

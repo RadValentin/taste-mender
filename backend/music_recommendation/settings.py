@@ -208,6 +208,8 @@ except (TypeError, ValueError):
     DAILY_PICKS_MIN_SUBMISSIONS = 100
 DAILY_PICKS_MIN_SUBMISSIONS = max(0, DAILY_PICKS_MIN_SUBMISSIONS)
 
+FEATURE_MATRIX_FILENAME = env_get("FEATURE_MATRIX_FILENAME", "features_and_index.npz") or "features_and_index.npz"
+
 # Set up caching for production only. Don't cache on dev or when running tests.
 # Note that certain middleware need to be enabled for caching to work.
 if DEBUG or "test" in sys.argv:

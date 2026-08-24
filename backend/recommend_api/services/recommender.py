@@ -113,7 +113,9 @@ class FeatureStore:
         return self.feature_matrix_raw[indexes[0]]
 
 
-STORE = FeatureStore(os.path.join(os.path.dirname(__file__), "../..", "features_and_index.npz"))
+STORE = FeatureStore(os.path.join(
+    os.path.dirname(__file__), "../..", settings.FEATURE_MATRIX_FILENAME
+))
 
 def recommend(target_mbid, options=None):
     """
