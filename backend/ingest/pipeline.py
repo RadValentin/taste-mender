@@ -22,6 +22,7 @@ from pympler import asizeof
 from typing import List, Set, Tuple
 from ingest import track_processing_helpers as tph
 from ingest.lmdb_index import LMDBTrackIndex
+from ingest.cli_helpers import print_banner, confirm
 
 log = logging.getLogger(__name__)
 
@@ -50,6 +51,24 @@ def show_progress_bar(done: int, total: int, step=10000, message: str = ""):
 
 
 def build_database(use_sample: bool, num_parts: int = None, parts_list: list = None):
+    if use_sample:
+        dataset_desc = "the sample dataset (~100k records)"
+    elif parts_list:
+        dataset_desc = f"parts {parts_list} of the full dataset"
+    elif num_parts:
+        dataset_desc = f"the first {num_parts} part(s) of the full dataset"
+    else:
+        dataset_desc = "the full dataset (all parts)"
+
+    print_banner(
+        "TasteMender DB Builder",
+        f"This will wipe and rebuild the database using {dataset_desc}.\n"
+        "Depending on the dataset size this may take a long time.",
+    )
+    if not confirm("Do you want to continue?"):
+        print("Aborted.")
+        return
+
     # Size of on-disk track index, set an arbitrary default 2GB
     MAP_SIZE = 1024 * 1024 * 1024 * 2
     BASE_DIR = Path(__file__).resolve().parent.parent
@@ -67,6 +86,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
     )
 
     ## NOTE: Phase 1 - Load JSON data about tracks into memory
+    # TODO: Inform the user when a phase of the pipeline begins
 
     # Different directories where AcousticBrainz data is stored
     if use_sample:
@@ -385,8 +405,10 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
             Track.objects.bulk_create(
                 track_list[i : i + BATCH_SIZE], batch_size=BATCH_SIZE
             )
+            # TODO: Fix this stopping at 2440000/2452048 ( 99.5%)
             show_progress_bar(i, len(track_list), BATCH_SIZE, message="Inserting Tracks:")
 
+        # TODO: Add progress bar for this if possible
         print(f"\nBuilding search vectors for tracks")
         search_vector = (
             SearchVector("title", config="simple", weight="A") +
@@ -419,21 +441,26 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
 
         for i in range(0, len(trackartist_list), BATCH_SIZE):
             TrackArtist.objects.bulk_create(trackartist_list[i:i+BATCH_SIZE], batch_size=BATCH_SIZE)
+            # TODO: Fix this stopping at 2460000/2464035 ( 99.8%)
             show_progress_bar(i, len(trackartist_list), BATCH_SIZE, message="Inserting TrackArtist:")
         print("")
         for i in range(0, len(albumartist_list), BATCH_SIZE):
             AlbumArtist.objects.bulk_create(albumartist_list[i:i+BATCH_SIZE], batch_size=BATCH_SIZE)
+            # TODO: Fix this stopping at 580000/589937 ( 98.3%)
             show_progress_bar(i, len(albumartist_list), BATCH_SIZE, message="Inserting AlbumArtist:")
 
         end = time.time()
         print(f"\nInserted M2M pairings for TrackArtist and AlbumArtist in {end - start:.2f} seconds")
+        # TODO: Inform the user DB was built and redundant objects are being cleaned from memory
         del trackartist_list
         del albumartist_list
         del album_index
         del merged_artist_index
+        # TODO: add gc.collect() here?
 
     ## NOTE: Phase 5 - Save data about audio features into vector files
 
+    # TODO: Inform the user that audio feature matrix is being built.
     start = time.time()
     # Load the track audio features into a DataFrame and then export, keeping track
     # of how MBIS map to indexes in the feature matrix.
