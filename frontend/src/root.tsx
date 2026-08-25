@@ -9,7 +9,7 @@ import './root.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <BrowserRouter basename={import.meta.env.BASE_URL}>
+    <BrowserRouter>
       <PlayerContextProvider>
         <Routes>
           <Route element={<AppLayout />}>

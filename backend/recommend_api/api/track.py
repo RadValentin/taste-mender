@@ -193,6 +193,7 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = (
             Track.objects
             .filter(album__date__month=month, album__date__day=day)
+            .select_related("album")
             .prefetch_related("artists")[:5000]
         )
 
