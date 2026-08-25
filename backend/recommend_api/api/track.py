@@ -1,4 +1,4 @@
-import logging, time
+import logging, time, random
 from collections import OrderedDict
 from django.conf import settings
 from django.core.cache import cache
@@ -42,9 +42,11 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
             "self": request.build_absolute_uri(reverse("api:track-list")),
             "daily_picks": request.build_absolute_uri(reverse("api:track-daily-picks")),
             "on_this_day": request.build_absolute_uri(reverse("api:track-on-this-day")),
+            "top_tracks": request.build_absolute_uri(reverse("api:track-top-tracks")),
         }
         response.data = OrderedDict(**response.data or {}, links=links)
         return response
+
 
     @extend_schema(
         responses=TrackFeaturesResponseSerializer,
@@ -77,6 +79,7 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
             **({"raw_features": raw_features_dict} if raw_features is not None else {}),
         })
         return Response(serializer.data)
+
 
     @extend_schema(
         description="Get a list of sources for a track (Youtube)"
@@ -206,4 +209,60 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
             return self.get_paginated_response(serializer.data)
 
         serializer = self.get_serializer(unique_tracks, many=True)
+        return Response(serializer.data)
+
+
+    @extend_schema(
+        description="Popular tracks with one track per album/artist, shuffled daily."
+    )
+    @method_decorator(never_cache)
+    @action(detail=False, methods=["get"], url_path="top_tracks")
+    def top_tracks(self, request, *args, **kwargs):
+        seed = timezone.localdate().isoformat()
+        cache_key = f"track:top_tracks:{seed}:{request.get_full_path()}"
+        cached = cache.get(cache_key)
+
+        if cached is not None:
+            return Response(cached)
+
+        # Start with genuinely popular tracks, then introduce some daily variety.
+        tracks = list(
+            self.get_queryset()
+            .order_by("-submissions")[:500]
+        )
+
+        random.Random(seed).shuffle(tracks)
+
+        seen_albums = set()
+        seen_artists = set()
+        unique_tracks = []
+
+        for track in tracks:
+            album_id = track.album_id
+            artist_ids = {artist.pk for artist in track.artists.all()}
+
+            if album_id in seen_albums:
+                continue
+
+            if not seen_artists.isdisjoint(artist_ids):
+                continue
+
+            unique_tracks.append(track)
+
+            if album_id is not None:
+                seen_albums.add(album_id)
+
+            seen_artists.update(artist_ids)
+
+        page = self.paginate_queryset(unique_tracks)
+
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            response = self.get_paginated_response(serializer.data)
+            cache.set(cache_key, response.data, timeout=60 * 60 * 24)
+            return response
+
+        serializer = self.get_serializer(unique_tracks, many=True)
+        cache.set(cache_key, serializer.data, timeout=60 * 60 * 24)
+
         return Response(serializer.data)

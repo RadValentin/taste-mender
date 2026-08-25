@@ -258,3 +258,38 @@ class TrackAPITests_DailyPicks(APITestCase):
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()
+
+
+class TrackAPITests_TopTracks(APITestCase):
+    @classmethod
+    def setUpTestData(cls):
+        shared_album = AlbumFactory.create()
+        shared_artist = ArtistFactory.create()
+        other_artists = [ArtistFactory.create() for _ in range(3)]
+
+        cls.tracks = [
+            TrackFactory.create(album=shared_album, submissions=400),
+            TrackFactory.create(album=shared_album, submissions=300),
+            TrackFactory.create(album=AlbumFactory.create(), submissions=200),
+            TrackFactory.create(album=AlbumFactory.create(), submissions=100),
+        ]
+        cls.tracks[0].artists.add(shared_artist)
+        cls.tracks[1].artists.add(other_artists[0])
+        cls.tracks[2].artists.add(shared_artist)
+        cls.tracks[3].artists.add(other_artists[1])
+
+    def test_get_top_tracks_limits_albums_and_artists(self):
+        url = reverse("api:track-top-tracks")
+        resp = self.client.get(url)
+
+        self.assertEqual(resp.status_code, 200)
+        self.assertLess(resp.data["count"], len(self.tracks))
+
+        album_mbids = [result["album"]["mbid"] for result in resp.data["results"]]
+        artist_mbids = [
+            artist["mbid"]
+            for result in resp.data["results"]
+            for artist in result["artists"]
+        ]
+        self.assertEqual(len(album_mbids), len(set(album_mbids)))
+        self.assertEqual(len(artist_mbids), len(set(artist_mbids)))
