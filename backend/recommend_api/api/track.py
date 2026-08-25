@@ -6,6 +6,8 @@ from django.db.models import Value, Func
 from django.db.models.functions import Concat
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -160,6 +162,7 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
             )
         ],
     )
+    @method_decorator(cache_page(60 * 60 * 24 * 30)) # cached 30 days
     @action(detail=False, methods=["get"], url_path="on_this_day")
     def on_this_day(self, request, *args, **kwargs):
         # Try to parse request date, default to server date if invalid.
@@ -178,12 +181,28 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
 
         # In the worst case there can be 100K tracks+ released on a certain day.
         # Doing filter+sort in the QS would tank performance. It's easier to sort a limited subset.
-        queryset = Track.objects.filter(album__date__month=month, album__date__day=day)[:5000]
+        queryset = (
+            Track.objects
+            .filter(album__date__month=month, album__date__day=day)
+            .prefetch_related("artists")[:5000]
+        )
+
         queryset_objs = sorted(queryset, key=lambda o: o.submissions, reverse=True)
-        page = self.paginate_queryset(queryset_objs)
+
+        seen_artists = set()
+        unique_tracks = []
+
+        for track in queryset_objs:
+            artist_ids = {artist.pk for artist in track.artists.all()}
+
+            if seen_artists.isdisjoint(artist_ids):
+                unique_tracks.append(track)
+                seen_artists.update(artist_ids)
+
+        page = self.paginate_queryset(unique_tracks)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
             return self.get_paginated_response(serializer.data)
 
-        serializer = self.get_serializer(queryset_objs, many=True)
+        serializer = self.get_serializer(unique_tracks, many=True)
         return Response(serializer.data)

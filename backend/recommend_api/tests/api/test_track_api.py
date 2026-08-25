@@ -9,6 +9,7 @@ from recommend_api.models import Album, Track
 from recommend_api.tests.factories import (
     TrackFactory,
     AlbumFactory,
+    ArtistFactory,
     GenreDortmundFactory,
     GenreRosamericaFactory,
 )
@@ -156,6 +157,35 @@ class TrackAPITests(APITestCase):
         self.assertEqual(resp.status_code, 200)
         for result in resp.data["results"]:
             self.assertTrue(result["album"]["date"].endswith("02-29"))
+
+    def test_get_on_this_day_limits_tracks_per_artist(self):
+        # Out of 2 tracks for the same artist released today, only one (popular one) is returned.
+        artist = ArtistFactory.create()
+        hit_track = TrackFactory.create(
+            album=AlbumFactory.create(date=datetime.today()),
+            submissions=2000,
+        )
+        mid_track = TrackFactory.create(
+            album=AlbumFactory.create(date=datetime.today()),
+            submissions=1000,
+        )
+        hit_track.artists.add(artist)
+        mid_track.artists.add(artist)
+
+        url = reverse("api:track-on-this-day")
+        resp = self.client.get(url)
+
+        self.assertEqual(resp.status_code, 200)
+        result_mbids = [result["mbid"] for result in resp.data["results"]]
+        self.assertIn(hit_track.musicbrainz_recordingid, result_mbids)
+        self.assertNotIn(mid_track.musicbrainz_recordingid, result_mbids)
+
+        artist_mbids = [
+            artist["mbid"]
+            for result in resp.data["results"]
+            for artist in result["artists"]
+        ]
+        self.assertEqual(len(artist_mbids), len(set(artist_mbids)))
 
     @classmethod
     def tearDownClass(cls):
