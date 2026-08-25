@@ -95,3 +95,13 @@
     }
   }
 }
+
+@media (width < 768px) {
+  .track-item--card .track-item__title {
+    font-size: 0.875rem;
+  }
+
+  .track-item--card .track-item__artist-album {
+    font-size: 0.75rem;
+  }
+}
