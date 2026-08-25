@@ -7,7 +7,7 @@ from django.db.models.functions import Concat
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page
+from django.views.decorators.cache import cache_page, never_cache
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -116,6 +116,7 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
     @extend_schema(
         description="Random selection of popular tracks seeded by the current date, cached for 24h."
     )
+    @method_decorator(never_cache)
     @action(detail=False, methods=["get"], url_path="daily_picks")
     def daily_picks(self, request, *args, **kwargs):
         min_submissions = settings.DAILY_PICKS_MIN_SUBMISSIONS
