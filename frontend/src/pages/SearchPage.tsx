@@ -28,20 +28,19 @@ export default function SearchPage() {
   const [searchParams] = useSearchParams();
 
   useEffect(() => {
-    if (isLoading) {
-      return;
-    }
+    const query = searchParams.get("q");
 
     // Close the player after user search
     dispatch({ type: "close" });
-    setLoading(true);
 
-    const query = searchParams.get("q");
     if (!query) {
+      setLoading(false);
       return;
     }
 
-    searchTracks(query)
+    const controller = new AbortController();
+    setLoading(true);
+    searchTracks(query, 25, controller.signal)
       .then(resp => {
         setResults({
           data: resp.results,
@@ -49,18 +48,28 @@ export default function SearchPage() {
         });
       })
       .catch(err => {
+        if (err.code === "ERR_CANCELED") {
+          return;
+        }
+
         console.error("Error while searching for tracks: ", err);
         setResults({ data: [], status: "ERROR" });
       }).finally(() => {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
       });
+
+    return () => {
+      controller.abort();
+    };
   }, [searchParams]);
 
   function renderContent() {
     if (isLoading) {
       return (
         <>
-          <h2>Search results</h2>
+          <h2>Searching</h2>
           <TrackListSkeleton count={10} variant="list" />
         </>
       );
