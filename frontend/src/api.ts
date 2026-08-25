@@ -40,7 +40,7 @@ export function getTracksTop() {
 
 export function getTracksOnThisDay(day?: number, month?: number) {
   const url = (day !== undefined && month !== undefined)
-    ? `tracks/on_this_day/?mmdd=${day}-${month}`
+    ? `tracks/on_this_day/?mmdd=${month}-${day}`
     : `tracks/on_this_day/`;
 
   return api.get<Paginated<Track>>(url).then(resp => resp.data);
