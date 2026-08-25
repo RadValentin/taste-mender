@@ -206,6 +206,21 @@ class TrackAPITests(APITestCase):
         ]
         self.assertEqual(len(artist_mbids), len(set(artist_mbids)))
 
+    def test_get_on_this_day_limits_tracks_per_album(self):
+        album = AlbumFactory.create(date=datetime.today())
+        hit_track = TrackFactory.create(album=album, submissions=2000)
+        mid_track = TrackFactory.create(album=album, submissions=1000)
+        hit_track.artists.add(ArtistFactory.create())
+        mid_track.artists.add(ArtistFactory.create())
+
+        url = reverse("api:track-on-this-day")
+        resp = self.client.get(url)
+
+        self.assertEqual(resp.status_code, 200)
+        result_mbids = [result["mbid"] for result in resp.data["results"]]
+        self.assertIn(hit_track.musicbrainz_recordingid, result_mbids)
+        self.assertNotIn(mid_track.musicbrainz_recordingid, result_mbids)
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()

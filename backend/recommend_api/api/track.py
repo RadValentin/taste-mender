@@ -198,14 +198,21 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
 
         queryset_objs = sorted(queryset, key=lambda o: o.submissions, reverse=True)
 
+        seen_albums = set()
         seen_artists = set()
         unique_tracks = []
 
         for track in queryset_objs:
+            album_id = track.album.pk if track.album is not None else None
             artist_ids = {artist.pk for artist in track.artists.all()}
+
+            if album_id in seen_albums:
+                continue
 
             if seen_artists.isdisjoint(artist_ids):
                 unique_tracks.append(track)
+                if album_id is not None:
+                    seen_albums.add(album_id)
                 seen_artists.update(artist_ids)
 
         page = self.paginate_queryset(unique_tracks)
