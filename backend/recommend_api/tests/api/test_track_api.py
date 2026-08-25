@@ -1,6 +1,6 @@
 import numpy as np
 import uuid
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
 from unittest.mock import patch
 from django.urls import reverse
 from rest_framework.test import APITestCase
@@ -135,6 +135,25 @@ class TrackAPITests(APITestCase):
         self.assertEqual(resp.status_code, 200)
         for result in resp.data["results"]:
             self.assertEqual(result["album"]["date"], datetime.today().strftime("%Y-%m-%d"))
+
+    def test_get_on_this_day_default_cache_key_includes_server_date(self):
+        url = reverse("api:track-on-this-day")
+        with (
+            patch("recommend_api.api.track.cache") as mock_cache,
+            patch(
+                "recommend_api.api.track.timezone.localdate",
+                side_effect=[date(2026, 8, 25), date(2026, 8, 26)],
+            ),
+        ):
+            mock_cache.get.return_value = None
+            self.client.get(url)
+            self.client.get(url)
+
+        cache_keys = [call.args[0] for call in mock_cache.set.call_args_list]
+        self.assertEqual(cache_keys, [
+            "track:on_this_day:08-25:/api/v1/tracks/on_this_day/",
+            "track:on_this_day:08-26:/api/v1/tracks/on_this_day/",
+        ])
 
     def test_get_on_this_day_bad_date(self):
         url = reverse("api:track-on-this-day", query={"mmdd": "13-32"})

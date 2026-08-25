@@ -7,7 +7,7 @@ from django.db.models.functions import Concat
 from django.urls import reverse
 from django.utils import timezone
 from django.utils.decorators import method_decorator
-from django.views.decorators.cache import cache_page, never_cache
+from django.views.decorators.cache import never_cache
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import viewsets
 from rest_framework.decorators import action
@@ -166,7 +166,7 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
             )
         ],
     )
-    @method_decorator(cache_page(60 * 60 * 24 * 30)) # cached 30 days
+    @method_decorator(never_cache)
     @action(detail=False, methods=["get"], url_path="on_this_day")
     def on_this_day(self, request, *args, **kwargs):
         # Try to parse request date, default to server date if invalid.
@@ -182,6 +182,11 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
                 month = struct_time.tm_mon
             except ValueError:
                 log.warning("Failed to parse date %r, falling back to server date.", mmdd)
+
+        cache_key = f"track:on_this_day:{month:02d}-{day:02d}:{request.get_full_path()}"
+        cached = cache.get(cache_key)
+        if cached is not None:
+            return Response(cached)
 
         # In the worst case there can be 100K tracks+ released on a certain day.
         # Doing filter+sort in the QS would tank performance. It's easier to sort a limited subset.
@@ -206,9 +211,12 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
         page = self.paginate_queryset(unique_tracks)
         if page is not None:
             serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
+            response = self.get_paginated_response(serializer.data)
+            cache.set(cache_key, response.data, timeout=60 * 60 * 24 * 30)
+            return response
 
         serializer = self.get_serializer(unique_tracks, many=True)
+        cache.set(cache_key, serializer.data, timeout=60 * 60 * 24 * 30)
         return Response(serializer.data)
 
 
