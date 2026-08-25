@@ -13,7 +13,10 @@ export default function HomePage() {
   const { onPlay } = useOutletContext<AppLayoutContext>();
 
   // Keep function references stable so carousels don't refetch just because HomePage re-rendered.
-  const todayFetcher = useCallback(() => getTracksOnThisDay(), []);
+  const todayFetcher = useCallback(() => {
+    const today = new Date();
+    return getTracksOnThisDay(today.getDate(), today.getMonth() + 1);
+  }, []);
   const topFetcher = useCallback(() => getTracks("-submissions"), []);
   const dailyFetcher = getTracksDailyPicks;
 
