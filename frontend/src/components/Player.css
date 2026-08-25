@@ -11,12 +11,12 @@
     bottom: calc(var(--player-height) * -1);
   }
 
-  .player__heading {
+  & .heading{
     font-weight: bold;
     margin-bottom: .5em;
   }
 
-  .player__overlay {
+  & .player__overlay {
     display: flex;
     position: absolute;
     left: 0;
@@ -35,14 +35,14 @@
     height: 0;
   }
 
-  .player__filters,
-  .player__recommendations {
+  & .player__filters,
+  & .player__recommendations {
     flex: 1;
     overflow: auto;
   }
 
   /* Video & stats tab */
-  .player__iframe {
+  & .player__iframe {
     display: flex;
     flex-direction: column;
     flex: 1.5;
@@ -54,13 +54,13 @@
     }
   }
 
-  .player__stats {
+  & .player__stats {
     display: flex;
     flex-wrap: wrap;
     gap: .5rem;
   }
 
-  .player__stats-box {
+  & .player__stats-box {
     width: calc((100% / 3) - (1rem / 3));
     border: 1px solid var(--bg-secondary);
     border-radius: 0.3rem;
@@ -72,19 +72,19 @@
     }
   }
 
-  .player__stats-box-heading {
+  & .player__stats-box-heading {
     font-size: var(--font-size-metadata);
     margin: 0 0 .6rem;
   }
 
-  .player__stats-box-counter {
+  & .player__stats-box-counter {
     font-size: var(--font-size-section-title);
     font-weight: 600;
     margin: 0;
   }
 
   /* Recommendations tab */
-  .player__recommendations {
+  & .player__recommendations {
     position: relative;
     overflow: hidden;
 
@@ -93,14 +93,14 @@
     }
   }
 
-  .player__recommendations-content {
+  & .player__recommendations-content {
     overflow: auto;
     height: 100%;
     padding: 1rem;
   }
 
   /* Footer */
-  .player__footer-bar {
+  & .player__footer-bar {
     width: calc(100dvw - var(--scrollbar-width));
     padding: 10px;
     display: flex;
@@ -113,7 +113,7 @@
     border-top-color: var(--text-engraved-soft);
   }
 
-  .player__coverart {
+  & .player__coverart {
     display: flex;
     align-items: center;
     justify-content: center;
@@ -130,7 +130,7 @@
       object-fit: cover;
     }
 
-    .image-fallback {
+    & .image-loader--fallback {
       display: flex;
       align-items: center;
       justify-content: center;
@@ -142,16 +142,16 @@
     }
   }
 
-  .player__meta {
+  & .player__meta {
     flex: 1 1;
     overflow: hidden;
   }
 
-  .player__controls {
+  & .player__controls {
     flex-shrink: 0;
   }
 
-  .player__title {
+  & .player__title {
     font-weight: 600;
     line-height: 1.2;
     white-space: nowrap;
@@ -159,7 +159,7 @@
     text-overflow: ellipsis;
   }
 
-  .player__artist-album {
+  & .player__artist-album {
     margin-top: 0.15rem;
     font-size: 0.92rem;
     white-space: nowrap;
@@ -171,11 +171,11 @@
     }
   }
 
-  .player__controls button {
+  & .player__controls button {
     font-size: 1.4rem;
   }
 
-  .player__controls button + button {
+  & .player__controls button + button {
     margin-left: .5rem;
   }
 }

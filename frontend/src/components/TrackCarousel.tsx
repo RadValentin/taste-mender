@@ -84,7 +84,7 @@ export default function TrackCarousel({ title, fetchTracks, onPlay, variant = "l
 
     const scrollLeft = Math.max(0, element.scrollLeft - element.offsetWidth);
 
-    element.scrollTo({left: scrollLeft, behavior: "smooth"});
+    element.scrollTo({ left: scrollLeft, behavior: "smooth" });
   };
 
   const handleNext = () => {
@@ -96,7 +96,7 @@ export default function TrackCarousel({ title, fetchTracks, onPlay, variant = "l
       element.scrollLeft + element.offsetWidth
     );
 
-    element.scrollTo({left: scrollLeft, behavior: "smooth"});
+    element.scrollTo({ left: scrollLeft, behavior: "smooth" });
   };
 
   // Render methods
@@ -136,10 +136,20 @@ export default function TrackCarousel({ title, fetchTracks, onPlay, variant = "l
       <div className="track-carousel__header">
         <h2>{title}</h2>
         <div className="track-carousel__controls">
-          <button className="btn btn-neon track-carousel__prev" disabled={isAtStart} onClick={handlePrev}>
+          <button
+            aria-label="Previous tracks"
+            className="btn btn-neon track-carousel__prev"
+            disabled={isAtStart}
+            onClick={handlePrev}
+          >
             <i className="fa-solid fa-chevron-left"></i>
           </button>
-          <button className="btn btn-neon track-carousel__next" disabled={isAtEnd} onClick={handleNext}>
+          <button
+            aria-label="Next tracks"
+            className="btn btn-neon track-carousel__next"
+            disabled={isAtEnd}
+            onClick={handleNext}
+          >
             <i className="fa-solid fa-chevron-right"></i>
           </button>
         </div>

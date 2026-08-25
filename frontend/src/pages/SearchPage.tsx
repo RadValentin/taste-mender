@@ -48,7 +48,7 @@ export default function SearchPage() {
         });
       })
       .catch(err => {
-        if (err.code === "ERR_CANCELED") {
+        if (controller.signal.aborted) {
           return;
         }
 
