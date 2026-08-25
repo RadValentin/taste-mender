@@ -1,6 +1,6 @@
 import { useCallback } from "react";
 import { useOutletContext } from "react-router";
-import { getTracks, getTracksDailyPicks, getTracksOnThisDay } from "../api";
+import { getTracksDailyPicks, getTracksOnThisDay, getTracksTop } from "../api";
 import TrackCarousel from "../components/TrackCarousel";
 import type { Track } from "../types";
 import "./HomePage.css";
@@ -17,7 +17,7 @@ export default function HomePage() {
     const today = new Date();
     return getTracksOnThisDay(today.getDate(), today.getMonth() + 1);
   }, []);
-  const topFetcher = useCallback(() => getTracks("-submissions"), []);
+  const topFetcher = getTracksTop;
   const dailyFetcher = getTracksDailyPicks;
 
   return (

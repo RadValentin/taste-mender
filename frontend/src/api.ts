@@ -34,6 +34,10 @@ export function getTracksDailyPicks() {
   return api.get<Paginated<Track>>('tracks/daily_picks/').then(resp => resp.data);
 }
 
+export function getTracksTop() {
+  return api.get<Paginated<Track>>('tracks/top_tracks/').then(resp => resp.data);
+}
+
 export function getTracksOnThisDay(day?: number, month?: number) {
   const url = (day !== undefined && month !== undefined)
     ? `tracks/on_this_day/?mmdd=${day}-${month}`
