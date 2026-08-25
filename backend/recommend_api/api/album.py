@@ -30,7 +30,7 @@ class AlbumViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
     @extend_schema(
-        responses={302: None},
+        responses={301: None},
         description="Redirects to the album cover art image (250px) from the Cover Art Archive for the given MusicBrainz Album ID.",
     )
     @action(detail=True, methods=["get"], url_path="art")

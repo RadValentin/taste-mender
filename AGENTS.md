@@ -66,6 +66,7 @@ docker-compose exec django python manage.py migrate
 - Error responses follow `{ "error": { "code": "...", "message": "..." } }`.
 - List responses follow the DRF pagination shape `{ count, next, previous, results }`.
 - All resource objects include a `links` field (HATEOAS) with URLs to related endpoints.
+- Collections can also include a `links` field to tell the client exactly what sub-collections, filters, or specific actions are available without requiring them to read hardcoded external documentation.
 - Project decisions:
   - [`ADR-001`](docs/DECISIONS/ADR-001-in-memory-feature-matrix.md): In-memory feature matrix.
   - [`ADR-002`](docs/DECISIONS/ADR-002-cache-analysis-targets-production.md): Production-first
