@@ -40,7 +40,11 @@ def ingest_parsed_track(result: dict, track_index: LMDBTrackIndex, counters):
         print(".", end="", flush=True)
 
 
-def build_database(use_sample: bool, num_parts: int | None = None, parts_list: list | None = None):
+def build_database(
+    use_sample: bool,
+    num_parts: int | None = None,
+    parts_list: list | None = None,
+) -> bool:
     if use_sample:
         dataset_desc = "the sample dataset (~100k records)"
     elif parts_list:
@@ -57,7 +61,7 @@ def build_database(use_sample: bool, num_parts: int | None = None, parts_list: l
     )
     if not confirm("Do you want to continue?"):
         print("Aborted.")
-        return
+        return False
 
     # Size of on-disk track index, set an arbitrary default 2GB
     MAP_SIZE = 1024 * 1024 * 1024 * 2
@@ -498,6 +502,7 @@ def build_database(use_sample: bool, num_parts: int | None = None, parts_list: l
 
     end = time.time()
     print(f"Exported feature matrix and indexes in {end - start:.2f} seconds")
+    return True
 
 
 if __name__ == "__main__":

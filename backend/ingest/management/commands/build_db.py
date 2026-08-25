@@ -30,12 +30,15 @@ class Command(BaseCommand):
             if parts_list:
                 parts_list = [int(part) for part in options["parts_list"].split(",")]
 
-            build_database(
+            completed = build_database(
                 use_sample=options["sample"],
                 num_parts=options["parts"],
-                parts_list=parts_list
+                parts_list=parts_list,
             )
         except Exception as e:
             raise CommandError(str(e))
-        
+
+        if not completed:
+            raise CommandError("Database build aborted.")
+
         self.stdout.write(self.style.SUCCESS("Build complete."))
