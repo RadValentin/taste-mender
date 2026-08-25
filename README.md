@@ -109,6 +109,16 @@ python manage.py build_db --sample # Use the sample dataset with 100k entries
       - `recommend.py` - command for showing recommendations
 - `frontend/` - standalone app that consumes the API
 
+## Frontend CSS naming
+
+Use a simple BEM-style convention for CSS classes in the React frontend:
+
+- Block: `.track-item`
+- Element: `.track-item__title`
+- Modifier: `.track-item--card`
+
+Prefer component-scoped names over generic ones such as `.meta` or `.title`, and keep class names semantic rather than purely presentational. This makes the stylesheet easier to scan, avoids collisions, and keeps component styles easier to maintain as the UI grows.
+
 ## How It Works
 
 ### Dataset Ingest

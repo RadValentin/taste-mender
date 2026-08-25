@@ -1,0 +1,18 @@
+.track-list {
+
+  &.track-list--list { }
+
+  &.track-list--card {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(auto-fill, minmax(11rem, 1fr));
+  }
+}
+
+@media (width < 768px) {
+  .track-list {
+    &.track-list--card {
+      grid-template-columns: repeat(auto-fill, minmax(9.5rem, 1fr));
+    }
+  }
+}

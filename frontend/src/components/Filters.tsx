@@ -129,8 +129,8 @@ export default function Filters({ onChange }: FiltersProps) {
     <div className="filters">
       <h3 className="heading">Recommendation Settings</h3>
       <h4 className="heading">Genre & Era</h4>
-      <div className="filters-container">
-        <label className="label-inline">
+      <div className="filters__container">
+        <label className="filters__label filters__label--inline">
           <span>Same genre</span>
           <input
             type="checkbox"
@@ -138,7 +138,7 @@ export default function Filters({ onChange }: FiltersProps) {
             onChange={() => toggleFilter("same_genre")}
           />
         </label>
-        <label className="label-inline">
+        <label className="filters__label filters__label--inline">
           <span>Same decade</span>
           <input
             type="checkbox"
@@ -146,7 +146,7 @@ export default function Filters({ onChange }: FiltersProps) {
             onChange={() => toggleFilter("same_decade")}
           />
         </label>
-        <label className="label-inline label-full">
+        <label className="filters__label filters__label--inline filters__label--full">
           <span>Genre system</span>
           <select
             value={filters.genre_classification}
@@ -159,11 +159,11 @@ export default function Filters({ onChange }: FiltersProps) {
       </div>
 
       <h4 className="heading">Ranking Balance</h4>
-      <div className="filters-container">
-        <label>
+      <div className="filters__container">
+        <label className="filters__label">
           <span>Similarity</span>
           <input
-            className="slider" type="range" min={0} max={1} step={0.1}
+            className="filters__slider" type="range" min={0} max={1} step={0.1}
             value={totalWeights.similarity}
             onChange={e => updateSimilarity(parseFloat(e.target.value))}
             onMouseUp={handleChangeEnd}
@@ -171,10 +171,10 @@ export default function Filters({ onChange }: FiltersProps) {
             onTouchEnd={handleChangeEnd}
           />
         </label>
-        <label>
+        <label className="filters__label">
           Popularity
           <input
-            className="slider" type="range" min={0} max={1} step={0.1}
+            className="filters__slider" type="range" min={0} max={1} step={0.1}
             value={totalWeights.popularity}
             onChange={e => updatePopularity(parseFloat(e.target.value))}
             onMouseUp={handleChangeEnd}
@@ -185,12 +185,12 @@ export default function Filters({ onChange }: FiltersProps) {
       </div>
 
       <h4 className="heading">Sound & Energy</h4>
-      <div className="filters-container">
+      <div className="filters__container">
         {AUDIO_FEATURES.map(feature_name => (
-          <label key={feature_name}>
+          <label className="filters__label" key={feature_name}>
             <span>{getFeatureDisplayName(feature_name)}</span>
             <input
-              className="slider" type="range" min={0} max={1} step={0.1}
+              className="filters__slider" type="range" min={0} max={1} step={0.1}
               value={featureWeights[feature_name]}
               onChange={e => updateFeatureWeight(feature_name, parseFloat(e.target.value))}
               onMouseUp={handleChangeEnd}
@@ -202,12 +202,12 @@ export default function Filters({ onChange }: FiltersProps) {
       </div>
 
       <h4 className="heading">Mood & Atmosphere</h4>
-      <div className="filters-container">
+      <div className="filters__container">
         {MOOD_FEATURES.map(feature_name => (
-          <label key={feature_name}>
+          <label className="filters__label" key={feature_name}>
             <span title={getFeatureDisplayName(feature_name)}>{getFeatureDisplayName(feature_name)}</span>
             <input
-              className="slider" type="range" min={0} max={1} step={0.1}
+              className="filters__slider" type="range" min={0} max={1} step={0.1}
               value={featureWeights[feature_name]}
               onChange={e => updateFeatureWeight(feature_name, parseFloat(e.target.value))}
               onMouseUp={handleChangeEnd}

@@ -202,6 +202,14 @@ CORS_ALLOW_HEADERS = [
     "x-requested-with",
 ]
 
+try:
+    DAILY_PICKS_MIN_SUBMISSIONS = int(env_get("DAILY_PICKS_MIN_SUBMISSIONS", "100") or "100")
+except (TypeError, ValueError):
+    DAILY_PICKS_MIN_SUBMISSIONS = 100
+DAILY_PICKS_MIN_SUBMISSIONS = max(0, DAILY_PICKS_MIN_SUBMISSIONS)
+
+FEATURE_MATRIX_FILENAME = env_get("FEATURE_MATRIX_FILENAME", "features_and_index.npz") or "features_and_index.npz"
+
 # Set up caching for production only. Don't cache on dev or when running tests.
 # Note that certain middleware need to be enabled for caching to work.
 if DEBUG or "test" in sys.argv:
@@ -222,12 +230,12 @@ else:
         "default": {
             "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
             "LOCATION": "unique-snowflake",
-            "TIMEOUT": 600
+            "TIMEOUT": 3600 # 1h
         }
     }
 
     CACHE_MIDDLEWARE_ALIAS = "default"
-    CACHE_MIDDLEWARE_SECONDS = 600
+    CACHE_MIDDLEWARE_SECONDS = 3600
     CACHE_MIDDLEWARE_KEY_PREFIX = ""
 
 # Format logging
@@ -237,7 +245,8 @@ LOGGING = {
     "formatters": {
         "simple": {
             "()": "colorlog.ColoredFormatter",
-            "format": "%(log_color)s[%(levelname)s]%(reset)s %(message)s",
+            "format": "%(log_color)s[%(asctime)s] [%(levelname)s]%(reset)s %(name)s:%(lineno)d %(message)s",
+            "datefmt": "%d/%b/%Y %H:%M:%S",
             "log_colors": {
                 "DEBUG": "cyan",
                 "INFO": "green",

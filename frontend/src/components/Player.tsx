@@ -2,10 +2,10 @@
 import React, { useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { Track, SimilarTrack, RecommendRequest } from "../types";
 import { getTrackSources, getRecommendations } from "../api.ts"
-import TrackItem from "./TrackItem.tsx";
+import TrackList from "./TrackList.tsx";
+import TrackListSkeleton from "./TrackListSkeleton.tsx";
 import Filters, {type FiltersPayload} from "./Filters.tsx";
 import ImageLoader from "./ImageLoader.tsx";
-import LoadingSpinner from "./LoadingSpinner.tsx";
 import { usePlayerContext } from "../PlayerContext.tsx";
 import "./Player.css";
 
@@ -241,20 +241,20 @@ export default function Player({ ref }: PlayerProps) {
     const fallbackText = track.title?.charAt(0)?.toUpperCase() ?? "♪"
 
     return (
-      <div className="footer-bar">
-        <div className="coverart" aria-hidden="true">
+      <div className="player__footer-bar">
+        <div className="player__coverart" aria-hidden="true">
           <ImageLoader src={artUrl} alt="cover art" fallback={fallbackText} />
         </div>
-        <div className="meta">
-          <div className="title" title={track.title}>{track.title}</div>
-          <div className="artist-album">
+        <div className="player__meta">
+          <div className="player__title" title={track.title}>{track.title}</div>
+          <div className="player__artist-album">
             <span className="artist" title={artists}>{artists}</span>
             {album && <> • <span className="album" title={album}>{album}</span></>}
             {year && <> • <span className="year">{year}</span></>}
           </div>
         </div>
 
-        <div className="controls">
+        <div className="player__controls">
           <button type="button" className="btn btn-metal" aria-label="Play/Pause" onClick={togglePlayback}>
             { playerState.isPlaying
               ? <i className="fa-solid fa-pause"></i>
@@ -276,86 +276,96 @@ export default function Player({ ref }: PlayerProps) {
   };
 
   const renderRecommendations = () => {
-    if (!recState.similarList || recState.similarList.length < 1) {
+    const hasRecommendations = !!recState.similarList && recState.similarList.length > 0;
+
+    if (!hasRecommendations && !recState.isLoading) {
       return;
     }
 
-    const firstRec = recState.similarList[0];
+    const firstRecList = recState.similarList.slice(0, 1);
     const otherRec = recState.similarList.slice(1);
+    const numSkeletons = recState.similarList.length || 9;
 
     return (
-      <div className="player-recommendations">
-        {recState.isLoading && <LoadingSpinner />}
-        <div className="recommendations-content">
+      <div className="player__recommendations">
+        <div className="player__recommendations-content">
           <h4 className="heading">Up Next:</h4>
-          <TrackItem
-            key={firstRec.mbid}
-            track={firstRec}
-            onPlay={() => { playTrack(firstRec) }}
-            disabled={recState.isLoading} />
+          {recState.isLoading ? (
+            <TrackListSkeleton count={1} variant="list" />
+          ) : (
+            <TrackList
+              tracks={firstRecList}
+              onPlay={(track) => { playTrack(track) }}
+              variant="list"
+            />
+          )}
           <h4 className="heading">Other Recommendations:</h4>
-          {otherRec.map(track =>
-            <TrackItem
-              key={track.mbid}
-              track={track}
-              onPlay={() => { playTrack(track) }}
-              disabled={recState.isLoading} />
+          {recState.isLoading ? (
+            <TrackListSkeleton count={numSkeletons} variant="list" />
+          ) : (
+            <TrackList
+              tracks={otherRec}
+              onPlay={(track) => { playTrack(track) }}
+              variant="list"
+            />
           )}
         </div>
       </div>
     );
   };
 
-  const overlayClass = globalState.isMaximized ? "overlay maximized" : "overlay minimized";
-  const playerClass = playerState.track ? "player" : "player empty";
+  const overlayClass = globalState.isMaximized
+    ? "player__overlay player__overlay--maximized"
+    : "player__overlay player__overlay--minimized";
+  const playerClass = playerState.track ? "player" : "player player--empty";
 
   return (
     <div className={playerClass}>
       <div className={overlayClass}>
-        <div className="player-filters">
+        <div className="player__filters">
           <Filters onChange={onFiltersChange} />
         </div>
-        <div className="player-iframe">
+        <div className="player__iframe">
           <div ref={containerRef}></div>
           {recState && recState.stats && (
             <>
               <h4 className="heading">Stats</h4>
-              <div className="stats">
-                <div className="stats-box">
-                  <p className="stats-box-heading">Tracks analyzed</p>
-                  <p className="stats-box-counter">{Number(recState.stats.candidate_count).toLocaleString()}</p>
+              <div className="player__stats">
+                <div className="player__stats-box">
+                  <p className="player__stats-box-heading">Tracks analyzed</p>
+                  <p className="player__stats-box-counter">{Number(recState.stats.candidate_count).toLocaleString()}</p>
                 </div>
-                <div className="stats-box">
-                  <p className="stats-box-heading">Best match</p>
-                  <p className="stats-box-counter">
+                <div className="player__stats-box">
+                  <p className="player__stats-box-heading">Best match</p>
+                  <p className="player__stats-box-counter">
                     {Math.floor(Number(recState.stats.max) * 100)}%
                   </p>
                 </div>
-                <div className="stats-box">
-                  <p className="stats-box-heading">Average match</p>
-                  <p className="stats-box-counter">
+                <div className="player__stats-box">
+                  <p className="player__stats-box-heading">Average match</p>
+                  <p className="player__stats-box-counter">
                     {Math.floor(Number(recState.stats.mean) * 100)}%
                   </p>
                 </div>
-                <div className="stats-box">
-                  <p className="stats-box-heading">Top-tier match (95th percentile)</p>
-                  <p className="stats-box-counter">
+                <div className="player__stats-box">
+                  <p className="player__stats-box-heading">Top-tier match (95th percentile)</p>
+                  <p className="player__stats-box-counter">
                     {Math.floor(Number(recState.stats.p95) * 100)}%
                   </p>
                 </div>
-                <div className="stats-box">
-                  <p className="stats-box-heading">Score spread (STD)</p>
-                  <p className="stats-box-counter">{Number(recState.stats.std).toFixed(3)}</p>
+                <div className="player__stats-box">
+                  <p className="player__stats-box-heading">Score spread (STD)</p>
+                  <p className="player__stats-box-counter">{Number(recState.stats.std).toFixed(3)}</p>
                 </div>
-                <div className="stats-box">
-                  <p className="stats-box-heading">Search time</p>
-                  <p className="stats-box-counter">
+                <div className="player__stats-box">
+                  <p className="player__stats-box-heading">Search time</p>
+                  <p className="player__stats-box-counter">
                     {Number(recState.stats.search_time * 1000).toFixed(3)}ms
                   </p>
                 </div>
-                <div className="stats-box">
-                  <p className="stats-box-heading">Listened tracks</p>
-                  <p className="stats-box-counter">{recState.listenedMbids.length}</p>
+                <div className="player__stats-box">
+                  <p className="player__stats-box-heading">Listened tracks</p>
+                  <p className="player__stats-box-counter">{recState.listenedMbids.length}</p>
                 </div>
               </div>
             </>

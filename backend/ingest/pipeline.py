@@ -6,6 +6,7 @@ from collections import Counter, defaultdict
 from datetime import date
 from django.contrib.postgres.search import SearchVector
 from django.db import transaction, connection
+from django.conf import settings as django_settings
 from dotenv import dotenv_values
 from pathlib import Path
 from sklearn.preprocessing import StandardScaler
@@ -22,6 +23,7 @@ from pympler import asizeof
 from typing import List, Set, Tuple
 from ingest import track_processing_helpers as tph
 from ingest.lmdb_index import LMDBTrackIndex
+from ingest.cli_helpers import print_banner, confirm, spinner, show_progress_bar
 
 log = logging.getLogger(__name__)
 
@@ -38,18 +40,29 @@ def ingest_parsed_track(result: dict, track_index: LMDBTrackIndex, counters):
         print(".", end="", flush=True)
 
 
-def show_progress_bar(done: int, total: int, step=10000, message: str = ""):
-    if ((done % step) == 0) or (done == total):
-        percent = done / total
-        filled = int(percent * 30)
-        bar = "#" * filled + "-" * (30 - filled)
-        if message:
-            print(f"\r{message} [{bar}] {done}/{total} ({percent*100:5.1f}%)", end="", flush=True)
-        else:
-            print(f"\r[{bar}] {done}/{total} ({percent*100:5.1f}%)", end="", flush=True)
+def build_database(
+    use_sample: bool,
+    num_parts: int | None = None,
+    parts_list: list | None = None,
+) -> bool:
+    if use_sample:
+        dataset_desc = "the sample dataset (~100k records)"
+    elif parts_list:
+        dataset_desc = f"parts {parts_list} of the full dataset"
+    elif num_parts:
+        dataset_desc = f"the first {num_parts} part(s) of the full dataset"
+    else:
+        dataset_desc = "the full dataset (all parts)"
 
+    print_banner(
+        "TasteMender DB Builder",
+        f"This will wipe and rebuild the database using {dataset_desc}.\n"
+        "Depending on the dataset size this may take a long time.",
+    )
+    if not confirm("Do you want to continue?"):
+        print("Aborted.")
+        return False
 
-def build_database(use_sample: bool, num_parts: int = None, parts_list: list = None):
     # Size of on-disk track index, set an arbitrary default 2GB
     MAP_SIZE = 1024 * 1024 * 1024 * 2
     BASE_DIR = Path(__file__).resolve().parent.parent
@@ -67,6 +80,8 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
     )
 
     ## NOTE: Phase 1 - Load JSON data about tracks into memory
+
+    print("\n=== Phase 1: Loading track data ===", flush=True)
 
     # Different directories where AcousticBrainz data is stored
     if use_sample:
@@ -164,7 +179,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
     ## NOTE: Phase 2 - Merge duplicate entries for tracks by selecting the most common value for each field
     ## The goal is to have the most representative values for each feature among the duplicates of a track.
 
-    print("Will merge duplicate tracks.", flush=True)
+    print("\n=== Phase 2: Merging duplicate tracks ===", flush=True)
     start = time.time()
 
     # Categorical fields for which we'll select the most common value between duplicates
@@ -237,7 +252,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
 
     ## NOTE: Phase 3 - Build the DB models
 
-    print("Will build DB models.")
+    print("\n=== Phase 3: Building DB models ===", flush=True)
     start = time.time()
 
     album_index = {}  # keep track of unique album names, indexed by MBID
@@ -350,6 +365,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
 
     ## NOTE: Phase 4 - Insert data into DB
 
+    print("\n=== Phase 4: Inserting data into DB ===", flush=True)
     with transaction.atomic():
         with connection.cursor() as c:
             c.execute("SET LOCAL synchronous_commit = OFF;")
@@ -385,14 +401,14 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
             Track.objects.bulk_create(
                 track_list[i : i + BATCH_SIZE], batch_size=BATCH_SIZE
             )
-            show_progress_bar(i, len(track_list), BATCH_SIZE, message="Inserting Tracks:")
+            show_progress_bar(i + BATCH_SIZE, len(track_list), BATCH_SIZE, message="Inserting Tracks:")
 
-        print(f"\nBuilding search vectors for tracks")
         search_vector = (
             SearchVector("title", config="simple", weight="A") +
             SearchVector("artists_text", config="simple", weight="B")
         )
-        Track.objects.update(search_vector=search_vector)
+        with spinner("Building search vectors for tracks"):
+            Track.objects.update(search_vector=search_vector)
 
         end = time.time()
         print(f"Inserted {len(track_list)} Tracks in {end - start:.2f} seconds")
@@ -419,21 +435,25 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
 
         for i in range(0, len(trackartist_list), BATCH_SIZE):
             TrackArtist.objects.bulk_create(trackartist_list[i:i+BATCH_SIZE], batch_size=BATCH_SIZE)
-            show_progress_bar(i, len(trackartist_list), BATCH_SIZE, message="Inserting TrackArtist:")
+            show_progress_bar(i + BATCH_SIZE, len(trackartist_list), BATCH_SIZE, message="Inserting TrackArtist:")
         print("")
         for i in range(0, len(albumartist_list), BATCH_SIZE):
             AlbumArtist.objects.bulk_create(albumartist_list[i:i+BATCH_SIZE], batch_size=BATCH_SIZE)
-            show_progress_bar(i, len(albumartist_list), BATCH_SIZE, message="Inserting AlbumArtist:")
+            show_progress_bar(i + BATCH_SIZE, len(albumartist_list), BATCH_SIZE, message="Inserting AlbumArtist:")
 
         end = time.time()
         print(f"\nInserted M2M pairings for TrackArtist and AlbumArtist in {end - start:.2f} seconds")
+
+        print("Database built, cleaning up in-memory objects", flush=True)
         del trackartist_list
         del albumartist_list
         del album_index
         del merged_artist_index
+        gc.collect()
 
     ## NOTE: Phase 5 - Save data about audio features into vector files
 
+    print("\n=== Phase 5: Exporting audio feature matrix ===", flush=True)
     start = time.time()
     # Load the track audio features into a DataFrame and then export, keeping track
     # of how MBIS map to indexes in the feature matrix.
@@ -465,7 +485,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
         dtype="V16",
     )
 
-    filename = os.path.join(os.path.dirname(__file__), "..", "features_and_index.npz")
+    filename = os.path.join(os.path.dirname(__file__), "..", django_settings.FEATURE_MATRIX_FILENAME)
     np.savez_compressed(
         filename,
         # save vectors with values for audio features of tracks
@@ -482,6 +502,7 @@ def build_database(use_sample: bool, num_parts: int = None, parts_list: list = N
 
     end = time.time()
     print(f"Exported feature matrix and indexes in {end - start:.2f} seconds")
+    return True
 
 
 if __name__ == "__main__":

@@ -7,6 +7,7 @@ type TrackItemProps = {
   track: Track;
   onPlay?: (track: Track) => void;
   disabled?: boolean;
+  variant?: "list" | "card";
 };
 
 /** Single track row displaying cover art, title, artist, album, year, genre badges, and
@@ -43,7 +44,7 @@ function getRosamericaLabel(str: string): string {
   return (labels[str] ?? str).toLowerCase();
 }
 
-export default function TrackItem({ track, onPlay, disabled }: TrackItemProps) {
+export default function TrackItem({ track, onPlay, disabled, variant = "list" }: TrackItemProps) {
   const artists = track.artists?.map(a => a.name).join(", ") || "Unknown artist";
   const album = track.album?.name ?? null;
   const year = track.album?.date ? new Date(track.album.date).getFullYear() : null;
@@ -52,28 +53,28 @@ export default function TrackItem({ track, onPlay, disabled }: TrackItemProps) {
 
   return (
     <div
-      className={"track-item"}
+      className={`track-item track-item--${variant}`}
       aria-label={`${track.title} by ${artists}`}
     >
-      <div className="coverart" aria-hidden="true">
+      <div className="track-item__coverart" aria-hidden="true">
         <ImageLoader src={artUrl} alt="cover art" fallback={fallbackText} />
       </div>
 
-      <div className="meta">
-        <div className="title" title={track.title}>{track.title}</div>
-        <div className="artist-album">
+      <div className="track-item__meta">
+        <div className="track-item__title" title={track.title}>{track.title}</div>
+        <div className="track-item__artist-album">
           <span className="artist" title={artists}>{artists}</span>
           {album && <> • <span className="album" title={album}>{album}</span></>}
           {year && <> • <span className="year">{year}</span></>}
         </div>
-        <div className="badges">
+        <div className="track-item__badges">
           <span className="badge badge-rosa" title="Genre in Rosamerica system">{getRosamericaLabel(track.genre_rosamerica)}</span>
           <span className="badge badge-dort" title="Genre in Dortmund system">{getDortmundLabel(track.genre_dortmund)}</span>
           <span className="badge" title="Submissions">{track.submissions} subs</span>
         </div>
       </div>
 
-      <div className="actions">
+      <div className="track-item__actions">
         {onPlay && <PlayButton disabled={disabled} onClick={() => onPlay(track)} />}
       </div>
     </div>

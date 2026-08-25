@@ -1,10 +1,10 @@
-import axios from "axios";
+import axios from 'axios';
 import type {
   Track, TrackFeaturesResponse, Artist, Paginated, RecommendRequest, RecommendResponse,
   SearchResponse, Album
-} from "./types";
+} from './types';
 
-export const API_BASE_URL = import.meta.env.VITE_API_BASE || "/api/v1/"
+export const API_BASE_URL = import.meta.env.VITE_API_BASE || '/api/v1/'
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -28,6 +28,22 @@ export function getTrackFeatures(mbid: string) {
 
 export function getTrackSources(mbid: string) {
   return api.get(`tracks/${mbid}/sources/`).then(resp => resp.data.sources);
+}
+
+export function getTracksDailyPicks() {
+  return api.get<Paginated<Track>>('tracks/daily_picks/').then(resp => resp.data);
+}
+
+export function getTracksTop() {
+  return api.get<Paginated<Track>>('tracks/top_tracks/').then(resp => resp.data);
+}
+
+export function getTracksOnThisDay(day?: number, month?: number) {
+  const url = (day !== undefined && month !== undefined)
+    ? `tracks/on_this_day/?mmdd=${month}-${day}`
+    : `tracks/on_this_day/`;
+
+  return api.get<Paginated<Track>>(url).then(resp => resp.data);
 }
 
 export async function getArtists() {
@@ -63,11 +79,14 @@ export function getAlbumArt(mbid: string) {
 }
 
 export function getRecommendations(body: RecommendRequest) {
-  return api.post<RecommendResponse>("recommend/", body).then(resp => resp.data);
+  return api.post<RecommendResponse>('recommend/', body).then(resp => resp.data);
 }
 
-export function searchTracks(query: string, limit: number=25) {
-  return api.get<SearchResponse<Track>>(`search/?type=track&q=${encodeURIComponent(query)}&limit=${limit}`)
+export function searchTracks(query: string, limit: number=25, signal?: AbortSignal) {
+  return api.get<SearchResponse<Track>>(
+    `search/?type=track&q=${encodeURIComponent(query)}&limit=${limit}`,
+    { signal },
+  )
     .then(resp => resp.data);
 }
 

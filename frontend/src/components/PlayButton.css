@@ -1,4 +1,4 @@
-.button-play {
+.play-button {
   cursor: pointer;
   color: var(--text-primary);
 
@@ -18,7 +18,7 @@
   &:hover {
     transform: scale(1.08);
     box-shadow: 0 0 8px var(--led-cyan),
-                0 0 10px var(--led-cyan-dim);
+      0 0 10px var(--led-cyan-dim);
   }
 
   &:focus {

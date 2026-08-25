@@ -1,0 +1,70 @@
+.track-carousel {
+  position: relative;
+}
+
+.track-carousel__items,
+.track-carousel__loading {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: var(--carousel-item-base-width);
+  gap: 0.75rem;
+  width: 100%;
+  overflow-x: auto;
+}
+
+.track-carousel__items {
+  /* Hide the scrollbar by default, show it on hover on desktop. */
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  scrollbar-gutter: stable;
+  scrollbar-color: var(--led-orange) var(--bg-primary);
+  padding-bottom: calc(var(--scrollbar-width) + 1rem );
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+
+  &:hover,
+  &:focus-within {
+    scrollbar-width: auto;
+    -ms-overflow-style: auto;
+    padding-bottom: 1rem;
+  }
+
+  &:hover::-webkit-scrollbar,
+  &:focus-within::-webkit-scrollbar {
+    display: block;
+  }
+}
+
+.track-carousel__loading {
+  overflow: hidden;
+}
+
+.track-carousel__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: .5rem;
+
+  & h2 {
+    margin-bottom: 0;
+  }
+}
+
+.track-carousel__controls {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+@media (width < 768px) {
+  .track-carousel__items,
+  .track-carousel__loading {
+    grid-auto-columns: var(--carousel-item-mobile-width);
+  }
+
+  .track-carousel__header h2 {
+    font-size: 1.25rem;
+  }
+}

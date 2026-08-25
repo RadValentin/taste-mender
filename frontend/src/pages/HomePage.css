@@ -1,0 +1,5 @@
+.home-page {
+  & .track-carousel {
+    margin-bottom: 1rem;
+  }
+}

@@ -12,7 +12,7 @@
   border-width: 0 0 1px;
   border-bottom-color: var(--text-engraved-soft);
 
-  & .header-inner {
+  .header__inner {
     display: flex;
     align-items: center;
     justify-content: space-between;
@@ -21,11 +21,11 @@
     width: calc(100dvw - var(--scrollbar-width));
   }
 
-  & .header-inner > * {
+  .header__inner > * {
     min-width: 12%;
   }
 
-  & .logo {
+  .header__logo {
     display: inline-block;
     color: var(--text-engraved);
     font-family: var(--font-headings);
@@ -34,17 +34,17 @@
     letter-spacing: 0.05em;
     text-shadow: 0 1px 0 rgba(255, 255, 255, 0.4);
     text-decoration: none;
-
-    & .logo-line {
-      display: inline;
-    }
-
-    & .logo-mender {
-      color: #006289;
-    }
   }
 
-  & .search-box {
+  .header__logo-line {
+    display: inline;
+  }
+
+  .header__logo-accent {
+    color: #006289;
+  }
+
+  .header__search-box {
     flex: 0 1 600px;
     display: flex;
     height: 2.6rem;
@@ -79,14 +79,14 @@
       box-shadow: var(--shadow-glow-inset);
     }
 
-    & .btn-search {
+    & button {
       margin: 3px;
       font-size: 1rem;
       box-shadow: none;
     }
   }
 
-  & .links {
+  .header__links {
     text-align: right;
 
     & a {
@@ -101,7 +101,7 @@
 
 @media (width < 992px) {
   .header {
-    & .search-box {
+    .header__search-box {
       flex: 1 1 auto;
     }
   }
@@ -109,22 +109,22 @@
 
 @media (width < 768px) {
   .header {
-    & .header-inner {
+    .header__inner {
       gap: .5em;
       padding: 0.5em 1em;
     }
 
-    & .header-inner > * {
+    .header__inner > * {
       min-width: initial;
     }
 
-    & .logo {
+    .header__logo {
       line-height: 1;
       font-size: calc(var(--font-size-app-title) * .75);
+    }
 
-      & .logo-line {
-        display: block;
-      }
+    .header__logo-line {
+      display: block;
     }
   }
 }
