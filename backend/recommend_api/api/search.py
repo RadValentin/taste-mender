@@ -4,6 +4,7 @@ from django.contrib.postgres.search import TrigramDistance, TrigramWordDistance,
 from django.db.models import F, Func, FloatField, ExpressionWrapper
 from drf_spectacular.utils import extend_schema, OpenApiParameter
 from rest_framework import status
+from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from recommend_api.models import *
@@ -50,16 +51,10 @@ class SearchView(APIView):
             limit = 100
 
         if not query:
-            return Response(
-                {"error": {"code": "INVALID_SEARCH_PARAM", "message": "Missing 'q' parameter."}},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({"q": ["This query parameter is required."]})
 
         if search_type not in ["track", "artist", "album"]:
-            return Response(
-                {"error": {"code": "INVALID_SEARCH_PARAM", "message": "Invalid 'type' parameter."}},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+            raise ValidationError({"type": ["Must be one of: track, artist, album."]})
 
         # Make search results relevant by comparing words when the query is a single word
         # and use standard trigram similarity for multi-word searches.

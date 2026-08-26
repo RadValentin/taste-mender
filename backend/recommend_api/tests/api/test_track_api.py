@@ -58,6 +58,11 @@ class TrackAPITests(APITestCase):
         self.assertEqual(resp.data["mbid"], track_tuple[0])
         self.assertEqual(resp.data["title"], track_tuple[1])
 
+    def test_get_detail_not_found_error_shape(self):
+        url = reverse("api:track-detail", kwargs={"mbid": str(uuid.uuid4())})
+        resp = self.client.get(url)
+        self.assertEqual(resp.status_code, 404)
+
     def test_get_features_includes_raw_features(self):
         mbid = self.track_tuples[0][0]
         with patch("recommend_api.api.track.rec") as mock_rec:

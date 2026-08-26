@@ -120,6 +120,25 @@ class RecommendAPITests(APITestCase):
         resp = self.client.post(url, {"mbid": "BADMBID"}, format="json")
         self.assertEqual(resp.status_code, 404)
 
+    def test_400_on_recommender_value_error(self):
+        self.mock_recommend.side_effect = ValueError("bad recommender input")
+        url = reverse("api:recommend")
+        resp = self.client.post(url, {"mbid": "A"}, format="json")
+        self.assertEqual(resp.status_code, 400)
+
+    def test_503_on_recommender_file_not_found(self):
+        self.mock_recommend.side_effect = FileNotFoundError("features missing")
+        url = reverse("api:recommend")
+        resp = self.client.post(url, {"mbid": "A"}, format="json")
+        self.assertEqual(resp.status_code, 503)
+
+    def test_500_on_recommender_unexpected_exception(self):
+        self.mock_recommend.side_effect = RuntimeError("boom")
+        url = reverse("api:recommend")
+        with patch("recommend_api.api.recommend.log.exception"):
+            resp = self.client.post(url, {"mbid": "A"}, format="json")
+        self.assertEqual(resp.status_code, 500)
+
     def tearDown(self):
         self.patched_recommend.stop()
 

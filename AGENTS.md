@@ -63,7 +63,8 @@ docker-compose exec django python manage.py migrate
 - All state lives in React component state and context for now.
 - The feature matrix (`features_and_index.npz`) is resolved relative to `recommender.py`,
   not the Django project root. It is **not** committed to the repository.
-- Error responses follow `{ "error": { "code": "...", "message": "..." } }`.
+- Error responses should use DRF's default exception format (for example, `{ "detail": "..." }` or field-level validation maps).
+- In API views, prefer raising DRF exceptions (`ValidationError`, `NotFound`, `APIException`, or a small `APIException` subclass for custom status codes like 503) over manually building error `Response` payloads.
 - List responses follow the DRF pagination shape `{ count, next, previous, results }`.
 - All resource objects include a `links` field (HATEOAS) with URLs to related endpoints.
 - Collections can also include a `links` field to tell the client exactly what sub-collections, filters, or specific actions are available without requiring them to read hardcoded external documentation.

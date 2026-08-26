@@ -1,6 +1,6 @@
 import logging, math
 from drf_spectacular.utils import extend_schema
-from rest_framework import status
+from rest_framework.exceptions import APIException, NotFound, ValidationError
 from rest_framework.generics import GenericAPIView
 from rest_framework.parsers import JSONParser, FormParser
 from rest_framework.response import Response
@@ -9,6 +9,12 @@ from recommend_api.serializers import *
 import recommend_api.services.recommender as rec
 
 log = logging.getLogger(__name__)
+
+
+class RecommenderDataUnavailable(APIException):
+    status_code = 503
+    default_detail = "Recommendation data unavailable."
+    default_code = "service_unavailable"
 
 
 class RecommendView(GenericAPIView):
@@ -26,10 +32,7 @@ class RecommendView(GenericAPIView):
         serializer.is_valid(raise_exception=True)
         target_mbid: str = serializer.validated_data.get("mbid")
         if not target_mbid:
-            return Response(
-                {"detail": "Missing 'mbid' parameter."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
+            raise ValidationError("Missing 'mbid' parameter.")
 
         listened_mbids: list = serializer.validated_data.get("listened_mbids", [])
         filters: dict = serializer.validated_data.get("filters", {})
@@ -49,9 +52,7 @@ class RecommendView(GenericAPIView):
             ).prefetch_related("artists").get(musicbrainz_recordingid=target_mbid)
             target_artist: Artist = target_track.artists.first()
         except Track.DoesNotExist:
-            return Response(
-                {"detail": "Target track not found"}, status=status.HTTP_404_NOT_FOUND
-            )
+            raise NotFound("Target track not found")
 
         # Get the recommendations dict, ask for a large number of similar tracks (50)
         # so we can have a buffer in case we need to filter the data
@@ -71,19 +72,14 @@ class RecommendView(GenericAPIView):
             top_tracks = recommendations["top_tracks"]
         except ValueError as e:
             # MBID not found in feature matrix
-            return Response({"detail": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+            raise ValidationError(str(e))
         except FileNotFoundError as e:
             # Feature matrix data couldn't be loaded from disk
-            return Response(
-                {"detail": str(e)}, status=status.HTTP_503_SERVICE_UNAVAILABLE
-            )
+            raise RecommenderDataUnavailable(detail=str(e))
         except Exception as e:
             # Any other error
             log.exception(f"Unexpected error in similar_tracks: {e}")
-            return Response(
-                {"detail": f"Unexpected error: {e}"},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            )
+            raise APIException("Unexpected error while generating recommendations.")
 
         # Build the QuerySet for the similar track data and create an index based on MBID
         top_mbids = [t["mbid"] for t in top_tracks]
