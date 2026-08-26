@@ -18,6 +18,13 @@ class RecommenderDataUnavailable(APIException):
 
 
 class RecommendView(GenericAPIView):
+    """
+    Recommendation endpoint for similar tracks.
+
+    Expects a target track MBID and optional filters/weights in the request body.
+    Returns the target track, a list of similar tracks, and recommendation stats.
+    """
+
     serializer_class = RecommendRequestSerializer
     parser_classes = [JSONParser, FormParser]
 

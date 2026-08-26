@@ -14,7 +14,8 @@ log = logging.getLogger(__name__)
 
 
 class SearchView(APIView):
-    """Search endpoint for tracks, albums and artists.
+    """
+    Search endpoint for tracks, albums and artists.
 
     This view accepts a free-text query via the `q` query parameter and returns
     a list of matching objects (`track`, `artist` or `album`).
