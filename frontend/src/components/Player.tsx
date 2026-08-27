@@ -288,28 +288,26 @@ export default function Player({ ref }: PlayerProps) {
 
     return (
       <div className="player__recommendations">
-        <div className="player__recommendations-content">
-          <h4 className="heading">Up Next:</h4>
-          {recState.isLoading ? (
-            <TrackListSkeleton count={1} variant="list" />
-          ) : (
-            <TrackList
-              tracks={firstRecList}
-              onPlay={(track) => { playTrack(track) }}
-              variant="list"
-            />
-          )}
-          <h4 className="heading">Other Recommendations:</h4>
-          {recState.isLoading ? (
-            <TrackListSkeleton count={numSkeletons} variant="list" />
-          ) : (
-            <TrackList
-              tracks={otherRec}
-              onPlay={(track) => { playTrack(track) }}
-              variant="list"
-            />
-          )}
-        </div>
+        <h4 className="heading">Up Next:</h4>
+        {recState.isLoading ? (
+          <TrackListSkeleton count={1} variant="list" />
+        ) : (
+          <TrackList
+            tracks={firstRecList}
+            onPlay={(track) => { playTrack(track) }}
+            variant="list"
+          />
+        )}
+        <h4 className="heading">Other Recommendations:</h4>
+        {recState.isLoading ? (
+          <TrackListSkeleton count={numSkeletons} variant="list" />
+        ) : (
+          <TrackList
+            tracks={otherRec}
+            onPlay={(track) => { playTrack(track) }}
+            variant="list"
+          />
+        )}
       </div>
     );
   };

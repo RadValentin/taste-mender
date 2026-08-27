@@ -87,17 +87,12 @@
 /* Recommendations tab */
 .player__recommendations {
   position: relative;
-  overflow: hidden;
+  overflow: auto;
+  padding: 1rem;
 
   & .track-item {
     margin-bottom: .5rem;
   }
-}
-
-.player__recommendations-content {
-  overflow: auto;
-  height: 100%;
-  padding: 1rem;
 }
 
 /* Footer */
