@@ -12,7 +12,7 @@ cycler==0.12.1
 debugpy==1.8.15
 decorator==5.2.1
 dj-database-url==3.0.1
-Django==5.2.7
+Django==5.2.16
 django-cors-headers==4.9.0
 django-extensions==4.1
 django-filter==26.1
