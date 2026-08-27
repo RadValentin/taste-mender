@@ -132,6 +132,12 @@ class RecommendAPITests(APITestCase):
         resp = self.client.post(url, {"mbid": "A"}, format="json")
         self.assertEqual(resp.status_code, 503)
 
+    def test_503_on_recommender_attribute_error(self):
+        self.mock_recommend.side_effect = AttributeError("STORE not initialized")
+        url = reverse("api:recommend")
+        resp = self.client.post(url, {"mbid": "A"}, format="json")
+        self.assertEqual(resp.status_code, 503)
+
     def test_500_on_recommender_unexpected_exception(self):
         self.mock_recommend.side_effect = RuntimeError("boom")
         url = reverse("api:recommend")

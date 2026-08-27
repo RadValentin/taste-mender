@@ -80,8 +80,8 @@ class RecommendView(GenericAPIView):
         except ValueError as e:
             # MBID not found in feature matrix
             raise ValidationError(str(e))
-        except FileNotFoundError as e:
-            # Feature matrix data couldn't be loaded from disk
+        except (FileNotFoundError, AttributeError) as e:
+            # Feature matrix is unavailable (missing file or uninitialized store state).
             raise RecommenderDataUnavailable(detail=str(e))
         except Exception as e:
             # Any other error
