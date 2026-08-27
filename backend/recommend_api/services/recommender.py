@@ -7,7 +7,7 @@ import numpy as np
 import numpy.typing as npt
 from django.conf import settings
 from sklearn.metrics.pairwise import cosine_similarity
-from typing import NotRequired, TypedDict
+from typing import Any, NotRequired, TypedDict
 
 log = logging.getLogger(__name__)
 
@@ -28,6 +28,14 @@ class RecommendationStats(TypedDict):
     std: float
     p95: float
     max: float
+
+
+class RecommendationResult(TypedDict):
+    target_year: int
+    target_genre_dortmund: int
+    target_genre_rosamerica: int
+    top_tracks: list[RecommendationTrack]
+    stats: RecommendationStats
 
 class FeatureStore:
     """
@@ -117,7 +125,7 @@ STORE = FeatureStore(os.path.join(
     os.path.dirname(__file__), "../..", settings.FEATURE_MATRIX_FILENAME
 ))
 
-def recommend(target_mbid, options=None):
+def recommend(target_mbid: str, options: dict[str, Any] | None = None) -> RecommendationResult:
     """
     Returns k tracks that have similar features to a target track identified by MBID.
 
@@ -165,8 +173,8 @@ def recommend(target_mbid, options=None):
     target_index = int(idxs[0])
 
     target_year = int(STORE.years[target_index])
-    target_genre_dortmund = STORE.genre_dortmund[target_index]
-    target_genre_rosamerica = STORE.genre_rosamerica[target_index]
+    target_genre_dortmund = int(STORE.genre_dortmund[target_index])
+    target_genre_rosamerica = int(STORE.genre_rosamerica[target_index])
 
     # Filter the data to a subset of tracks which are in a += 10 year interval, same genre and
     # aren't excluded
@@ -231,19 +239,21 @@ def recommend(target_mbid, options=None):
             }
         )
 
+    stats: RecommendationStats = {
+        "candidate_count": len(mb),
+        "search_time": float(end - start),
+        "mean": float(similarities.mean()),
+        "std": float(similarities.std()),
+        "p95": float(np.quantile(similarities, 0.95)),
+        "max": float(similarities.max()),
+    }
+
     return {
         "target_year": target_year,
         "target_genre_dortmund": target_genre_dortmund,
         "target_genre_rosamerica": target_genre_rosamerica,
         "top_tracks": top_tracks,
-        "stats": {
-            "candidate_count": len(mb),
-            "search_time": float(end - start),
-            "mean": float(similarities.mean()),
-            "std": float(similarities.std()),
-            "p95": float(np.quantile(similarities, 0.95)),
-            "max": float(similarities.max()),
-        },
+        "stats": stats,
     }
 
 
