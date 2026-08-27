@@ -34,6 +34,14 @@
 
 .player__overlay--minimized {
   height: 0;
+
+  /* Hide scrollbars when player being minimized to prevent content shift from homepage
+  scrollbar being enabled */
+  & .player__filters,
+  & .player__iframe,
+  & .player__recommendations {
+    overflow: hidden;
+  }
 }
 
 .player__filters,
