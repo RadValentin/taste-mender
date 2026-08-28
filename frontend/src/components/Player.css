@@ -6,6 +6,7 @@
   height: var(--player-height);
   background: linear-gradient(180deg, #b8b3a8 0%, #8a847a 55%, #5a564e 100%);
   transition: bottom .3s;
+  z-index: 2;
 
   &.player--empty {
     bottom: calc(var(--player-height) * -1);
@@ -17,8 +18,13 @@
   }
 }
 
+/* Overlay - Toggle-able part of player that expands to fill the screen */
 .player__overlay {
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr;
+  grid-template-rows: auto 1fr;
+  grid-template-areas: "filters video recommendations"
+                       "filters stats recommendations";
   position: absolute;
   left: 0;
   right: 0;
@@ -26,6 +32,10 @@
   background: linear-gradient(180deg, #4a4d52 0%, #2e3136 50%, #1a1c1f 100%);
   transition: height 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
+
+  & > * {
+    max-width: 100%;;
+  }
 }
 
 .player__overlay--maximized {
@@ -38,32 +48,40 @@
   /* Hide scrollbars when player being minimized to prevent content shift from homepage
   scrollbar being enabled */
   & .player__filters,
-  & .player__iframe,
+  & .player__stats,
   & .player__recommendations {
     overflow: hidden;
   }
 }
 
-.player__filters,
-.player__recommendations {
-  flex: 1;
+/* Filters panel */
+.player__filters {
+  grid-area: filters;
   overflow: auto;
 }
 
-/* Video & stats tab */
-.player__iframe {
+/* Video panel */
+.player__video {
+  grid-area: video;
   display: flex;
   flex-direction: column;
   flex: 1.5;
   margin-top: 1rem;
 
   & iframe {
+    aspect-ratio: 16 / 9;
     width: 100%;
     margin-bottom: 1rem;
   }
 }
 
+/* Stats panel */
 .player__stats {
+  grid-area: stats;
+  overflow: auto;
+}
+
+.player__stats-container {
   display: flex;
   flex-wrap: wrap;
   gap: .5rem;
@@ -92,19 +110,78 @@
   margin: 0;
 }
 
-/* Recommendations tab */
+/* Recommendations panel */
 .player__recommendations {
+  grid-area: recommendations;
   position: relative;
-  overflow: auto;
   padding: 1rem;
+  overflow: auto;
 
   & .track-item {
     margin-bottom: .5rem;
   }
 }
 
-/* Footer */
-.player__footer-bar {
+/* Mobile tabs */
+.player__mobile-tabs {
+  display: none;
+
+  & button {
+    cursor: pointer;
+  }
+
+  & button.is-active {
+    background-color: red;
+  }
+}
+
+@media (width < 768px) {
+  .player__overlay {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-areas: "video"
+                         "tabs"
+                         "panel";
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .player__overlay--maximized {
+    /* On small screens, overlap the header to gain extra vspace */
+    height: calc(100dvh - var(--player-height));
+  }
+
+  .player__mobile-tabs {
+    grid-area: tabs;
+    display: flex;
+  }
+
+  .player__video {
+    margin-top: 0;
+  }
+
+  .player__stats {
+    padding: 1rem;
+  }
+
+  .player__filters,
+  .player__stats,
+  .player__recommendations {
+    grid-area: panel;
+  }
+
+  .player__mobile-panel {
+    display: none;
+    min-height: 0;
+  }
+
+  .player__mobile-panel.is-active {
+    display: block;
+  }
+}
+
+/* Sticky footer */
+.player__footer {
   width: calc(100dvw - var(--scrollbar-width));
   padding: 10px;
   display: flex;

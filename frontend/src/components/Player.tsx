@@ -32,6 +32,8 @@ type RecState = {
   filtersPayload: FiltersPayload
 }
 
+type MobileTab = "recommendations" | "filters" | "stats";
+
 declare global {
   interface Window {
     YT?: any;
@@ -77,12 +79,13 @@ const defaultRecState: RecState = {
 export default function Player({ ref }: PlayerProps) {
   // Child refs
   const iframeRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const ytPlayerRef = useRef<HTMLDivElement | null>(null);
   // State refs - needed for methods called by YT player events (closure)
   const recListRef = useRef<SimilarTrack[]>([]);
   const recIDsRef = useRef<string[]>([]);
   const recPayloadRef = useRef({});
   // Component state
+  const [mobileTab, setMobileTab] = useState<MobileTab>("recommendations");
   const [playerState, setPlayerState] = useState<PlayerState>(defaultPlayerState);
   const [recState, setRecState] = useState<RecState>(defaultRecState);
   const {state: globalState, dispatch} = usePlayerContext();
@@ -99,9 +102,9 @@ export default function Player({ ref }: PlayerProps) {
 
     (async () => {
       await loadYouTubeIframeAPI();
-      if (!mounted || !containerRef.current) return;
+      if (!mounted || !ytPlayerRef.current) return;
 
-      iframeRef.current = new window.YT.Player(containerRef.current, {
+      iframeRef.current = new window.YT.Player(ytPlayerRef.current, {
         height: "360",
         width: "640",
         playerVars: {
@@ -241,7 +244,7 @@ export default function Player({ ref }: PlayerProps) {
     const fallbackText = track.title?.charAt(0)?.toUpperCase() ?? "♪"
 
     return (
-      <div className="player__footer-bar">
+      <div className="player__footer">
         <div className="player__coverart" aria-hidden="true">
           <ImageLoader src={artUrl} alt="cover art" fallback={fallbackText} />
         </div>
@@ -287,7 +290,7 @@ export default function Player({ ref }: PlayerProps) {
     const numSkeletons = recState.similarList.length || 9;
 
     return (
-      <div className="player__recommendations">
+      <div className={`player__recommendations player__mobile-panel ${mobileTab === "recommendations" ? "is-active" : ""}`}>
         <h4 className="heading">Up Next:</h4>
         {recState.isLoading ? (
           <TrackListSkeleton count={1} variant="list" />
@@ -320,15 +323,39 @@ export default function Player({ ref }: PlayerProps) {
   return (
     <div className={playerClass}>
       <div className={overlayClass}>
-        <div className="player__filters">
+        <div className={`player__filters player__mobile-panel ${mobileTab === "filters" ? "is-active" : ""}`}>
           <Filters onChange={onFiltersChange} />
         </div>
-        <div className="player__iframe">
-          <div ref={containerRef}></div>
+        <div className="player__video">
+          <div ref={ytPlayerRef}></div>
+        </div>
+        <div className="player__mobile-tabs" role="tablist">
+          <button
+            className={mobileTab === "recommendations" ? "is-active" : ""}
+            onClick={() => setMobileTab("recommendations")}
+          >
+            Queue
+          </button>
+
+          <button
+            className={mobileTab === "filters" ? "is-active" : ""}
+            onClick={() => setMobileTab("filters")}
+          >
+            Tune
+          </button>
+
+          <button
+            className={mobileTab === "stats" ? "is-active" : ""}
+            onClick={() => setMobileTab("stats")}
+          >
+            Stats
+          </button>
+        </div>
+        <div className={`player__stats player__mobile-panel ${mobileTab === "stats" ? "is-active" : ""}`}>
           {recState && recState.stats && (
             <>
               <h4 className="heading">Stats</h4>
-              <div className="player__stats">
+              <div className="player__stats-container">
                 <div className="player__stats-box">
                   <p className="player__stats-box-heading">Tracks analyzed</p>
                   <p className="player__stats-box-counter">{Number(recState.stats.candidate_count).toLocaleString()}</p>

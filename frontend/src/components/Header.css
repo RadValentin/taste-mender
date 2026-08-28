@@ -39,6 +39,7 @@
 
 .header__logo-line {
   display: inline;
+  color: var(--text-engraved);
 }
 
 .header__logo-accent {
