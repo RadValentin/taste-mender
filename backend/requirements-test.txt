@@ -38,6 +38,6 @@ sqlparse==0.5.3
 threadpoolctl==3.6.0
 tzdata==2025.2
 uritemplate==4.2.0
-urllib3==2.5.0
+urllib3==2.7.0
 whitenoise==6.11.0
 zstandard==0.24.0
