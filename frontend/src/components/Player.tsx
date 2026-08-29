@@ -278,6 +278,52 @@ export default function Player({ ref }: PlayerProps) {
     );
   };
 
+  const renderStats = () => {
+    return(
+      <>
+        <h4 className="heading">Stats</h4>
+        <div className="player__stats-container">
+          <div className="player__stats-box">
+            <p className="player__stats-box-heading">Tracks analyzed</p>
+            <p className="player__stats-box-counter">{Number(recState.stats.candidate_count).toLocaleString()}</p>
+          </div>
+          <div className="player__stats-box">
+            <p className="player__stats-box-heading">Best match</p>
+            <p className="player__stats-box-counter">
+              {Math.floor(Number(recState.stats.max) * 100)}%
+            </p>
+          </div>
+          <div className="player__stats-box">
+            <p className="player__stats-box-heading">Average match</p>
+            <p className="player__stats-box-counter">
+              {Math.floor(Number(recState.stats.mean) * 100)}%
+            </p>
+          </div>
+          <div className="player__stats-box">
+            <p className="player__stats-box-heading">Top-tier match (95th percentile)</p>
+            <p className="player__stats-box-counter">
+              {Math.floor(Number(recState.stats.p95) * 100)}%
+            </p>
+          </div>
+          <div className="player__stats-box">
+            <p className="player__stats-box-heading">Score spread (STD)</p>
+            <p className="player__stats-box-counter">{Number(recState.stats.std).toFixed(3)}</p>
+          </div>
+          <div className="player__stats-box">
+            <p className="player__stats-box-heading">Search time</p>
+            <p className="player__stats-box-counter">
+              {Number(recState.stats.search_time * 1000).toFixed(3)}ms
+            </p>
+          </div>
+          <div className="player__stats-box">
+            <p className="player__stats-box-heading">Listened tracks</p>
+            <p className="player__stats-box-counter">{recState.listenedMbids.length}</p>
+          </div>
+        </div>
+      </>
+    )
+  }
+
   const renderRecommendations = () => {
     const hasRecommendations = !!recState.similarList && recState.similarList.length > 0;
 
@@ -334,7 +380,7 @@ export default function Player({ ref }: PlayerProps) {
             className={mobileTab === "recommendations" ? "is-active" : ""}
             onClick={() => setMobileTab("recommendations")}
           >
-            Queue
+            Up Next
           </button>
 
           <button
@@ -352,49 +398,7 @@ export default function Player({ ref }: PlayerProps) {
           </button>
         </div>
         <div className={`player__stats player__mobile-panel ${mobileTab === "stats" ? "is-active" : ""}`}>
-          {recState && recState.stats && (
-            <>
-              <h4 className="heading">Stats</h4>
-              <div className="player__stats-container">
-                <div className="player__stats-box">
-                  <p className="player__stats-box-heading">Tracks analyzed</p>
-                  <p className="player__stats-box-counter">{Number(recState.stats.candidate_count).toLocaleString()}</p>
-                </div>
-                <div className="player__stats-box">
-                  <p className="player__stats-box-heading">Best match</p>
-                  <p className="player__stats-box-counter">
-                    {Math.floor(Number(recState.stats.max) * 100)}%
-                  </p>
-                </div>
-                <div className="player__stats-box">
-                  <p className="player__stats-box-heading">Average match</p>
-                  <p className="player__stats-box-counter">
-                    {Math.floor(Number(recState.stats.mean) * 100)}%
-                  </p>
-                </div>
-                <div className="player__stats-box">
-                  <p className="player__stats-box-heading">Top-tier match (95th percentile)</p>
-                  <p className="player__stats-box-counter">
-                    {Math.floor(Number(recState.stats.p95) * 100)}%
-                  </p>
-                </div>
-                <div className="player__stats-box">
-                  <p className="player__stats-box-heading">Score spread (STD)</p>
-                  <p className="player__stats-box-counter">{Number(recState.stats.std).toFixed(3)}</p>
-                </div>
-                <div className="player__stats-box">
-                  <p className="player__stats-box-heading">Search time</p>
-                  <p className="player__stats-box-counter">
-                    {Number(recState.stats.search_time * 1000).toFixed(3)}ms
-                  </p>
-                </div>
-                <div className="player__stats-box">
-                  <p className="player__stats-box-heading">Listened tracks</p>
-                  <p className="player__stats-box-counter">{recState.listenedMbids.length}</p>
-                </div>
-              </div>
-            </>
-          )}
+          {recState && recState.stats && renderStats()}
         </div>
         {renderRecommendations()}
       </div>
