@@ -35,7 +35,7 @@ export default function AppLayout() {
   }, [playerState.isMaximized]);
 
   function onPlay(track: Track) {
-    playerRef.current?.loadAndPlay(track);
+    playerRef.current?.loadAndPlay(track, true);
   }
 
   return (

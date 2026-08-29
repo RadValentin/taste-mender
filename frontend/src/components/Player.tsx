@@ -10,7 +10,7 @@ import { usePlayerContext } from "../PlayerContext.tsx";
 import "./Player.css";
 
 export interface PlayerRef {
-  loadAndPlay: (track: Track) => void,
+  loadAndPlay: (track: Track, shouldMaximise: boolean) => void,
   reset: () => void
 }
 
@@ -145,13 +145,18 @@ export default function Player({ ref }: PlayerProps) {
 
   // Methods callable by parent component
   useImperativeHandle(ref, () => ({
-    // Play a track
-    loadAndPlay: (track: Track) => {
+    /**
+     * @param track The track to play.
+     * @param shouldMaximise Whether to maximize the player when the track starts.
+     */
+    loadAndPlay: (track: Track, shouldMaximise: boolean = false) => {
       setPlayerState(() => ({...defaultPlayerState, track}));
       setRecState(defaultRecState);
-      playTrack(track);
+      playTrack(track, shouldMaximise);
     },
-    // Stop playback and reset state
+    /**
+     * Stops playback and resets the player state.
+     */
     reset: () => {
       iframeRef.current?.stopVideo();
       setPlayerState(defaultPlayerState);
@@ -186,7 +191,13 @@ export default function Player({ ref }: PlayerProps) {
     });
   };
 
-  const playTrack = (track: Track) => {
+  /**
+   * Loads and plays a track.
+   *
+   * @param track The track to load and play.
+   * @param shouldMaximize Whether the player should open in its expanded/maximized state.
+   */
+  const playTrack = (track: Track, shouldMaximize: boolean = false) => {
     console.log("I've been told to play this track:", track);
     getTrackSources(track.mbid).then(sources => {
       if (!sources[0]) {
@@ -196,7 +207,10 @@ export default function Player({ ref }: PlayerProps) {
 
       iframeRef.current.loadVideoById({ videoId: sources[0].id });
       setPlayerState(playerState => ({ ...playerState, track }));
-      dispatch({type: "open"});
+
+      if (shouldMaximize) {
+        dispatch({type: "open"});
+      }
 
       setRecState(recState => ({...recState, isLoading: true}));
       const recommendPayload: RecommendRequest = {
