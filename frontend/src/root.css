@@ -138,7 +138,7 @@ a {
   font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  padding: 8px 16px;
+  padding: 0.5rem 1rem;
   border-radius: var(--r-button);
   border: none;
   cursor: pointer;

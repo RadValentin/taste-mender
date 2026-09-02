@@ -64,8 +64,8 @@
 .player__video {
   grid-area: video;
   display: flex;
-  flex-direction: column;
-  flex: 1.5;
+  align-items: flex-start;
+  justify-content: center;
   margin-top: 1rem;
 
   & iframe {
@@ -143,6 +143,12 @@
   }
 }
 
+@media (width < 992px) {
+  .player__overlay {
+    grid-template-columns: .8fr 1.2fr 1fr;
+  }
+}
+
 @media (width < 768px) {
   .player__overlay {
     grid-template-columns: 1fr;
@@ -168,9 +174,11 @@
 
   .player__video {
     margin-top: 0;
+    max-height: 30vh;
 
     & iframe {
       margin-bottom: 0;
+      max-height: 30vh;
     }
   }
 
@@ -272,4 +280,24 @@
 
 .player__controls button + button {
   margin-left: .5rem;
+}
+
+@media (width < 768px) {
+  .player__controls button {
+    font-size: 1rem;
+    padding: 0.75rem .75rem;
+  }
+
+  .player__coverart {
+    width: 44px;
+    height: 44px;
+  }
+
+  .player__title {
+    font-size: 0.9rem;
+  }
+
+  .player__artist-album {
+    font-size: 0.75rem;
+  }
 }

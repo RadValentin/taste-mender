@@ -326,7 +326,7 @@ export default function Player({ ref }: PlayerProps) {
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Search time</p>
             <p className="player__stats-box-counter">
-              {Number(recState.stats.search_time * 1000).toFixed(3)}ms
+              {Number(recState.stats.search_time * 1000).toFixed(0)}ms
             </p>
           </div>
           <div className="player__stats-box">
