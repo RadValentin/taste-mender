@@ -160,10 +160,11 @@
 
   .player__overlay {
     grid-template-columns: 1fr;
-    grid-template-rows: auto auto minmax(0, 1fr);
+    grid-template-rows: auto auto max-content;
     grid-template-areas: "video"
                          "tabs"
                          "panel";
+    align-content: start;
     overflow-x: hidden;
     overflow-y: auto;
   }
