@@ -67,10 +67,6 @@
 }
 
 @media (width < 768px) {
-  .filters {
-    padding: 0 1rem 1rem;
-  }
-
   .filters__label {
     width: calc(50% - .25rem);
   }

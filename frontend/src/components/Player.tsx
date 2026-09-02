@@ -295,7 +295,7 @@ export default function Player({ ref }: PlayerProps) {
   const renderStats = () => {
     return(
       <>
-        <h4 className="heading">Stats</h4>
+        <h4 className="heading mobile-hidden">Stats</h4>
         <div className="player__stats-container">
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Tracks analyzed</p>
@@ -391,21 +391,21 @@ export default function Player({ ref }: PlayerProps) {
         </div>
         <div className="player__mobile-tabs" role="tablist">
           <button
-            className={mobileTab === "recommendations" ? "is-active" : ""}
+            className={`btn btn-metal ${mobileTab === "recommendations" ? "pressed" : ""}`}
             onClick={() => setMobileTab("recommendations")}
           >
-            Up Next
+            Queue
           </button>
 
           <button
-            className={mobileTab === "filters" ? "is-active" : ""}
+            className={`btn btn-metal ${mobileTab === "filters" ? "pressed" : ""}`}
             onClick={() => setMobileTab("filters")}
           >
             Tune
           </button>
 
           <button
-            className={mobileTab === "stats" ? "is-active" : ""}
+            className={`btn btn-metal ${mobileTab === "stats" ? "pressed" : ""}`}
             onClick={() => setMobileTab("stats")}
           >
             Stats

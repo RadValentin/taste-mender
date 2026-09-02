@@ -124,9 +124,18 @@
 /* Mobile tabs */
 .player__mobile-tabs {
   display: none;
+  gap: 0.5rem;
+  padding: 0.5rem 0.75rem 0.6rem;
+  background: linear-gradient(180deg, #6b6e73 0%, #4d5055 100%);
+  border-top: 1px solid rgba(255,255,255,0.18);
+  border-bottom: 1px solid rgba(0,0,0,0.45);
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,0.08),
+    inset 0 -1px 0 rgba(0,0,0,0.35);
 
   & button {
     cursor: pointer;
+    width: clamp(100px, 30% + 0.1vw, 200px);
   }
 
   & button.is-active {
@@ -153,10 +162,16 @@
   .player__mobile-tabs {
     grid-area: tabs;
     display: flex;
+    justify-content: center;
+    align-items: center;
   }
 
   .player__video {
     margin-top: 0;
+
+    & iframe {
+      margin-bottom: 0;
+    }
   }
 
   .player__stats {
