@@ -70,4 +70,8 @@
   .filters__label {
     width: calc(50% - .25rem);
   }
+
+  .filters__label--full {
+    width: 100%;
+  }
 }
