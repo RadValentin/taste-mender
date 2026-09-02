@@ -120,6 +120,12 @@
     min-width: initial;
   }
 
+  .header__search-box {
+    & input {
+      font-size: 0.875rem;
+    }
+  }
+
   .header__logo {
     line-height: 1;
     font-size: calc(var(--font-size-app-title) * .75);
