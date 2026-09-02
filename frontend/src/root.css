@@ -41,6 +41,8 @@
   /* UI element sizes */
   --header-height: 80px;
   --player-height: 80px;
+  --header-height-mobile: 66px;
+  --player-height-mobile: 66px;
   --carousel-item-base-width: 180px;
   --carousel-item-mobile-width: 130px;
 
@@ -116,6 +118,16 @@ a {
   padding: 1rem;
 }
 
+.mobile-hidden {
+  display: block;
+}
+
+@media (width < 768px) {
+  .mobile-hidden {
+    display: none !important;
+  }
+}
+
 /* Buttons */
 
 .btn {
@@ -125,9 +137,10 @@ a {
   gap: 6px;
   font-size: 0.8rem;
   font-family: var(--font-mono);
+  font-weight: 700;
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  padding: 8px 16px;
+  padding: 0.5rem 1rem;
   border-radius: var(--r-button);
   border: none;
   cursor: pointer;
@@ -175,7 +188,6 @@ a {
               0 0 0 1px #4a2a08,
               0 0 12px rgba(255, 179, 71, 0.35);
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.3);
-  font-weight: 700;
 
   &:hover {
     color: #3a1d05;
@@ -281,4 +293,16 @@ a {
 .main:has(+ .player--empty) {
   margin: var(--header-height) 0 0;
   min-height: calc(100dvh - var(--header-height));
+}
+
+@media (width < 768px) {
+  .main {
+    margin: var(--header-height-mobile) 0 var(--player-height-mobile);
+    min-height: calc(100dvh - (var(--header-height-mobile) + var(--player-height-mobile)));
+  }
+
+  .main:has(+ .player--empty) {
+    margin: var(--header-height-mobile) 0 0;
+    min-height: calc(100dvh - var(--header-height-mobile));
+  }
 }

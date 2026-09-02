@@ -10,7 +10,7 @@ import { usePlayerContext } from "../PlayerContext.tsx";
 import "./Player.css";
 
 export interface PlayerRef {
-  loadAndPlay: (track: Track) => void,
+  loadAndPlay: (track: Track, shouldMaximise: boolean) => void,
   reset: () => void
 }
 
@@ -31,6 +31,8 @@ type RecState = {
   listenedMbids: string[],
   filtersPayload: FiltersPayload
 }
+
+type MobileTab = "recommendations" | "filters" | "stats";
 
 declare global {
   interface Window {
@@ -77,12 +79,13 @@ const defaultRecState: RecState = {
 export default function Player({ ref }: PlayerProps) {
   // Child refs
   const iframeRef = useRef<any>(null);
-  const containerRef = useRef<HTMLDivElement | null>(null);
+  const ytPlayerRef = useRef<HTMLDivElement | null>(null);
   // State refs - needed for methods called by YT player events (closure)
   const recListRef = useRef<SimilarTrack[]>([]);
   const recIDsRef = useRef<string[]>([]);
   const recPayloadRef = useRef({});
   // Component state
+  const [mobileTab, setMobileTab] = useState<MobileTab>("recommendations");
   const [playerState, setPlayerState] = useState<PlayerState>(defaultPlayerState);
   const [recState, setRecState] = useState<RecState>(defaultRecState);
   const {state: globalState, dispatch} = usePlayerContext();
@@ -99,9 +102,9 @@ export default function Player({ ref }: PlayerProps) {
 
     (async () => {
       await loadYouTubeIframeAPI();
-      if (!mounted || !containerRef.current) return;
+      if (!mounted || !ytPlayerRef.current) return;
 
-      iframeRef.current = new window.YT.Player(containerRef.current, {
+      iframeRef.current = new window.YT.Player(ytPlayerRef.current, {
         height: "360",
         width: "640",
         playerVars: {
@@ -142,13 +145,18 @@ export default function Player({ ref }: PlayerProps) {
 
   // Methods callable by parent component
   useImperativeHandle(ref, () => ({
-    // Play a track
-    loadAndPlay: (track: Track) => {
+    /**
+     * @param track The track to play.
+     * @param shouldMaximise Whether to maximize the player when the track starts.
+     */
+    loadAndPlay: (track: Track, shouldMaximise: boolean = false) => {
       setPlayerState(() => ({...defaultPlayerState, track}));
       setRecState(defaultRecState);
-      playTrack(track);
+      playTrack(track, shouldMaximise);
     },
-    // Stop playback and reset state
+    /**
+     * Stops playback and resets the player state.
+     */
     reset: () => {
       iframeRef.current?.stopVideo();
       setPlayerState(defaultPlayerState);
@@ -183,7 +191,13 @@ export default function Player({ ref }: PlayerProps) {
     });
   };
 
-  const playTrack = (track: Track) => {
+  /**
+   * Loads and plays a track.
+   *
+   * @param track The track to load and play.
+   * @param shouldMaximize Whether the player should open in its expanded/maximized state.
+   */
+  const playTrack = (track: Track, shouldMaximize: boolean = false) => {
     console.log("I've been told to play this track:", track);
     getTrackSources(track.mbid).then(sources => {
       if (!sources[0]) {
@@ -193,7 +207,10 @@ export default function Player({ ref }: PlayerProps) {
 
       iframeRef.current.loadVideoById({ videoId: sources[0].id });
       setPlayerState(playerState => ({ ...playerState, track }));
-      dispatch({type: "open"});
+
+      if (shouldMaximize) {
+        dispatch({type: "open"});
+      }
 
       setRecState(recState => ({...recState, isLoading: true}));
       const recommendPayload: RecommendRequest = {
@@ -241,7 +258,7 @@ export default function Player({ ref }: PlayerProps) {
     const fallbackText = track.title?.charAt(0)?.toUpperCase() ?? "♪"
 
     return (
-      <div className="player__footer-bar">
+      <div className="player__footer">
         <div className="player__coverart" aria-hidden="true">
           <ImageLoader src={artUrl} alt="cover art" fallback={fallbackText} />
         </div>
@@ -275,6 +292,52 @@ export default function Player({ ref }: PlayerProps) {
     );
   };
 
+  const renderStats = () => {
+    return(
+      <>
+        <h4 className="heading mobile-hidden">Stats</h4>
+        <div className="player__stats-container">
+          <div className="player__stats-box">
+            <p className="player__stats-box-heading">Tracks analyzed</p>
+            <p className="player__stats-box-counter">{Number(recState.stats.candidate_count).toLocaleString()}</p>
+          </div>
+          <div className="player__stats-box">
+            <p className="player__stats-box-heading">Best match</p>
+            <p className="player__stats-box-counter">
+              {Math.floor(Number(recState.stats.max) * 100)}%
+            </p>
+          </div>
+          <div className="player__stats-box">
+            <p className="player__stats-box-heading">Average match</p>
+            <p className="player__stats-box-counter">
+              {Math.floor(Number(recState.stats.mean) * 100)}%
+            </p>
+          </div>
+          <div className="player__stats-box">
+            <p className="player__stats-box-heading">Top-tier match (95th percentile)</p>
+            <p className="player__stats-box-counter">
+              {Math.floor(Number(recState.stats.p95) * 100)}%
+            </p>
+          </div>
+          <div className="player__stats-box">
+            <p className="player__stats-box-heading">Score spread (STD)</p>
+            <p className="player__stats-box-counter">{Number(recState.stats.std).toFixed(3)}</p>
+          </div>
+          <div className="player__stats-box">
+            <p className="player__stats-box-heading">Search time</p>
+            <p className="player__stats-box-counter">
+              {Number(recState.stats.search_time * 1000).toFixed(0)}ms
+            </p>
+          </div>
+          <div className="player__stats-box">
+            <p className="player__stats-box-heading">Listened tracks</p>
+            <p className="player__stats-box-counter">{recState.listenedMbids.length}</p>
+          </div>
+        </div>
+      </>
+    )
+  }
+
   const renderRecommendations = () => {
     const hasRecommendations = !!recState.similarList && recState.similarList.length > 0;
 
@@ -287,29 +350,29 @@ export default function Player({ ref }: PlayerProps) {
     const numSkeletons = recState.similarList.length || 9;
 
     return (
-      <div className="player__recommendations">
-        <div className="player__recommendations-content">
-          <h4 className="heading">Up Next:</h4>
-          {recState.isLoading ? (
-            <TrackListSkeleton count={1} variant="list" />
-          ) : (
-            <TrackList
-              tracks={firstRecList}
-              onPlay={(track) => { playTrack(track) }}
-              variant="list"
-            />
-          )}
-          <h4 className="heading">Other Recommendations:</h4>
-          {recState.isLoading ? (
-            <TrackListSkeleton count={numSkeletons} variant="list" />
-          ) : (
-            <TrackList
-              tracks={otherRec}
-              onPlay={(track) => { playTrack(track) }}
-              variant="list"
-            />
-          )}
-        </div>
+      <div
+        className={`player__recommendations player__mobile-panel ${mobileTab === "recommendations" ? "is-active" : ""}`}
+      >
+        <h4 className="heading">Up Next:</h4>
+        {recState.isLoading ? (
+          <TrackListSkeleton count={1} variant="list" />
+        ) : (
+          <TrackList
+            tracks={firstRecList}
+            onPlay={(track) => { playTrack(track) }}
+            variant="list"
+          />
+        )}
+        <h4 className="heading">Other Recommendations:</h4>
+        {recState.isLoading ? (
+          <TrackListSkeleton count={numSkeletons} variant="list" />
+        ) : (
+          <TrackList
+            tracks={otherRec}
+            onPlay={(track) => { playTrack(track) }}
+            variant="list"
+          />
+        )}
       </div>
     );
   };
@@ -322,54 +385,46 @@ export default function Player({ ref }: PlayerProps) {
   return (
     <div className={playerClass}>
       <div className={overlayClass}>
-        <div className="player__filters">
+        <div
+          className={`player__filters player__mobile-panel ${mobileTab === "filters" ? "is-active" : ""}`}
+        >
           <Filters onChange={onFiltersChange} />
         </div>
-        <div className="player__iframe">
-          <div ref={containerRef}></div>
-          {recState && recState.stats && (
-            <>
-              <h4 className="heading">Stats</h4>
-              <div className="player__stats">
-                <div className="player__stats-box">
-                  <p className="player__stats-box-heading">Tracks analyzed</p>
-                  <p className="player__stats-box-counter">{Number(recState.stats.candidate_count).toLocaleString()}</p>
-                </div>
-                <div className="player__stats-box">
-                  <p className="player__stats-box-heading">Best match</p>
-                  <p className="player__stats-box-counter">
-                    {Math.floor(Number(recState.stats.max) * 100)}%
-                  </p>
-                </div>
-                <div className="player__stats-box">
-                  <p className="player__stats-box-heading">Average match</p>
-                  <p className="player__stats-box-counter">
-                    {Math.floor(Number(recState.stats.mean) * 100)}%
-                  </p>
-                </div>
-                <div className="player__stats-box">
-                  <p className="player__stats-box-heading">Top-tier match (95th percentile)</p>
-                  <p className="player__stats-box-counter">
-                    {Math.floor(Number(recState.stats.p95) * 100)}%
-                  </p>
-                </div>
-                <div className="player__stats-box">
-                  <p className="player__stats-box-heading">Score spread (STD)</p>
-                  <p className="player__stats-box-counter">{Number(recState.stats.std).toFixed(3)}</p>
-                </div>
-                <div className="player__stats-box">
-                  <p className="player__stats-box-heading">Search time</p>
-                  <p className="player__stats-box-counter">
-                    {Number(recState.stats.search_time * 1000).toFixed(3)}ms
-                  </p>
-                </div>
-                <div className="player__stats-box">
-                  <p className="player__stats-box-heading">Listened tracks</p>
-                  <p className="player__stats-box-counter">{recState.listenedMbids.length}</p>
-                </div>
-              </div>
-            </>
-          )}
+        <div className="player__video">
+          <div ref={ytPlayerRef}></div>
+        </div>
+        <div className="player__mobile-tabs" role="group">
+          <button
+            type="button"
+            className={`btn btn-metal ${mobileTab === "recommendations" ? "pressed" : ""}`}
+            aria-pressed={mobileTab === "recommendations"}
+            onClick={() => setMobileTab("recommendations")}
+          >
+            Queue
+          </button>
+
+          <button
+            type="button"
+            className={`btn btn-metal ${mobileTab === "filters" ? "pressed" : ""}`}
+            aria-pressed={mobileTab === "filters"}
+            onClick={() => setMobileTab("filters")}
+          >
+            Tune
+          </button>
+
+          <button
+            type="button"
+            className={`btn btn-metal ${mobileTab === "stats" ? "pressed" : ""}`}
+            aria-pressed={mobileTab === "stats"}
+            onClick={() => setMobileTab("stats")}
+          >
+            Stats
+          </button>
+        </div>
+        <div
+          className={`player__stats player__mobile-panel ${mobileTab === "stats" ? "is-active" : ""}`}
+        >
+          {recState && recState.stats && renderStats()}
         </div>
         {renderRecommendations()}
       </div>

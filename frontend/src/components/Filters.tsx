@@ -127,7 +127,7 @@ export default function Filters({ onChange }: FiltersProps) {
 
   return (
     <div className="filters">
-      <h3 className="heading">Recommendation Settings</h3>
+      <h3 className="heading mobile-hidden">Recommendation Settings</h3>
       <h4 className="heading">Genre & Era</h4>
       <div className="filters__container">
         <label className="filters__label filters__label--inline">
