@@ -198,6 +198,8 @@
   .player__stats,
   .player__recommendations {
     grid-area: panel;
+    overflow: visible;
+    max-width: 100vw;
   }
 
   .player__mobile-panel {
