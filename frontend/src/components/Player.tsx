@@ -350,7 +350,9 @@ export default function Player({ ref }: PlayerProps) {
     const numSkeletons = recState.similarList.length || 9;
 
     return (
-      <div className={`player__recommendations player__mobile-panel ${mobileTab === "recommendations" ? "is-active" : ""}`}>
+      <div
+        className={`player__recommendations player__mobile-panel ${mobileTab === "recommendations" ? "is-active" : ""}`}
+      >
         <h4 className="heading">Up Next:</h4>
         {recState.isLoading ? (
           <TrackListSkeleton count={1} variant="list" />
@@ -383,35 +385,45 @@ export default function Player({ ref }: PlayerProps) {
   return (
     <div className={playerClass}>
       <div className={overlayClass}>
-        <div className={`player__filters player__mobile-panel ${mobileTab === "filters" ? "is-active" : ""}`}>
+        <div
+          className={`player__filters player__mobile-panel ${mobileTab === "filters" ? "is-active" : ""}`}
+        >
           <Filters onChange={onFiltersChange} />
         </div>
         <div className="player__video">
           <div ref={ytPlayerRef}></div>
         </div>
-        <div className="player__mobile-tabs" role="tablist">
+        <div className="player__mobile-tabs" role="group">
           <button
+            type="button"
             className={`btn btn-metal ${mobileTab === "recommendations" ? "pressed" : ""}`}
+            aria-pressed={mobileTab === "recommendations"}
             onClick={() => setMobileTab("recommendations")}
           >
             Queue
           </button>
 
           <button
+            type="button"
             className={`btn btn-metal ${mobileTab === "filters" ? "pressed" : ""}`}
+            aria-pressed={mobileTab === "filters"}
             onClick={() => setMobileTab("filters")}
           >
             Tune
           </button>
 
           <button
+            type="button"
             className={`btn btn-metal ${mobileTab === "stats" ? "pressed" : ""}`}
+            aria-pressed={mobileTab === "stats"}
             onClick={() => setMobileTab("stats")}
           >
             Stats
           </button>
         </div>
-        <div className={`player__stats player__mobile-panel ${mobileTab === "stats" ? "is-active" : ""}`}>
+        <div
+          className={`player__stats player__mobile-panel ${mobileTab === "stats" ? "is-active" : ""}`}
+        >
           {recState && recState.stats && renderStats()}
         </div>
         {renderRecommendations()}
