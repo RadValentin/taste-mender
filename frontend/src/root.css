@@ -41,6 +41,8 @@
   /* UI element sizes */
   --header-height: 80px;
   --player-height: 80px;
+  --header-height-mobile: 66px;
+  --player-height-mobile: 66px;
   --carousel-item-base-width: 180px;
   --carousel-item-mobile-width: 130px;
 
@@ -291,4 +293,16 @@ a {
 .main:has(+ .player--empty) {
   margin: var(--header-height) 0 0;
   min-height: calc(100dvh - var(--header-height));
+}
+
+@media (width < 768px) {
+  .main {
+    margin: var(--header-height-mobile) 0 var(--player-height-mobile);
+    min-height: calc(100dvh - (var(--header-height-mobile) + var(--player-height-mobile)));
+  }
+
+  .main:has(+ .player--empty) {
+    margin: var(--header-height-mobile) 0 0;
+    min-height: calc(100dvh - var(--header-height-mobile));
+  }
 }

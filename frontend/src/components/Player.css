@@ -150,6 +150,14 @@
 }
 
 @media (width < 768px) {
+  .player {
+    height: var(--player-height-mobile);
+  }
+
+  .player--empty {
+    bottom: calc(var(--player-height-mobile) * -1);
+  }
+
   .player__overlay {
     grid-template-columns: 1fr;
     grid-template-rows: auto auto minmax(0, 1fr);
@@ -162,7 +170,7 @@
 
   .player__overlay--maximized {
     /* On small screens, overlap the header to gain extra vspace */
-    height: calc(100dvh - var(--player-height));
+    height: calc(100dvh - var(--player-height-mobile));
   }
 
   .player__mobile-tabs {
