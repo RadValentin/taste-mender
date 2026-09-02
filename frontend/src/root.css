@@ -116,6 +116,16 @@ a {
   padding: 1rem;
 }
 
+.mobile-hidden {
+  display: block;
+}
+
+@media (width < 768px) {
+  .mobile-hidden {
+    display: none !important;
+  }
+}
+
 /* Buttons */
 
 .btn {
