@@ -104,8 +104,11 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="search-page container">
-      {renderContent()}
-    </div>
+    <>
+      <title>Search | TasteMender</title>
+      <div className="search-page container">
+        {renderContent()}
+      </div>
+    </>
   );
 }

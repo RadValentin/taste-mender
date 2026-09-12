@@ -21,10 +21,13 @@ export default function HomePage() {
   const dailyFetcher = getTracksDailyPicks;
 
   return (
-    <div className="home-page container">
-      <TrackCarousel title="Top tracks" fetchTracks={topFetcher} onPlay={onPlay} variant="card" />
-      <TrackCarousel title="Daily picks" fetchTracks={dailyFetcher} onPlay={onPlay} variant="card" />
-      <TrackCarousel title="On this day" fetchTracks={todayFetcher} onPlay={onPlay} variant="card" />
-    </div>
+    <>
+      <title>TasteMender | Unbiased Music Recommendations</title>
+      <div className="home-page container">
+        <TrackCarousel title="Top tracks" fetchTracks={topFetcher} onPlay={onPlay} variant="card" />
+        <TrackCarousel title="Daily picks" fetchTracks={dailyFetcher} onPlay={onPlay} variant="card" />
+        <TrackCarousel title="On this day" fetchTracks={todayFetcher} onPlay={onPlay} variant="card" />
+      </div>
+    </>
   );
 }
