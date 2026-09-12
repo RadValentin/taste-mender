@@ -1,5 +1,5 @@
 import { useEffect, useRef, useLayoutEffect } from "react";
-import { Outlet } from "react-router";
+import { Outlet, useLocation } from "react-router";
 import { getScrollbarWidth } from "./layout";
 import Header from "./components/Header";
 import Player, { type PlayerRef } from "./components/Player";
@@ -13,6 +13,7 @@ import type { Track } from "./types";
 export default function AppLayout() {
   const { state: playerState } = usePlayerContext();
   const playerRef = useRef<PlayerRef>(null);
+  const location = useLocation();
 
   useLayoutEffect(() => {
     // Set global CSS properties which need to be pre-calculated before first paint
@@ -40,6 +41,7 @@ export default function AppLayout() {
 
   return (
     <>
+      <link rel="canonical" href={new URL(location.pathname, window.location.origin).toString()} />
       <Header />
       <main className="main" inert={playerState.isMaximized}>
         <Outlet context={{ onPlay }} />
