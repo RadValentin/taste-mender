@@ -7,7 +7,7 @@ class PublicPagesSitemap(Sitemap):
     priority = 0.7
 
     def items(self):
-        return ["home", "search"]
+        return ["api:home-page", "api:search-page"]
 
     def location(self, item):
         return reverse(item)

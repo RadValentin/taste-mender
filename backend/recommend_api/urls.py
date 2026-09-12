@@ -26,9 +26,10 @@ urlpatterns = [
 # Keep explicit static URL patterns in all environments so static assets do not get redirected.
 urlpatterns += staticfiles_urlpatterns()
 
-# Redirect requests to SPA view unless they're for the API or static files
+# Handle requests for front-end views and specific files.
 urlpatterns += [
+    path("", views.SPAView.as_view(), name="home-page"),
+    path("search", views.SPAView.as_view(), name="search-page"),
     path("robots.txt", views.robots_txt, name="robots-txt"),
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
-    re_path(r"^(?!api/|assets/|static/).*$", views.SPAView.as_view(), name="spa"),
 ]
