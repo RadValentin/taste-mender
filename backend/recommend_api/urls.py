@@ -1,10 +1,9 @@
-from django.conf import settings
+from django.contrib.sitemaps.views import sitemap
 from django.contrib.staticfiles.urls import staticfiles_urlpatterns
 from django.urls import path, include, re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
-from rest_framework.response import Response
-from rest_framework.routers import DefaultRouter, Route
 from recommend_api.router import APIRouter
+from recommend_api.sitemaps import sitemaps
 from recommend_api import views
 from recommend_api import api
 
@@ -29,5 +28,7 @@ urlpatterns += staticfiles_urlpatterns()
 
 # Redirect requests to SPA view unless they're for the API or static files
 urlpatterns += [
+    path("robots.txt", views.robots_txt, name="robots-txt"),
+    path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
     re_path(r"^(?!api/|assets/|static/).*$", views.SPAView.as_view(), name="spa"),
 ]

@@ -1,4 +1,0 @@
-User-agent: *
-Allow: /
-
-Sitemap: https://taste-mender.com/sitemap.xml
