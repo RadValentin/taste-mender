@@ -3,10 +3,13 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>TasteMender | Unbiased Music Recommendations</title>
-    <meta name="description" content="Discover music without bias or tracking. TasteMender is a privacy-friendly music recommendation system that puts you in control." />
     <meta name="keywords" content="music recommendation, unbiased music, music discovery, privacy, no tracking, TasteMender, musical taste" />
     <meta name="author" content="Valentin Radulescu" />
+    <meta name="robots" content="index, follow" />
+    <meta property="og:site_name" content="TasteMender" />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://taste-mender.com/" />
+    <meta name="twitter:card" content="summary" />
     <link rel="author" href="https://valentin.io/" />
     <link rel="repository" href="https://github.com/RadValentin/taste-mender" />
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -23,6 +26,20 @@
       gtag('js', new Date());
 
       gtag('config', 'G-8DD8B5GWQR');
+    </script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "TasteMender",
+        "url": "https://taste-mender.com/",
+        "description": "Discover music without bias or tracking. TasteMender is a privacy-friendly music recommendation system that puts you in control.",
+        "potentialAction": {
+          "@type": "SearchAction",
+          "target": "https://taste-mender.com/search?q={search_term_string}",
+          "query-input": "required name=search_term_string"
+        }
+      }
     </script>
   </head>
   <body>

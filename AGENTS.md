@@ -27,6 +27,8 @@ For the full architecture, data models, API reference, and algorithm details see
 
 For planned work and goals first check [GitHub issues](https://github.com/RadValentin/taste-mender/issues) then **[`docs/ROADMAP.md`](docs/ROADMAP.md)**.
 
+Testing guidance is documented in **[`docs/TESTING.md`](docs/TESTING.md)**.
+
 ---
 
 ## Quick Commands

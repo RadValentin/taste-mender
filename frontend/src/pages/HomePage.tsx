@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useOutletContext } from "react-router";
 import { getTracksDailyPicks, getTracksOnThisDay, getTracksTop } from "../api";
+import PageMetadata from "../components/PageMetadata.tsx";
 import TrackCarousel from "../components/TrackCarousel";
 import type { Track } from "../types";
 import "./HomePage.css";
@@ -21,10 +22,16 @@ export default function HomePage() {
   const dailyFetcher = getTracksDailyPicks;
 
   return (
-    <div className="home-page container">
-      <TrackCarousel title="Top tracks" fetchTracks={topFetcher} onPlay={onPlay} variant="card" />
-      <TrackCarousel title="Daily picks" fetchTracks={dailyFetcher} onPlay={onPlay} variant="card" />
-      <TrackCarousel title="On this day" fetchTracks={todayFetcher} onPlay={onPlay} variant="card" />
-    </div>
+    <>
+      <PageMetadata
+        title="TasteMender | Unbiased Music Recommendations"
+        description="Discover music without bias or tracking. TasteMender is a privacy-friendly music recommendation system that puts you in control."
+      />
+      <div className="home-page container">
+        <TrackCarousel title="Top tracks" fetchTracks={topFetcher} onPlay={onPlay} variant="card" />
+        <TrackCarousel title="Daily picks" fetchTracks={dailyFetcher} onPlay={onPlay} variant="card" />
+        <TrackCarousel title="On this day" fetchTracks={todayFetcher} onPlay={onPlay} variant="card" />
+      </div>
+    </>
   );
 }

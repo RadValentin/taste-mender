@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router";
 import { useOutletContext } from "react-router";
 import type { Track } from "./../types";
 import { searchTracks } from "./../api";
+import PageMetadata from "./../components/PageMetadata.tsx";
 import TrackList from "./../components/TrackList";
 import TrackListSkeleton from "./../components/TrackListSkeleton.tsx";
 import StatusMessage from "./../components/StatusMessage";
@@ -104,8 +105,14 @@ export default function SearchPage() {
   }
 
   return (
-    <div className="search-page container">
-      {renderContent()}
-    </div>
+    <>
+      <PageMetadata
+        title="Search | TasteMender"
+        description="Search TasteMender by track title or artist and discover acoustically similar music."
+      />
+      <div className="search-page container">
+        {renderContent()}
+      </div>
+    </>
   );
 }
