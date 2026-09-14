@@ -106,6 +106,18 @@ export default function SearchPage() {
   return (
     <>
       <title>Search | TasteMender</title>
+      <meta
+        name="description"
+        content="Search TasteMender by track title or artist and discover acoustically similar music."
+      />
+      <meta
+        property="og:description"
+        content="Search TasteMender by track title or artist and discover acoustically similar music."
+      />
+      <meta
+        name="twitter:description"
+        content="Search TasteMender by track title or artist and discover acoustically similar music."
+      />
       <div className="search-page container">
         {renderContent()}
       </div>
