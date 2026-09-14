@@ -20,6 +20,8 @@ on listening history, social data, or collaborative filtering.
 The project began as a BSc Computer Science final project at Goldsmiths, University of
 London, and is being evolved into a fully deployable music discovery web app.
 
+Testing methodology is documented in [`docs/TESTING.md`](TESTING.md).
+
 ---
 
 ## Core Features

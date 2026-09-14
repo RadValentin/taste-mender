@@ -40,6 +40,8 @@ python manage.py test
 python manage.py runserver
 ```
 
+See [`docs/TESTING.md`](docs/TESTING.md) for the project's testing methodology.
+
 6. Install React dependencies:
 ```bash
 cd frontend/
