@@ -3,7 +3,6 @@ from django.conf import settings
 from django.contrib.postgres.search import TrigramDistance, TrigramWordDistance, SearchQuery, SearchRank
 from django.db.models import F, Func, FloatField, ExpressionWrapper
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -35,9 +34,29 @@ class SearchView(APIView):
         responses=SearchResponseSerializer,
         description="Search for tracks, albums or artists",
         parameters=[
-            OpenApiParameter(name="q", type=str, location=OpenApiParameter.QUERY, required=True, description="The string to search for"),
-            OpenApiParameter(name="type", type=str, location=OpenApiParameter.QUERY, required=False, description="What type of objects to return: track, album, or artist"),
-        ]
+            OpenApiParameter(
+                name="q",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="The string to search for",
+            ),
+            OpenApiParameter(
+                name="type",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="What type of objects to return: track, album, or artist",
+            ),
+            OpenApiParameter(
+                name="limit",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                default=100,
+                description="Maximum results to return, from 1 to 500.",
+            )
+        ],
     )
     def get(self, request):
         start_time = time.perf_counter()
