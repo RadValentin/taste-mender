@@ -107,6 +107,24 @@ class SearchAPITests(APITestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data["count"], 5)
 
+    def test_offset(self):
+        url = reverse("api:search")
+        resp = self.client.get(url, {"q": "eve", "limit": 2, "offset": 2})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["count"], 2)
+        self.assertEqual(len(resp.data["results"]), 2)
+        self.assertNotIn("Track even 0", [result["title"] for result in resp.data["results"]])
+        self.assertNotIn("Track even 2", [result["title"] for result in resp.data["results"]])
+
+    def test_offset_at_or_above_result_window_returns_empty_results(self):
+        url = reverse("api:search")
+        for offset in (500, 501):
+            with self.subTest(offset=offset):
+                resp = self.client.get(url, {"q": "eve", "offset": offset})
+                self.assertEqual(resp.status_code, 200)
+                self.assertEqual(resp.data["count"], 0)
+                self.assertEqual(resp.data["results"], [])
+
     @classmethod
     def tearDownClass(cls):
         super().tearDownClass()

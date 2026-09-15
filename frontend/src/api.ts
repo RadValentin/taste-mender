@@ -82,9 +82,11 @@ export function getRecommendations(body: RecommendRequest) {
   return api.post<RecommendResponse>('recommend/', body).then(resp => resp.data);
 }
 
-export function searchTracks(query: string, limit: number=25, signal?: AbortSignal) {
+export function searchTracks(
+  query: string, limit: number = 25, offset: number = 0, signal?: AbortSignal
+) {
   return api.get<SearchResponse<Track>>(
-    `search/?type=track&q=${encodeURIComponent(query)}&limit=${limit}`,
+    `search/?type=track&q=${encodeURIComponent(query)}&limit=${limit}&offset=${offset}`,
     { signal },
   )
     .then(resp => resp.data);
