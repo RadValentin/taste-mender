@@ -1,9 +1,12 @@
 type PageMetadataProps = {
   title: string;
   description: string;
+  robots?: string;
 };
 
-export default function PageMetadata({ title, description }: PageMetadataProps) {
+export default function PageMetadata({
+  title, description, robots = "index, follow"
+}: PageMetadataProps) {
   return (
     <>
       <title>{title}</title>
@@ -12,6 +15,7 @@ export default function PageMetadata({ title, description }: PageMetadataProps) 
       <meta name="description" content={description} />
       <meta property="og:description" content={description} />
       <meta name="twitter:description" content={description} />
+      <meta name="robots" content={robots} />
     </>
   );
 }
