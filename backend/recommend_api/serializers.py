@@ -182,4 +182,5 @@ class SearchResponseSerializer(serializers.Serializer):
     results = serializers.ListField(
         child=serializers.DictField()
     )
+    has_more = serializers.BooleanField()
 

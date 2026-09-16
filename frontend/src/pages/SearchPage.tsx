@@ -19,15 +19,17 @@ type SearchResultsStatus = "DONE" | "ERROR" | "EMPTY";
 type SearchResultsState = {
   data: Track[];
   status: SearchResultsStatus;
+  hasMore: boolean;
 }
 
 const SEARCH_LIMIT = 25;
 
 export default function SearchPage() {
-  const [results, setResults] = useState<SearchResultsState>({ data: [], status: "DONE" });
+  const [results, setResults] = useState<SearchResultsState>({
+    data: [], status: "DONE", hasMore: false
+  });
   const [isLoading, setLoading] = useState(false);
   const [isLoadingMore, setLoadingMore] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
   const loadMoreController = useRef<AbortController | null>(null);
   const { onPlay } = useOutletContext<AppLayoutContext>();
   const { dispatch } = usePlayerContext();
@@ -53,9 +55,9 @@ export default function SearchPage() {
       .then(resp => {
         setResults({
           data: resp.results,
-          status: resp.results.length !== 0 ? "DONE" : "EMPTY"
+          status: resp.results.length !== 0 ? "DONE" : "EMPTY",
+          hasMore: resp.has_more
         });
-        setHasMore(resp.results.length >= SEARCH_LIMIT);
       })
       .catch(err => {
         if (controller.signal.aborted) {
@@ -63,8 +65,7 @@ export default function SearchPage() {
         }
 
         console.error("Error while searching for tracks: ", err);
-        setResults({ data: [], status: "ERROR" });
-        setHasMore(false);
+        setResults({ data: [], status: "ERROR", hasMore: false });
       }).finally(() => {
         if (!controller.signal.aborted) {
           setLoading(false);
@@ -94,8 +95,8 @@ export default function SearchPage() {
         setResults(previous => ({
           data: [...previous.data, ...resp.results],
           status: "DONE",
+          hasMore: resp.has_more,
         }));
-        setHasMore(resp.results.length >= SEARCH_LIMIT);
       })
       .catch(err => {
         if (!controller.signal.aborted) {
@@ -126,7 +127,7 @@ export default function SearchPage() {
           <>
             <h2>Search results</h2>
             <TrackList tracks={results.data} onPlay={onPlay}></TrackList>
-            {hasMore && (
+            {results.hasMore && (
               <button
                 type="button"
                 className="btn btn-neon"

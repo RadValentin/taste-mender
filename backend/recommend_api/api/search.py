@@ -100,13 +100,15 @@ class SearchView(APIView):
                 "response_time": end_time - start_time,
                 "count": 0,
                 "results": [],
+                "has_more": False
             })
             return Response(response_serializer.data)
 
         # Make search results relevant by comparing words when the query is a single word
         # and use standard trigram similarity for multi-word searches.
-        query_is_one_word = len(query.split()) == 1
-        result_end = min(offset + limit, MAX_SEARCH_RESULTS)
+        query_is_one_word: bool = len(query.split()) == 1
+        result_end: int = min(offset + limit + 1, MAX_SEARCH_RESULTS)
+        has_more: bool = False
 
         if search_type == "track":
             search_query = SearchQuery(query, search_type="websearch", config="simple")
@@ -210,12 +212,17 @@ class SearchView(APIView):
 
         # materialize results BEFORE calculating response time for accurate timings
         results = serializer.data
+        has_more = len(results) > limit
+        if has_more:
+            results = results[:-1]
+
         end_time = time.perf_counter()
         response_serializer = SearchResponseSerializer({
             "query": query,
             "type": search_type,
             "response_time": end_time - start_time,
             "count": len(results),
-            "results": results
+            "results": results,
+            "has_more": has_more
         })
         return Response(response_serializer.data)
