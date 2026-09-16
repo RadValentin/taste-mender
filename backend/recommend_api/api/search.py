@@ -29,8 +29,8 @@ class SearchView(APIView):
     - limit (optional): max number of results (default 100, clamped to 1..500)
     - offset (optional): number of results to skip (default 0, maximum result window is 500)
 
-    Returns a serialized JSON response with `query`, `type`, `response_time`, `count`
-    and `results` keys.
+    Returns a serialized JSON response with `query`, `type`, `response_time`, `count`, `results`
+    and `has_more` keys.
     """
     @extend_schema(
         responses=SearchResponseSerializer,
