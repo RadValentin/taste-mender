@@ -44,7 +44,9 @@ export default function SearchPage() {
     loadMoreController.current?.abort();
 
     if (!query) {
+      setResults({ data: [], status: "EMPTY", hasMore: false });
       setLoading(false);
+      setLoadingMore(false);
       return;
     }
 
