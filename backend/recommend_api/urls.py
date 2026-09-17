@@ -32,4 +32,10 @@ urlpatterns += [
     path("search", views.SPAView.as_view(), name="search-page"),
     path("robots.txt", views.robots_txt, name="robots-txt"),
     path("sitemap.xml", sitemap, {"sitemaps": sitemaps}, name="sitemap"),
+    # This must be last. It's a catch-all to set 404 status for unknown routes.
+    re_path(
+        r"^(?!api/|assets/|static/|admin/).*$",
+        views.SPAView.as_view(status_code=404),
+        name="spa-not-found"
+    ),
 ]
