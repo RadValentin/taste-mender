@@ -1,6 +1,19 @@
 # TasteMender: A stateless music recommendation API
 
-[![codecov](https://codecov.io/gh/RadValentin/taste-mender/graph/badge.svg?token=JfbmGuIWGl)](https://codecov.io/gh/RadValentin/taste-mender)
+<p align="center">
+  <a href="https://taste-mender.com/">
+    <img src="https://img.shields.io/badge/demo-taste--mender.com-blue" alt="Live demo">
+  </a>
+  <a href="https://github.com/RadValentin/taste-mender/actions/workflows/django.yml">
+    <img src="https://github.com/RadValentin/taste-mender/actions/workflows/django.yml/badge.svg?branch=main&amp;event=push" alt="Django CI">
+  </a>
+  <a href="https://codecov.io/gh/RadValentin/taste-mender">
+    <img src="https://codecov.io/gh/RadValentin/taste-mender/graph/badge.svg?token=JfbmGuIWGl" alt="codecov">
+  </a>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/github/license/RadValentin/taste-mender" alt="License">
+  </a>
+</p>
 
 > [!NOTE]
 > Originally developed as a final project for the BSc Computer Science degree at Goldsmiths, University of London (available [here](https://github.com/RadValentin/CM3070-FP-Music-Recommendation)). This repository continues that work, aiming to transform it into a deployable music discovery web app.
