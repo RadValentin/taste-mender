@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router";
 import { API_BASE_URL } from "../api";
 import "./Header.css"
@@ -11,6 +11,11 @@ export default function Header() {
   const [searchQuery, setSearchQuery] = useState(query);
   const navigate = useNavigate();
   const inputPlaceholder = `Search for track or artist...`;
+
+  // Synchronize the QS query with the input's content when the route query changes
+  useEffect(() => {
+    setSearchQuery(query);
+  }, [query]);
 
   function onSearch(query: string) {
     if (query.trim()) {
