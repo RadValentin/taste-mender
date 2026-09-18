@@ -1,12 +1,14 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router";
+import { useNavigate, useSearchParams, Link } from "react-router";
 import { API_BASE_URL } from "../api";
 import "./Header.css"
 
 /** App header: TasteMender logo, search bar (fires `onSearch` on Enter or button click),
  *  and a link to the REST API docs. */
 export default function Header() {
-  const [searchQuery, setSearchQuery] = useState("");
+  const [searchParams] = useSearchParams();
+  const query = searchParams.get("q") ?? "";
+  const [searchQuery, setSearchQuery] = useState(query);
   const navigate = useNavigate();
   const inputPlaceholder = `Search for track or artist...`;
 

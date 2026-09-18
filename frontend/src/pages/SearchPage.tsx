@@ -33,12 +33,13 @@ export default function SearchPage() {
   const loadMoreController = useRef<AbortController | null>(null);
   const { onPlay } = useOutletContext<AppLayoutContext>();
   const { dispatch } = usePlayerContext();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // QS params
+  const query = searchParams.get("q");
+  const limit = Number(searchParams.get("loaded") ?? SEARCH_LIMIT);
 
   // Initial search (though input or navigation)
   useEffect(() => {
-    const query = searchParams.get("q");
-
     // Close the player after user search
     dispatch({ type: "close" });
     loadMoreController.current?.abort();
@@ -53,7 +54,7 @@ export default function SearchPage() {
     const controller = new AbortController();
     setLoading(true);
     setLoadingMore(false);
-    searchTracks(query, SEARCH_LIMIT, 0, controller.signal)
+    searchTracks(query, limit, 0, controller.signal)
       .then(resp => {
         setResults({
           data: resp.results,
@@ -78,7 +79,7 @@ export default function SearchPage() {
       controller.abort();
       loadMoreController.current?.abort();
     };
-  }, [searchParams]);
+  }, [query]);
 
   // Loading more search results
   function handleLoadMore() {
@@ -99,6 +100,15 @@ export default function SearchPage() {
           status: "DONE",
           hasMore: resp.has_more,
         }));
+
+        // Persist number of results loaded through URL
+        const nextLoaded = results.data.length + SEARCH_LIMIT;
+        setSearchParams(params => {
+          params.set("loaded", String(nextLoaded));
+          return params;
+        }, {
+          replace: true
+        });
       })
       .catch(err => {
         if (!controller.signal.aborted) {
