@@ -111,6 +111,7 @@ export interface SearchResponse<T = Record<string, unknown>> {
   response_time: number;
   count: number;
   results: T[];
+  has_more: boolean;
 }
 
 /** DRF pagination helper */

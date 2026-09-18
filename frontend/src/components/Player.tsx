@@ -7,6 +7,7 @@ import TrackListSkeleton from "./TrackListSkeleton.tsx";
 import Filters, {type FiltersPayload} from "./Filters.tsx";
 import ImageLoader from "./ImageLoader.tsx";
 import { usePlayerContext } from "../PlayerContext.tsx";
+import useBeforeUnload from "../hooks/useBeforeUnload.ts";
 import "./Player.css";
 
 export interface PlayerRef {
@@ -89,6 +90,9 @@ export default function Player({ ref }: PlayerProps) {
   const [playerState, setPlayerState] = useState<PlayerState>(defaultPlayerState);
   const [recState, setRecState] = useState<RecState>(defaultRecState);
   const {state: globalState, dispatch} = usePlayerContext();
+
+  // Warns users before they leave the page while playback is active.
+  useBeforeUnload(playerState.isPlaying);
 
   useEffect(() => {
     recListRef.current = recState.similarList;

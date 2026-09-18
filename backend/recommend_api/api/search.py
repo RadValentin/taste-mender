@@ -3,7 +3,6 @@ from django.conf import settings
 from django.contrib.postgres.search import TrigramDistance, TrigramWordDistance, SearchQuery, SearchRank
 from django.db.models import F, Func, FloatField, ExpressionWrapper
 from drf_spectacular.utils import extend_schema, OpenApiParameter
-from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
 from rest_framework.views import APIView
@@ -11,6 +10,7 @@ from recommend_api.models import *
 from recommend_api.serializers import *
 
 log = logging.getLogger(__name__)
+MAX_SEARCH_RESULTS = 500
 
 
 class SearchView(APIView):
@@ -27,17 +27,46 @@ class SearchView(APIView):
     - q (required): search string
     - type (optional): one of "track", "artist", "album" (defaults to "track")
     - limit (optional): max number of results (default 100, clamped to 1..500)
+    - offset (optional): number of results to skip (default 0, maximum result window is 500)
 
-    Returns a serialized JSON response with `query`, `type`, `response_time`, `count`
-    and `results` keys.
+    Returns a serialized JSON response with `query`, `type`, `response_time`, `count`, `results`
+    and `has_more` keys.
     """
     @extend_schema(
         responses=SearchResponseSerializer,
         description="Search for tracks, albums or artists",
         parameters=[
-            OpenApiParameter(name="q", type=str, location=OpenApiParameter.QUERY, required=True, description="The string to search for"),
-            OpenApiParameter(name="type", type=str, location=OpenApiParameter.QUERY, required=False, description="What type of objects to return: track, album, or artist"),
-        ]
+            OpenApiParameter(
+                name="q",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=True,
+                description="The string to search for",
+            ),
+            OpenApiParameter(
+                name="type",
+                type=str,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                description="What type of objects to return: track, album, or artist",
+            ),
+            OpenApiParameter(
+                name="limit",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                default=100,
+                description="Maximum results to return, from 1 to 500.",
+            ),
+            OpenApiParameter(
+                name="offset",
+                type=int,
+                location=OpenApiParameter.QUERY,
+                required=False,
+                default=0,
+                description="Number of matching results to skip. The maximum searchable result window is 500.",
+            ),
+        ],
     )
     def get(self, request):
         start_time = time.perf_counter()
@@ -50,6 +79,12 @@ class SearchView(APIView):
                 limit = 100
         except (ValueError, TypeError):
             limit = 100
+        try:
+            offset = int(request.GET.get("offset", 0))
+            if offset < 0:
+                offset = 0
+        except (ValueError, TypeError):
+            offset = 0
 
         if not query:
             raise ValidationError({"q": ["This query parameter is required."]})
@@ -57,9 +92,23 @@ class SearchView(APIView):
         if search_type not in ["track", "artist", "album"]:
             raise ValidationError({"type": ["Must be one of: track, artist, album."]})
 
+        if offset >= MAX_SEARCH_RESULTS:
+            end_time = time.perf_counter()
+            response_serializer = SearchResponseSerializer({
+                "query": query,
+                "type": search_type,
+                "response_time": end_time - start_time,
+                "count": 0,
+                "results": [],
+                "has_more": False
+            })
+            return Response(response_serializer.data)
+
         # Make search results relevant by comparing words when the query is a single word
         # and use standard trigram similarity for multi-word searches.
-        query_is_one_word = len(query.split()) == 1
+        query_is_one_word: bool = len(query.split()) == 1
+        result_end: int = min(offset + limit + 1, MAX_SEARCH_RESULTS)
+        has_more: bool = False
 
         if search_type == "track":
             search_query = SearchQuery(query, search_type="websearch", config="simple")
@@ -76,8 +125,8 @@ class SearchView(APIView):
                     ),
                 )
                 .filter(search_vector=search_query)
-                .order_by("-combined_rank")
-                .values_list("pk", flat=True)[:limit]
+                .order_by("-combined_rank", "pk")
+                .values_list("pk", flat=True)[:result_end]
             )
             # for debugging SQL query
             if settings.DEBUG:
@@ -85,16 +134,16 @@ class SearchView(APIView):
             fts_ids = list(fts_id_qs)
 
             # FTS may not return enough results, fill in the rest using fuzzy trigram matching
-            remaining = max(0, limit - len(fts_ids))
+            remaining = max(0, result_end - len(fts_ids))
             trgm_ids = []
             if remaining:
-                log.info("Backfilling search for (%s) with %s/%s entries using trigrams.", query, remaining, limit)
+                log.info("Backfilling search for (%s) with %s/%s entries using trigrams.", query, remaining, result_end)
                 if query_is_one_word:
                     trgm_id_qs = (
                         Track.objects.filter(title__trigram_word_similar=query)
                         .alias(distance=TrigramWordDistance(query, "title"))
                         .exclude(pk__in=fts_ids)
-                        .order_by("distance", "-submissions")
+                        .order_by("distance", "-submissions", "pk")
                         .values_list("pk", flat=True)[:remaining]
                     )
                 else:
@@ -102,7 +151,7 @@ class SearchView(APIView):
                         Track.objects.filter(title__trigram_similar=query)
                         .alias(distance=TrigramDistance("title", query))
                         .exclude(pk__in=fts_ids)
-                        .order_by("distance", "-submissions")
+                        .order_by("distance", "-submissions", "pk")
                         .values_list("pk", flat=True)[:remaining]
                     )
                 # for debugging SQL query
@@ -111,7 +160,7 @@ class SearchView(APIView):
                 # merge results while preserving order
                 trgm_ids = list(trgm_id_qs)
 
-            final_ids = fts_ids + trgm_ids
+            final_ids = (fts_ids + trgm_ids)[offset:result_end]
             if not final_ids:
                 serializer = TrackSerializer([], many=True)
             else:
@@ -130,13 +179,13 @@ class SearchView(APIView):
                 results = (
                     Artist.objects.filter(name__trigram_word_similar=query)
                     .annotate(distance=TrigramWordDistance(query, "name"))
-                    .order_by("distance")[:limit]
+                    .order_by("distance", "pk")[offset:result_end]
                 )
             else:
                 results = (
                     Artist.objects.filter(name__trigram_similar=query)
                     .annotate(distance=TrigramDistance("name", query))
-                    .order_by("distance")[:limit]
+                    .order_by("distance", "pk")[offset:result_end]
                 )
             serializer = ArtistSerializer(results, many=True)
         else:
@@ -144,14 +193,14 @@ class SearchView(APIView):
                 results = (
                     Album.objects.filter(name__trigram_word_similar=query)
                     .annotate(distance=TrigramWordDistance(query, "name"))
-                    .order_by("distance")[:limit]
+                    .order_by("distance", "pk")[offset:result_end]
                     .prefetch_related("artists")
                 )
             else:
                 results = (
                     Album.objects.filter(name__trigram_similar=query)
                     .annotate(distance=TrigramDistance("name", query))
-                    .order_by("distance")[:limit]
+                    .order_by("distance", "pk")[offset:result_end]
                     .prefetch_related("artists")
                 )
             serializer = AlbumSerializer(results, many=True)
@@ -163,12 +212,17 @@ class SearchView(APIView):
 
         # materialize results BEFORE calculating response time for accurate timings
         results = serializer.data
+        has_more = len(results) > limit
+        if has_more:
+            results = results[:-1]
+
         end_time = time.perf_counter()
         response_serializer = SearchResponseSerializer({
             "query": query,
             "type": search_type,
             "response_time": end_time - start_time,
             "count": len(results),
-            "results": results
+            "results": results,
+            "has_more": has_more
         })
         return Response(response_serializer.data)

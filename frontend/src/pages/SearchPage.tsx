@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useSearchParams } from "react-router";
 import { useOutletContext } from "react-router";
 import type { Track } from "./../types";
@@ -19,33 +19,47 @@ type SearchResultsStatus = "DONE" | "ERROR" | "EMPTY";
 type SearchResultsState = {
   data: Track[];
   status: SearchResultsStatus;
+  hasMore: boolean;
 }
 
+const SEARCH_LIMIT = 25;
+
 export default function SearchPage() {
-  const [results, setResults] = useState<SearchResultsState>({ data: [], status: "DONE" });
+  const [results, setResults] = useState<SearchResultsState>({
+    data: [], status: "DONE", hasMore: false
+  });
   const [isLoading, setLoading] = useState(false);
+  const [isLoadingMore, setLoadingMore] = useState(false);
+  const loadMoreController = useRef<AbortController | null>(null);
   const { onPlay } = useOutletContext<AppLayoutContext>();
   const { dispatch } = usePlayerContext();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
+  // QS params
+  const query = searchParams.get("q");
+  const limit = Number(searchParams.get("loaded") ?? SEARCH_LIMIT);
 
+  // Initial search (though input or navigation)
   useEffect(() => {
-    const query = searchParams.get("q");
-
     // Close the player after user search
     dispatch({ type: "close" });
+    loadMoreController.current?.abort();
 
     if (!query) {
+      setResults({ data: [], status: "EMPTY", hasMore: false });
       setLoading(false);
+      setLoadingMore(false);
       return;
     }
 
     const controller = new AbortController();
     setLoading(true);
-    searchTracks(query, 25, controller.signal)
+    setLoadingMore(false);
+    searchTracks(query, limit, 0, controller.signal)
       .then(resp => {
         setResults({
           data: resp.results,
-          status: resp.results.length !== 0 ? "DONE" : "EMPTY"
+          status: resp.results.length !== 0 ? "DONE" : "EMPTY",
+          hasMore: resp.has_more
         });
       })
       .catch(err => {
@@ -54,7 +68,7 @@ export default function SearchPage() {
         }
 
         console.error("Error while searching for tracks: ", err);
-        setResults({ data: [], status: "ERROR" });
+        setResults({ data: [], status: "ERROR", hasMore: false });
       }).finally(() => {
         if (!controller.signal.aborted) {
           setLoading(false);
@@ -63,8 +77,51 @@ export default function SearchPage() {
 
     return () => {
       controller.abort();
+      loadMoreController.current?.abort();
     };
-  }, [searchParams]);
+  }, [query]);
+
+  // Loading more search results
+  function handleLoadMore() {
+    const query = searchParams.get("q");
+    if (!query || isLoadingMore) {
+      return;
+    }
+
+    const offset = results.data.length;
+    const controller = new AbortController();
+    loadMoreController.current = controller;
+    setLoadingMore(true);
+
+    searchTracks(query, SEARCH_LIMIT, offset, controller.signal)
+      .then(resp => {
+        setResults(previous => ({
+          data: [...previous.data, ...resp.results],
+          status: "DONE",
+          hasMore: resp.has_more,
+        }));
+
+        // Persist number of results loaded through URL
+        const nextLoaded = results.data.length + SEARCH_LIMIT;
+        setSearchParams(params => {
+          params.set("loaded", String(nextLoaded));
+          return params;
+        }, {
+          replace: true
+        });
+      })
+      .catch(err => {
+        if (!controller.signal.aborted) {
+          console.error("Error while loading more search results: ", err);
+        }
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) {
+          setLoadingMore(false);
+        }
+      });
+
+  }
 
   function renderContent() {
     if (isLoading) {
@@ -82,6 +139,16 @@ export default function SearchPage() {
           <>
             <h2>Search results</h2>
             <TrackList tracks={results.data} onPlay={onPlay}></TrackList>
+            {results.hasMore && (
+              <button
+                type="button"
+                className="btn btn-neon"
+                onClick={handleLoadMore}
+                disabled={isLoadingMore}
+              >
+                {isLoadingMore ? "Loading..." : "Load More"}
+              </button>
+            )}
           </>
         );
       case "ERROR":

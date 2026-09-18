@@ -21,6 +21,7 @@ The project began as a BSc Computer Science final project at Goldsmiths, Univers
 London, and is being evolved into a fully deployable music discovery web app.
 
 Testing methodology is documented in [`docs/TESTING.md`](TESTING.md).
+Development guidelines are documented in [`docs/DEVELOPMENT.md`](docs/DEVELOPMENT.md)
 
 ---
 
@@ -90,6 +91,15 @@ Testing methodology is documented in [`docs/TESTING.md`](TESTING.md).
 | **DigitalOcean** (implied) | Cloud hosting (VPS / Droplet) |
 
 ---
+
+The production deployment currently runs on a DigitalOcean droplet with:
+
+- 2 vCPUs
+- 4 GB RAM
+- 80 GB SSD
+- 4 TB monthly transfer
+
+Performance-sensitive changes should account for this small single-host environment.
 
 ## Architecture Overview
 

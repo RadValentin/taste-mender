@@ -67,10 +67,14 @@ docker-compose exec django python manage.py migrate
   not the Django project root. It is **not** committed to the repository.
 - Error responses should use DRF's default exception format (for example, `{ "detail": "..." }` or field-level validation maps).
 - In API views, prefer raising DRF exceptions (`ValidationError`, `NotFound`, `APIException`, or a small `APIException` subclass for custom status codes like 503) over manually building error `Response` payloads.
-- List responses follow the DRF pagination shape `{ count, next, previous, results }`.
+- List responses follow the DRF pagination shape `{ count, next, previous, results }` except for search endpoint.
 - All resource objects include a `links` field (HATEOAS) with URLs to related endpoints.
 - Collections can also include a `links` field to tell the client exactly what sub-collections, filters, or specific actions are available without requiring them to read hardcoded external documentation.
-- Project decisions:
-  - [`ADR-001`](docs/DECISIONS/ADR-001-in-memory-feature-matrix.md): In-memory feature matrix.
-  - [`ADR-002`](docs/DECISIONS/ADR-002-cache-analysis-targets-production.md): Production-first
-    cache analysis.
+
+## Architecture decisions
+
+Consult the relevant ADR before changing the associated subsystem:
+
+- [`ADR-001`](docs/DECISIONS/ADR-001-in-memory-feature-matrix.md): In-memory feature matrix
+- [`ADR-002`](docs/DECISIONS/ADR-002-cache-analysis-targets-production.md): Production-first cache analysis
+- [`ADR-003`](docs/DECISIONS/ADR-003-search-ranking-and-bounded-pagination.md): Hybrid ranked search with bounded offset pagination

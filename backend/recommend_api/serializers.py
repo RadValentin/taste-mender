@@ -175,11 +175,25 @@ class RecommendRequestSerializer(serializers.Serializer):
 
 
 class SearchResponseSerializer(serializers.Serializer):
-    query = serializers.CharField()
-    type = serializers.ChoiceField(["track", "artist", "album"])
-    response_time = serializers.FloatField()
-    count = serializers.IntegerField(min_value=0)
+    query = serializers.CharField(
+        help_text="The normalized search query.",
+    )
+    type = serializers.ChoiceField(
+        ["track", "artist", "album"],
+        help_text="The type of objects returned in results.",
+    )
+    response_time = serializers.FloatField(
+        help_text="Time taken to execute the search, in seconds.",
+    )
+    count = serializers.IntegerField(
+        min_value=0,
+        help_text="Number of results returned on this page.",
+    )
     results = serializers.ListField(
-        child=serializers.DictField()
+        child=serializers.DictField(),
+        help_text="The matching tracks, artists, or albums for this page.",
+    )
+    has_more = serializers.BooleanField(
+        help_text="Whether another matching result exists after this page.",
     )
 
