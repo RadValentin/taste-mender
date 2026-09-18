@@ -78,6 +78,44 @@ class SearchAPITests(APITestCase):
         self.assertEqual(resp.data["count"], EVEN_ITEM_COUNT)
         self.assertContains(resp, "Track even", EVEN_ITEM_COUNT)
 
+    def test_search_for_track_offset(self):
+        url = reverse("api:search")
+        resp = self.client.get(url, {"q": "eve", "limit": 2, "offset": 2})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["count"], 2)
+        self.assertEqual(len(resp.data["results"]), 2)
+        self.assertNotIn("Track even 0", [result["title"] for result in resp.data["results"]])
+        self.assertNotIn("Track even 2", [result["title"] for result in resp.data["results"]])
+
+    def test_search_for_track_offset_upper_bound(self):
+        url = reverse("api:search")
+
+        with patch("recommend_api.api.search.MAX_SEARCH_RESULTS", 4):
+            for offset in (4, 5):
+                with self.subTest(offset=offset):
+                    resp = self.client.get(url, {"q": "eve", "limit": 2, "offset": offset})
+                    self.assertEqual(resp.status_code, 200)
+                    self.assertEqual(resp.data["count"], 0)
+                    self.assertEqual(resp.data["results"], [])
+
+    def test_search_for_track_more_entries_found(self):
+        url = reverse("api:search")
+        resp = self.client.get(url, {"q": "eve", "limit": 2})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["count"], 2)
+        self.assertEqual(len(resp.data["results"]), 2)
+        self.assertTrue(resp.data["has_more"])
+
+    def test_search_for_track_no_more_entries_found(self):
+        url = reverse("api:search")
+
+        for offset in (4, 5):
+            with self.subTest(offset=offset):
+                resp = self.client.get(url, {"q": "eve", "limit": 2, "offset": offset})
+                self.assertEqual(resp.status_code, 200)
+                self.assertEqual(resp.data["count"], EVEN_ITEM_COUNT - offset)
+                self.assertFalse(resp.data["has_more"])
+
     def test_search_for_artist_single_word(self):
         url = reverse("api:search")
         resp = self.client.get(url, {"q": "eve", "type": "artist"})
@@ -91,6 +129,15 @@ class SearchAPITests(APITestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data["count"], EVEN_ITEM_COUNT)
         self.assertContains(resp, "Artist odd", EVEN_ITEM_COUNT)
+
+    def test_search_for_artist_offset(self):
+        url = reverse("api:search")
+        resp = self.client.get(url, {"q": "art eve", "type": "artist", "limit": 2, "offset": 2})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["count"], 2)
+        self.assertEqual(len(resp.data["results"]), 2)
+        self.assertNotIn("Artist even 0", [result["name"] for result in resp.data["results"]])
+        self.assertNotIn("Artist even 2", [result["name"] for result in resp.data["results"]])
 
     def test_search_for_album_single_word(self):
         url = reverse("api:search")
@@ -106,50 +153,21 @@ class SearchAPITests(APITestCase):
         self.assertEqual(resp.data["count"], EVEN_ITEM_COUNT)
         self.assertContains(resp, "Album odd", EVEN_ITEM_COUNT)
 
+    def test_search_for_album_offset(self):
+        url = reverse("api:search")
+        resp = self.client.get(url, {"q": "alb eve", "type": "album", "limit": 2, "offset": 2})
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp.data["count"], 2)
+        self.assertEqual(len(resp.data["results"]), 2)
+        self.assertNotIn("Album even 0", [result["name"] for result in resp.data["results"]])
+        self.assertNotIn("Album even 2", [result["name"] for result in resp.data["results"]])
+
     def test_limit(self):
         url = reverse("api:search")
         resp = self.client.get(url, {"q": "odd", "limit": 0})
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data["count"], EVEN_ITEM_COUNT)
         self.assertContains(resp, "Album odd", EVEN_ITEM_COUNT)
-
-    def test_offset(self):
-        url = reverse("api:search")
-        resp = self.client.get(url, {"q": "eve", "limit": 2, "offset": 2})
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data["count"], 2)
-        self.assertEqual(len(resp.data["results"]), 2)
-        self.assertNotIn("Track even 0", [result["title"] for result in resp.data["results"]])
-        self.assertNotIn("Track even 2", [result["title"] for result in resp.data["results"]])
-
-    def test_offset_upper_bound(self):
-        url = reverse("api:search")
-
-        with patch("recommend_api.api.search.MAX_SEARCH_RESULTS", 4):
-            for offset in (4, 5):
-                with self.subTest(offset=offset):
-                    resp = self.client.get(url, {"q": "eve", "limit": 2, "offset": offset})
-                    self.assertEqual(resp.status_code, 200)
-                    self.assertEqual(resp.data["count"], 0)
-                    self.assertEqual(resp.data["results"], [])
-
-    def test_more_entries_found(self):
-        url = reverse("api:search")
-        resp = self.client.get(url, {"q": "eve", "limit": 2})
-        self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.data["count"], 2)
-        self.assertEqual(len(resp.data["results"]), 2)
-        self.assertTrue(resp.data["has_more"])
-
-    def test_no_more_entries_found(self):
-        url = reverse("api:search")
-
-        for offset in (4, 5):
-            with self.subTest(offset=offset):
-                resp = self.client.get(url, {"q": "eve", "limit": 2, "offset": offset})
-                self.assertEqual(resp.status_code, 200)
-                self.assertEqual(resp.data["count"], EVEN_ITEM_COUNT - offset)
-                self.assertFalse(resp.data["has_more"])
 
     @classmethod
     def tearDownClass(cls):
