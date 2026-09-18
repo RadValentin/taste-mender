@@ -70,7 +70,11 @@ docker-compose exec django python manage.py migrate
 - List responses follow the DRF pagination shape `{ count, next, previous, results }`.
 - All resource objects include a `links` field (HATEOAS) with URLs to related endpoints.
 - Collections can also include a `links` field to tell the client exactly what sub-collections, filters, or specific actions are available without requiring them to read hardcoded external documentation.
-- Project decisions:
-  - [`ADR-001`](docs/DECISIONS/ADR-001-in-memory-feature-matrix.md): In-memory feature matrix.
-  - [`ADR-002`](docs/DECISIONS/ADR-002-cache-analysis-targets-production.md): Production-first
-    cache analysis.
+
+## Architecture decisions
+
+Consult the relevant ADR before changing the associated subsystem:
+
+- [`ADR-001`](docs/DECISIONS/ADR-001-in-memory-feature-matrix.md): In-memory feature matrix
+- [`ADR-002`](docs/DECISIONS/ADR-002-cache-analysis-targets-production.md): Production-first cache analysis
+- [`ADR-003`](docs/DECISIONS/ADR-003-search-ranking-and-bounded-pagination.md): Hybrid ranked search with bounded offset pagination
