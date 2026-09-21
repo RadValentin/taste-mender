@@ -12,7 +12,7 @@ env:
   DJANGO_DEBUG: "True"
 
 jobs:
-  test:
+  test-django:
     runs-on: ubuntu-latest
 
     services:

@@ -7,7 +7,7 @@ on:
     branches: ["main", "dev"]
 
 jobs:
-  lint:
+  lint-frontend:
     runs-on: ubuntu-latest
 
     defaults:
