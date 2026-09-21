@@ -50,6 +50,7 @@ export const initialPlaybackState: PlaybackState = {
 
 export const playbackReducer = (state: PlaybackState, action: PlaybackAction): PlaybackState => {
   switch (action.type) {
+    // UI actions
     case "OPEN_PLAYER": {
       return {
         ...state,
@@ -68,12 +69,21 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
         isMaximized: !state.isMaximized
       }
     }
+    // Recommendation actions
     case "SET_FILTERS": {
       return {
         ...state,
         filters: action.filters
       };
     }
+    // Playback actions
+    case "TRACK_STARTED": {
+      return {
+        ...state,
+        history: [...state.history, action.track]
+      }
+    }
+
     default: {
       throw Error("Unknown action: " + action["type"]);
     }

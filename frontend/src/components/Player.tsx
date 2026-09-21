@@ -29,7 +29,6 @@ type RecState = {
   isLoading: boolean,
   similarList: SimilarTrack[],
   stats: any,
-  listenedMbids: string[],
 }
 
 type MobileTab = "recommendations" | "filters" | "stats";
@@ -66,7 +65,6 @@ const defaultRecState: RecState = {
   isLoading: false,
   similarList: [],
   stats: {},
-  listenedMbids: [],
 }
 
 /**
@@ -170,7 +168,7 @@ export default function Player({ ref }: PlayerProps) {
     setRecState(recState => ({...recState, isLoading: true}));
     const recommendPayload: RecommendRequest = {
       mbid: track.mbid,
-      listened_mbids: recState.listenedMbids,
+      listened_mbids: playbackState.history.map(t => t.mbid),
       ...payload
     };
     getRecommendations(recommendPayload).then(data => {
@@ -191,6 +189,10 @@ export default function Player({ ref }: PlayerProps) {
    *
    * @param track The track to load and play.
    * @param shouldMaximize Whether the player should open in its expanded/maximized state.
+   *
+   * @todo When current track is moved to global context make this fn just emit a dispatch and
+   * the rest of the loading video logic can happen as an effect.
+   * Removes issues with syncing `TRACK_STARTED` and `listened_mbids`.
    */
   const playTrack = (track: Track, shouldMaximize: boolean = false) => {
     console.log("I've been told to play this track:", track);
@@ -210,9 +212,14 @@ export default function Player({ ref }: PlayerProps) {
       setRecState(recState => ({...recState, isLoading: true}));
       const recommendPayload: RecommendRequest = {
         mbid: track.mbid,
-        listened_mbids: recState.listenedMbids,
+        listened_mbids: [
+          ...playbackState.history.map(({ mbid }) => mbid),
+          track.mbid,
+        ],
         ...playbackState.filters
       };
+      dispatch({type: "TRACK_STARTED", track});
+
       getRecommendations(recommendPayload).then(data => {
         console.log("Got recommendations:", data);
         setRecState(recState => ({
@@ -220,7 +227,6 @@ export default function Player({ ref }: PlayerProps) {
           isLoading: false,
           similarList: data.similar_list,
           stats: data.stats,
-          listenedMbids: [track.mbid, ...recState.listenedMbids]
         }))
       }).catch(() => {
         setRecState(recState => ({...recState, isLoading:false}));
@@ -326,7 +332,7 @@ export default function Player({ ref }: PlayerProps) {
           </div>
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Listened tracks</p>
-            <p className="player__stats-box-counter">{recState.listenedMbids.length}</p>
+            <p className="player__stats-box-counter">{playbackState.history.length}</p>
           </div>
         </div>
       </>
