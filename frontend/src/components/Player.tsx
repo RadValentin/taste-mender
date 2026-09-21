@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import React, { useEffect, useEffectEvent, useImperativeHandle, useRef, useState } from "react";
-import type { Track, SimilarTrack, RecommendRequest } from "../types";
+import type { Track, SimilarTrack, RecommendRequest, RecommendStats } from "../types";
 import { getTrackSources, getRecommendations } from "../api.ts"
 import TrackList from "./TrackList.tsx";
 import TrackListSkeleton from "./TrackListSkeleton.tsx";
@@ -28,7 +28,7 @@ type PlayerState = {
 type RecState = {
   isLoading: boolean,
   similarList: SimilarTrack[],
-  stats: any,
+  stats: RecommendStats | null,
 }
 
 type MobileTab = "recommendations" | "filters" | "stats";
@@ -64,7 +64,7 @@ const defaultPlayerState: PlayerState = {
 const defaultRecState: RecState = {
   isLoading: false,
   similarList: [],
-  stats: {},
+  stats: null,
 }
 
 /**
@@ -294,40 +294,47 @@ export default function Player({ ref }: PlayerProps) {
   };
 
   const renderStats = () => {
+    const stats = recState.stats;
+    if (!stats) {
+      return;
+    }
+
     return(
       <>
         <h4 className="heading mobile-hidden">Stats</h4>
         <div className="player__stats-container">
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Tracks analyzed</p>
-            <p className="player__stats-box-counter">{Number(recState.stats.candidate_count).toLocaleString()}</p>
+            <p className="player__stats-box-counter">{stats.candidate_count.toLocaleString()}</p>
           </div>
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Best match</p>
             <p className="player__stats-box-counter">
-              {Math.floor(Number(recState.stats.max) * 100)}%
+              {stats.max === null ? "-" : `${Math.floor(stats.max * 100)}%`}
             </p>
           </div>
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Average match</p>
             <p className="player__stats-box-counter">
-              {Math.floor(Number(recState.stats.mean) * 100)}%
+              {stats.mean === null ? "-" : `${Math.floor(stats.mean * 100)}%`}
             </p>
           </div>
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Top-tier match (95th percentile)</p>
             <p className="player__stats-box-counter">
-              {Math.floor(Number(recState.stats.p95) * 100)}%
+              {stats.p95 === null ? "-" : `${Math.floor(stats.p95 * 100)}%`}
             </p>
           </div>
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Score spread (STD)</p>
-            <p className="player__stats-box-counter">{Number(recState.stats.std).toFixed(3)}</p>
+            <p className="player__stats-box-counter">
+              {stats.std === null ? "-" : stats.std.toFixed(3)}
+            </p>
           </div>
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Search time</p>
             <p className="player__stats-box-counter">
-              {Number(recState.stats.search_time * 1000).toFixed(0)}ms
+              {(stats.search_time * 1000).toFixed(0)}ms
             </p>
           </div>
           <div className="player__stats-box">
@@ -425,7 +432,7 @@ export default function Player({ ref }: PlayerProps) {
         <div
           className={`player__stats player__mobile-panel ${mobileTab === "stats" ? "is-active" : ""}`}
         >
-          {recState && recState.stats && renderStats()}
+          {renderStats()}
         </div>
         {renderRecommendations()}
       </div>
