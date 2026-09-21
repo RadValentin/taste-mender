@@ -1,5 +1,7 @@
 import { createContext, useContext } from "react";
 import type { Dispatch } from "react";
+import type { SimilarTrack, Track } from "./types";
+import type { FiltersPayload } from "./components/Filters";
 
 /**
  * Context that stores the global audio playback state and the audio player's
@@ -7,30 +9,60 @@ import type { Dispatch } from "react";
  * provided by `PlaybackContextProvider`.
  * */
 export type PlaybackState = {
-  isMaximized: boolean
+  currentTrack: Track | null;
+
+  queue: Track[];
+  history: Track[];
+
+  recommendations: SimilarTrack[];
+  recommendationsLoading: boolean;
+
+  filters: FiltersPayload;
+
+  isPlaying: boolean;
+  isMaximized: boolean;
 }
 
-export type PlaybackAction = { type: "open" } | { type: "close" } | { type: "toggle" }
+export type PlaybackAction =
+  | { type: "OPEN_PLAYER" }
+  | { type: "CLOSE_PLAYER" }
+  | { type: "TOGGLE_PLAYER" }
+  | { type: "PLAY_TRACK"; track: Track }
+  | { type: "TRACK_STARTED"; track: Track }
+  | { type: "ENQUEUE"; track: Track }
+  | { type: "REMOVE_FROM_QUEUE"; index: number }
+  | { type: "REORDER_QUEUE"; from: number; to: number }
+  | { type: "ADVANCE_QUEUE" }
+  | { type: "SET_RECOMMENDATIONS"; tracks: SimilarTrack[] }
+  | { type: "SET_FILTERS"; filters: FiltersPayload }
+  | { type: "SET_PLAYING"; value: boolean };
 
 export const initialPlaybackState: PlaybackState = {
-  isMaximized: false
+  currentTrack: null,
+  queue: [],
+  history: [],
+  recommendations: [],
+  recommendationsLoading: false,
+  filters: {},
+  isPlaying: false,
+  isMaximized: false,
 };
 
 export const playbackReducer = (state: PlaybackState, action: PlaybackAction): PlaybackState => {
   switch (action.type) {
-    case "open": {
+    case "OPEN_PLAYER": {
       return {
         ...state,
         isMaximized: true
       };
     }
-    case "close": {
+    case "CLOSE_PLAYER": {
       return {
         ...state,
         isMaximized: false
       };
     }
-    case "toggle": {
+    case "TOGGLE_PLAYER": {
       return {
         ...state,
         isMaximized: !state.isMaximized

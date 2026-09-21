@@ -41,7 +41,7 @@ export default function SearchPage() {
   // Initial search (though input or navigation)
   useEffect(() => {
     // Close the player after user search
-    dispatch({ type: "close" });
+    dispatch({ type: "CLOSE_PLAYER" });
     loadMoreController.current?.abort();
 
     if (!query) {

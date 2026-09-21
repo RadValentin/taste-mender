@@ -213,7 +213,7 @@ export default function Player({ ref }: PlayerProps) {
       setPlayerState(playerState => ({ ...playerState, track }));
 
       if (shouldMaximize) {
-        dispatch({type: "open"});
+        dispatch({ type: "OPEN_PLAYER" });
       }
 
       setRecState(recState => ({...recState, isLoading: true}));
@@ -246,7 +246,7 @@ export default function Player({ ref }: PlayerProps) {
   };
 
   const toggleMaximize = () => {
-    dispatch({type: "toggle" });
+    dispatch({ type: "TOGGLE_PLAYER" });
   }
 
   const renderContent = () => {
