@@ -137,6 +137,7 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
         // so clear them while the new set is fetched.
         recommendations: [],
         recommendationsLoading: true,
+        recommendationStats: null,
         history: [...state.history, action.track]
       }
     }
