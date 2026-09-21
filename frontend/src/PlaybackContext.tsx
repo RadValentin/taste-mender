@@ -155,6 +155,12 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
 export const PlaybackContext = createContext<PlaybackState | null>(null);
 export const PlaybackDispatchContext = createContext<Dispatch<PlaybackAction> | null>(null);
 
+/**
+ * Provides access to the current playback state and controls.
+ *
+ * @returns The playback state, action dispatcher, and whether playback controls
+ * are currently blocked while a track or its recommendations are loading.
+ */
 export const usePlaybackContext = () => {
   const state = useContext(PlaybackContext);
   const dispatch = useContext(PlaybackDispatchContext);
@@ -163,6 +169,8 @@ export const usePlaybackContext = () => {
     throw new Error("usePlaybackContext must be used within PlaybackProvider");
   }
 
-  return { state, dispatch };
+  const playbackBusy = state.pendingTrack !== null || state.recommendationsLoading;
+
+  return { state, dispatch, playbackBusy };
 };
 

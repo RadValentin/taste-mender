@@ -57,7 +57,7 @@ export default function Player() {
   // Component state
   const [mobileTab, setMobileTab] = useState<MobileTab>("recommendations");
   const [playerState, setPlayerState] = useState<PlayerState>(defaultPlayerState);
-  const {state: playbackState, dispatch} = usePlaybackContext();
+  const {state: playbackState, dispatch, playbackBusy} = usePlaybackContext();
 
   // Warns users before they leave the page while playback is active.
   useBeforeUnload(playbackState.isPlaying);
@@ -266,7 +266,7 @@ export default function Player() {
             type="button"
             className="btn btn-metal"
             aria-label="Play/Pause"
-            disabled={!playerState.isReady || playbackState.pendingTrack !== null}
+            disabled={!playerState.isReady || playbackBusy}
             onClick={togglePlayback}
           >
             { playbackState.isPlaying
@@ -278,7 +278,7 @@ export default function Player() {
             type="button"
             className="btn btn-amber"
             aria-label="Next Track"
-            disabled={!playerState.isReady || playbackState.pendingTrack !== null}
+            disabled={!playerState.isReady || playbackBusy}
             onClick={playNextTrack}
           >
             <i className="fa-solid fa-forward"></i>
