@@ -32,10 +32,11 @@ export type PlaybackAction =
   | { type: "PLAY_TRACK"; track: Track }
   | { type: "PLAY_TRACK_FAILED" }
   | { type: "TRACK_STARTED"; track: Track }
-  | { type: "ENQUEUE"; track: Track }
-  | { type: "REMOVE_FROM_QUEUE"; index: number }
-  | { type: "REORDER_QUEUE"; from: number; to: number }
-  | { type: "ADVANCE_QUEUE" }
+  // Deferred to issue #52; reviewers should ignore these commented actions for now.
+  // | { type: "ENQUEUE"; track: Track }
+  // | { type: "REMOVE_FROM_QUEUE"; index: number }
+  // | { type: "REORDER_QUEUE"; from: number; to: number }
+  // | { type: "ADVANCE_QUEUE" }
   | { type: "SET_RECOMMENDATIONS_LOADING"; value: boolean }
   | { type: "SET_RECOMMENDATIONS"; tracks: SimilarTrack[]; stats: RecommendStats }
   | { type: "RESET_RECOMMENDATIONS" }
