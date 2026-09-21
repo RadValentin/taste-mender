@@ -68,6 +68,12 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
         isMaximized: !state.isMaximized
       }
     }
+    case "SET_FILTERS": {
+      return {
+        ...state,
+        filters: action.filters
+      };
+    }
     default: {
       throw Error("Unknown action: " + action["type"]);
     }

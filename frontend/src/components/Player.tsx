@@ -30,7 +30,6 @@ type RecState = {
   similarList: SimilarTrack[],
   stats: any,
   listenedMbids: string[],
-  filtersPayload: FiltersPayload
 }
 
 type MobileTab = "recommendations" | "filters" | "stats";
@@ -68,7 +67,6 @@ const defaultRecState: RecState = {
   similarList: [],
   stats: {},
   listenedMbids: [],
-  filtersPayload: {}
 }
 
 /**
@@ -163,6 +161,8 @@ export default function Player({ ref }: PlayerProps) {
   const onFiltersChange = (payload: FiltersPayload) => {
     const track = playerState.track;
 
+    dispatch({ type: "SET_FILTERS", filters: payload });
+
     if (!track) {
       return;
     }
@@ -180,7 +180,6 @@ export default function Player({ ref }: PlayerProps) {
         isLoading: false,
         similarList: data.similar_list,
         stats: data.stats,
-        filtersPayload: payload
       }))
     }).catch(() => {
       setRecState(recState => ({...recState, isLoading:false}));
@@ -212,7 +211,7 @@ export default function Player({ ref }: PlayerProps) {
       const recommendPayload: RecommendRequest = {
         mbid: track.mbid,
         listened_mbids: recState.listenedMbids,
-        ...recState.filtersPayload
+        ...playbackState.filters
       };
       getRecommendations(recommendPayload).then(data => {
         console.log("Got recommendations:", data);
