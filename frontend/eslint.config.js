@@ -19,5 +19,11 @@ export default defineConfig([
       ecmaVersion: 'latest',
       globals: globals.browser,
     },
+    rules: {
+      '@eslint-react/exhaustive-deps': 'off',
+      '@eslint-react/naming-convention-ref-name': 'off',
+      '@eslint-react/set-state-in-effect': 'off',
+      '@eslint-react/use-state': 'off',
+    },
   },
 ])
