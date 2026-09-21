@@ -21,8 +21,7 @@ export type PlayerProps = {
 
 type PlayerState = {
   track: Track | undefined,
-  isReady: boolean,
-  isPlaying: boolean
+  isReady: boolean
 }
 
 type MobileTab = "recommendations" | "filters" | "stats";
@@ -51,8 +50,7 @@ const loadYouTubeIframeAPI = (() => {
 
 const defaultPlayerState: PlayerState = {
   track: undefined,
-  isReady: false,
-  isPlaying: false
+  isReady: false
 };
 
 /**
@@ -71,16 +69,16 @@ export default function Player({ ref }: PlayerProps) {
   const {state: playbackState, dispatch} = usePlaybackContext();
 
   // Warns users before they leave the page while playback is active.
-  useBeforeUnload(playerState.isPlaying);
+  useBeforeUnload(playbackState.isPlaying);
 
   const onYouTubeStateChange = useEffectEvent((e: any) => {
     const YT = window.YT;
     if (!YT) return;
 
-    setPlayerState(playerState => ({
-      ...playerState,
-      isPlaying: e.data === YT.PlayerState.PLAYING
-    }));
+    dispatch({
+      type: "SET_PLAYING",
+      value: e.data === YT.PlayerState.PLAYING
+    });
 
     // If video ended, play first recommendation
     if (e.data === YT.PlayerState.ENDED) {
@@ -139,6 +137,7 @@ export default function Player({ ref }: PlayerProps) {
     reset: () => {
       iframeRef.current?.stopVideo();
       setPlayerState(defaultPlayerState);
+      dispatch({ type: "SET_PLAYING", value: false });
       dispatch({ type: "RESET_RECOMMENDATIONS" });
     }
   }));
@@ -229,7 +228,7 @@ export default function Player({ ref }: PlayerProps) {
   };
 
   const togglePlayback = () => {
-    if (playerState.isPlaying) {
+    if (playbackState.isPlaying) {
       iframeRef.current?.pauseVideo();
     } else {
       iframeRef.current?.playVideo();
@@ -268,7 +267,7 @@ export default function Player({ ref }: PlayerProps) {
 
         <div className="player__controls">
           <button type="button" className="btn btn-metal" aria-label="Play/Pause" onClick={togglePlayback}>
-            { playerState.isPlaying
+            { playbackState.isPlaying
               ? <i className="fa-solid fa-pause"></i>
               : <i className="fa-solid fa-play"></i>
             }

@@ -109,7 +109,12 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
         history: [...state.history, action.track]
       }
     }
-
+    case "SET_PLAYING": {
+      return {
+        ...state,
+        isPlaying: action.value
+      };
+    }
     default: {
       throw Error("Unknown action: " + action["type"]);
     }
