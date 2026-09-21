@@ -54,6 +54,7 @@ export default function Player() {
   // Child refs
   const iframeRef = useRef<any>(null);
   const ytPlayerRef = useRef<HTMLDivElement | null>(null);
+  const recommendControllerRef = useRef<AbortController | null>(null);
   // Component state
   const [mobileTab, setMobileTab] = useState<MobileTab>("recommendations");
   const [playerState, setPlayerState] = useState<PlayerState>(defaultPlayerState);
@@ -62,9 +63,11 @@ export default function Player() {
   // Warns users before they leave the page while playback is active.
   useBeforeUnload(playbackState.isPlaying);
 
+  // When a new track is marked as pending try to play it
   useEffect(() => {
     const track = playbackState.pendingTrack;
 
+    // When player becomes ready, effect runs again, ensuring it picks up the pending track.
     if (!track || !playerState.isReady || !iframeRef.current) {
       return;
     }
@@ -93,7 +96,12 @@ export default function Player() {
 
       dispatch({ type: "TRACK_STARTED", track});
 
-      getRecommendations(recommendPayload).then(data => {
+      // A new track invalidates any recommendation request for the previous track or filters.
+      recommendControllerRef.current?.abort();
+      const controller = new AbortController();
+      recommendControllerRef.current = controller;
+
+      getRecommendations(recommendPayload, controller.signal).then(data => {
         console.log("Got recommendations:", data);
           dispatch({
             type: "SET_RECOMMENDATIONS",
@@ -101,7 +109,9 @@ export default function Player() {
             stats: data.stats,
           });
       }).catch(() => {
-        dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: false });
+        if (!controller.signal.aborted) {
+          dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: false });
+        }
       });
     }).catch(() => {
       dispatch({ type: "PLAY_TRACK_FAILED" });
@@ -157,17 +167,26 @@ export default function Player() {
     })();
 
     return () => {
+      // component unmount
       mounted = false;
       try {
         iframeRef.current?.destroy?.();
       } catch {
         console.error("Could not destroy iframe player");
       }
+
+      // cancel any pending recommendations requests
+      recommendControllerRef.current?.abort();
     };
   }, []);
 
   const onFiltersChange = (payload: FiltersPayload) => {
     const track = playbackState.currentTrack;
+
+    // Cancel any pending filter update and remake the controller
+    recommendControllerRef.current?.abort();
+    const controller = new AbortController();
+    recommendControllerRef.current = controller;
 
     dispatch({ type: "SET_FILTERS", filters: payload });
 
@@ -181,7 +200,7 @@ export default function Player() {
       listened_mbids: playbackState.history.map(t => t.mbid),
       ...payload
     };
-    getRecommendations(recommendPayload).then(data => {
+    getRecommendations(recommendPayload, controller.signal).then(data => {
       console.log("Got recommendations:", data);
       dispatch({
         type: "SET_RECOMMENDATIONS",
@@ -189,7 +208,9 @@ export default function Player() {
         stats: data.stats,
       });
     }).catch(() => {
-      dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: false });
+      if (!controller.signal.aborted) {
+        dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: false });
+      }
     });
   };
 
