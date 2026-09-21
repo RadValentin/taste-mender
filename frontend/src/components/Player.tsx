@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useImperativeHandle, useRef, useState } from "react";
+import React, { useEffect, useEffectEvent, useImperativeHandle, useRef, useState } from "react";
 import type { Track, SimilarTrack, RecommendRequest } from "../types";
 import { getTrackSources, getRecommendations } from "../api.ts"
 import TrackList from "./TrackList.tsx";
@@ -81,10 +81,6 @@ export default function Player({ ref }: PlayerProps) {
   // Child refs
   const iframeRef = useRef<any>(null);
   const ytPlayerRef = useRef<HTMLDivElement | null>(null);
-  // State refs - needed for methods called by YT player events (closure)
-  const recListRef = useRef<SimilarTrack[]>([]);
-  const recIDsRef = useRef<string[]>([]);
-  const recPayloadRef = useRef({});
   // Component state
   const [mobileTab, setMobileTab] = useState<MobileTab>("recommendations");
   const [playerState, setPlayerState] = useState<PlayerState>(defaultPlayerState);
@@ -94,11 +90,20 @@ export default function Player({ ref }: PlayerProps) {
   // Warns users before they leave the page while playback is active.
   useBeforeUnload(playerState.isPlaying);
 
-  useEffect(() => {
-    recListRef.current = recState.similarList;
-    recIDsRef.current = recState.listenedMbids;
-    recPayloadRef.current = recState.filtersPayload;
-  }, [recState.similarList, recState.listenedMbids, recState.filtersPayload]);
+  const onYouTubeStateChange = useEffectEvent((e: any) => {
+    const YT = window.YT;
+    if (!YT) return;
+
+    setPlayerState(playerState => ({
+      ...playerState,
+      isPlaying: e.data === YT.PlayerState.PLAYING
+    }));
+
+    // If video ended, play first recommendation
+    if (e.data === YT.PlayerState.ENDED && recState.similarList.length > 0) {
+      playTrack(recState.similarList[0]);
+    }
+  });
 
   // Load the YouTube iframe player on first mount
   useEffect(() => {
@@ -119,20 +124,7 @@ export default function Player({ ref }: PlayerProps) {
           onReady: () => {
             setPlayerState(playerState => ({...playerState, isReady: true}));
           },
-          onStateChange: (e: any) => {
-            const YT = window.YT;
-            if (!YT) return;
-
-            setPlayerState(playerState => ({
-              ...playerState,
-              isPlaying: e.data === YT.PlayerState.PLAYING
-            }));
-
-            // If video ended, play first recommendation
-            if (e.data === YT.PlayerState.ENDED && recListRef.current.length > 0) {
-              playTrack(recListRef.current[0]);
-            }
-          }
+          onStateChange: onYouTubeStateChange
         }
       });
     })();
@@ -178,7 +170,7 @@ export default function Player({ ref }: PlayerProps) {
     setRecState(recState => ({...recState, isLoading: true}));
     const recommendPayload: RecommendRequest = {
       mbid: track.mbid,
-      listened_mbids: recIDsRef.current,
+      listened_mbids: recState.listenedMbids,
       ...payload
     };
     getRecommendations(recommendPayload).then(data => {
@@ -219,8 +211,8 @@ export default function Player({ ref }: PlayerProps) {
       setRecState(recState => ({...recState, isLoading: true}));
       const recommendPayload: RecommendRequest = {
         mbid: track.mbid,
-        listened_mbids: recIDsRef.current,
-        ...recPayloadRef.current
+        listened_mbids: recState.listenedMbids,
+        ...recState.filtersPayload
       };
       getRecommendations(recommendPayload).then(data => {
         console.log("Got recommendations:", data);
@@ -282,7 +274,7 @@ export default function Player({ ref }: PlayerProps) {
               : <i className="fa-solid fa-play"></i>
             }
           </button>
-          <button type="button" className="btn btn-amber" aria-label="Next Track" onClick={() => { playTrack(recListRef.current[0]) }}>
+          <button type="button" className="btn btn-amber" aria-label="Next Track" onClick={() => { playTrack(recState.similarList[0]) }}>
             <i className="fa-solid fa-forward"></i>
           </button>
           <button type="button" className="btn btn-dark" aria-label="Minimize/Maximize" onClick={toggleMaximize}>
