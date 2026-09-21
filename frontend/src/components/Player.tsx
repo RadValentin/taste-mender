@@ -6,7 +6,7 @@ import TrackList from "./TrackList.tsx";
 import TrackListSkeleton from "./TrackListSkeleton.tsx";
 import Filters, {type FiltersPayload} from "./Filters.tsx";
 import ImageLoader from "./ImageLoader.tsx";
-import { usePlayerContext } from "../PlayerContext.tsx";
+import { usePlaybackContext } from "../PlaybackContext.tsx";
 import useBeforeUnload from "../hooks/useBeforeUnload.ts";
 import "./Player.css";
 
@@ -89,7 +89,7 @@ export default function Player({ ref }: PlayerProps) {
   const [mobileTab, setMobileTab] = useState<MobileTab>("recommendations");
   const [playerState, setPlayerState] = useState<PlayerState>(defaultPlayerState);
   const [recState, setRecState] = useState<RecState>(defaultRecState);
-  const {state: globalState, dispatch} = usePlayerContext();
+  const {state: playbackState, dispatch} = usePlaybackContext();
 
   // Warns users before they leave the page while playback is active.
   useBeforeUnload(playerState.isPlaying);
@@ -286,7 +286,7 @@ export default function Player({ ref }: PlayerProps) {
             <i className="fa-solid fa-forward"></i>
           </button>
           <button type="button" className="btn btn-dark" aria-label="Minimize/Maximize" onClick={toggleMaximize}>
-            { globalState.isMaximized
+            { playbackState.isMaximized
               ? <i className="fa-solid fa-caret-down"></i>
               : <i className="fa-solid fa-caret-up"></i>
             }
@@ -381,7 +381,7 @@ export default function Player({ ref }: PlayerProps) {
     );
   };
 
-  const overlayClass = globalState.isMaximized
+  const overlayClass = playbackState.isMaximized
     ? "player__overlay player__overlay--maximized"
     : "player__overlay player__overlay--minimized";
   const playerClass = playerState.track ? "player" : "player player--empty";

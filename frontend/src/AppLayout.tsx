@@ -3,7 +3,7 @@ import { Outlet, useLocation } from "react-router";
 import { getScrollbarWidth } from "./layout";
 import Header from "./components/Header";
 import Player, { type PlayerRef } from "./components/Player";
-import { usePlayerContext } from "./PlayerContext";
+import { usePlaybackContext } from "./PlaybackContext";
 import "./AppLayout.css";
 import type { Track } from "./types";
 
@@ -11,7 +11,7 @@ import type { Track } from "./types";
  * Root component which manages the main content area.
  */
 export default function AppLayout() {
-  const { state: playerState } = usePlayerContext();
+  const { state: playerState } = usePlaybackContext();
   const playerRef = useRef<PlayerRef>(null);
   const location = useLocation();
 
