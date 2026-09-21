@@ -3,7 +3,8 @@
 		"ESLint": {
 			"type": "stdio",
 			"command": "npx",
-			"args": ["@eslint/mcp@latest"]
+			"cwd": "${workspaceFolder}/frontend",
+			"args": ["--no-install", "@eslint/mcp"]
 		}
 	}
 }
