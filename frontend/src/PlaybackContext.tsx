@@ -115,7 +115,6 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
           ...state,
           // We intend to play this, but it hasn't started yet.
           pendingTrack: action.track,
-          isPlaying: false,
       };
     }
     case "PLAY_TRACK_FAILED": {
@@ -133,7 +132,6 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
         // so clear them while the new set is fetched.
         recommendations: [],
         recommendationsLoading: true,
-        isPlaying: true,
         history: [...state.history, action.track]
       }
     }

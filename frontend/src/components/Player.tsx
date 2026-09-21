@@ -123,6 +123,14 @@ export default function Player() {
     }
   });
 
+  const onYouTubeError = useEffectEvent((e: any) => {
+    console.error("YouTube player error:", e.data);
+    dispatch({
+      type: "SET_PLAYING",
+      value: false
+    });
+  });
+
   // Load the YouTube iframe player on first mount
   useEffect(() => {
     let mounted = true;
@@ -142,7 +150,8 @@ export default function Player() {
           onReady: () => {
             setPlayerState(playerState => ({...playerState, isReady: true}));
           },
-          onStateChange: onYouTubeStateChange
+          onStateChange: onYouTubeStateChange,
+          onError: onYouTubeError
         }
       });
     })();
