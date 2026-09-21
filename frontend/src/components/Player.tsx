@@ -11,7 +11,7 @@ import useBeforeUnload from "../hooks/useBeforeUnload.ts";
 import "./Player.css";
 
 export interface PlayerRef {
-  loadAndPlay: (track: Track, shouldMaximise: boolean) => void,
+  loadAndPlay: (track: Track) => void,
   reset: () => void
 }
 
@@ -126,10 +126,10 @@ export default function Player({ ref }: PlayerProps) {
      * @param track The track to play.
      * @param shouldMaximise Whether to maximize the player when the track starts.
      */
-    loadAndPlay: (track: Track, shouldMaximise: boolean = false) => {
+    loadAndPlay: (track: Track) => {
       setPlayerState(() => ({...defaultPlayerState, track}));
       dispatch({ type: "RESET_RECOMMENDATIONS" });
-      playTrack(track, shouldMaximise);
+      playTrack(track);
     },
     /**
      * Stops playback and resets the player state.
@@ -179,7 +179,7 @@ export default function Player({ ref }: PlayerProps) {
    * the rest of the loading video logic can happen as an effect.
    * Removes issues with syncing `TRACK_STARTED` and `listened_mbids`.
    */
-  const playTrack = (track: Track, shouldMaximize: boolean = false) => {
+  const playTrack = (track: Track) => {
     console.log("I've been told to play this track:", track);
     getTrackSources(track.mbid).then(sources => {
       if (!sources[0]) {
@@ -189,10 +189,6 @@ export default function Player({ ref }: PlayerProps) {
 
       iframeRef.current.loadVideoById({ videoId: sources[0].id });
       setPlayerState(playerState => ({ ...playerState, track }));
-
-      if (shouldMaximize) {
-        dispatch({ type: "OPEN_PLAYER" });
-      }
 
       dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: true });
       const recommendPayload: RecommendRequest = {

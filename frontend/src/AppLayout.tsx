@@ -11,7 +11,7 @@ import type { Track } from "./types";
  * Root component which manages the main content area.
  */
 export default function AppLayout() {
-  const { state: playerState } = usePlaybackContext();
+  const { state: playerState, dispatch } = usePlaybackContext();
   const playerRef = useRef<PlayerRef>(null);
   const location = useLocation();
 
@@ -36,7 +36,8 @@ export default function AppLayout() {
   }, [playerState.isMaximized]);
 
   function onPlay(track: Track) {
-    playerRef.current?.loadAndPlay(track, true);
+    dispatch({ type: "OPEN_PLAYER" });
+    playerRef.current?.loadAndPlay(track);
   }
 
   return (
