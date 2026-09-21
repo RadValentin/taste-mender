@@ -1,6 +1,6 @@
 import { createContext, useContext } from "react";
 import type { Dispatch } from "react";
-import type { SimilarTrack, Track } from "./types";
+import type { RecommendStats, SimilarTrack, Track } from "./types";
 import type { FiltersPayload } from "./components/Filters";
 
 /**
@@ -16,6 +16,7 @@ export type PlaybackState = {
 
   recommendations: SimilarTrack[];
   recommendationsLoading: boolean;
+  recommendationStats: RecommendStats | null;
 
   filters: FiltersPayload;
 
@@ -33,7 +34,9 @@ export type PlaybackAction =
   | { type: "REMOVE_FROM_QUEUE"; index: number }
   | { type: "REORDER_QUEUE"; from: number; to: number }
   | { type: "ADVANCE_QUEUE" }
-  | { type: "SET_RECOMMENDATIONS"; tracks: SimilarTrack[] }
+  | { type: "SET_RECOMMENDATIONS_LOADING"; value: boolean }
+  | { type: "SET_RECOMMENDATIONS"; tracks: SimilarTrack[]; stats: RecommendStats }
+  | { type: "RESET_RECOMMENDATIONS" }
   | { type: "SET_FILTERS"; filters: FiltersPayload }
   | { type: "SET_PLAYING"; value: boolean };
 
@@ -43,6 +46,7 @@ export const initialPlaybackState: PlaybackState = {
   history: [],
   recommendations: [],
   recommendationsLoading: false,
+  recommendationStats: null,
   filters: {},
   isPlaying: false,
   isMaximized: false,
@@ -70,6 +74,28 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
       }
     }
     // Recommendation actions
+    case "SET_RECOMMENDATIONS_LOADING": {
+      return {
+        ...state,
+        recommendationsLoading: action.value
+      };
+    }
+    case "SET_RECOMMENDATIONS": {
+      return {
+        ...state,
+        recommendations: action.tracks,
+        recommendationStats: action.stats,
+        recommendationsLoading: false
+      };
+    }
+    case "RESET_RECOMMENDATIONS": {
+      return {
+        ...state,
+        recommendations: [],
+        recommendationsLoading: false,
+        recommendationStats: null
+      };
+    }
     case "SET_FILTERS": {
       return {
         ...state,
