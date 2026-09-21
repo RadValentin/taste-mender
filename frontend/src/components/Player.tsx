@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useEffectEvent, useImperativeHandle, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import type { Track, RecommendRequest } from "../types";
 import { getTrackSources, getRecommendations } from "../api.ts"
 import TrackList from "./TrackList.tsx";
@@ -9,18 +9,10 @@ import ImageLoader from "./ImageLoader.tsx";
 import { usePlaybackContext } from "../PlaybackContext.tsx";
 import useBeforeUnload from "../hooks/useBeforeUnload.ts";
 import "./Player.css";
+import LoadingSpinner from "./LoadingSpinner.tsx";
 
-export interface PlayerRef {
-  loadAndPlay: (track: Track) => void,
-  reset: () => void
-}
-
-export type PlayerProps = {
-  ref: React.RefObject<PlayerRef | null>
-}
 
 type PlayerState = {
-  track: Track | undefined,
   isReady: boolean
 }
 
@@ -49,7 +41,6 @@ const loadYouTubeIframeAPI = (() => {
 })();
 
 const defaultPlayerState: PlayerState = {
-  track: undefined,
   isReady: false
 };
 
@@ -59,7 +50,7 @@ const defaultPlayerState: PlayerState = {
  * "Up Next", and "Other Recommendations" lists. Exposed via `PlayerRef` for imperative
  * `loadAndPlay` and `reset` calls from the parent.
  */
-export default function Player({ ref }: PlayerProps) {
+export default function Player() {
   // Child refs
   const iframeRef = useRef<any>(null);
   const ytPlayerRef = useRef<HTMLDivElement | null>(null);
@@ -70,6 +61,50 @@ export default function Player({ ref }: PlayerProps) {
 
   // Warns users before they leave the page while playback is active.
   useBeforeUnload(playbackState.isPlaying);
+
+  useEffect(() => {
+    const track = playbackState.pendingTrack;
+
+    if (!track || !playerState.isReady || !iframeRef.current) {
+      return;
+    }
+
+    console.log("I've been told to play this track:", track);
+    getTrackSources(track.mbid).then(sources => {
+      if (!sources[0]) {
+        console.error(`No sources found for mbid ${track.mbid}`);
+        dispatch({
+          type: "PLAY_TRACK_FAILED"
+        });
+
+        return;
+      }
+
+      iframeRef.current.loadVideoById({ videoId: sources[0].id });
+
+      const recommendPayload: RecommendRequest = {
+        mbid: track.mbid,
+        listened_mbids: [
+          ...playbackState.history.map(({ mbid }) => mbid),
+          track.mbid,
+        ],
+        ...playbackState.filters
+      };
+
+      dispatch({ type: "TRACK_STARTED", track});
+
+      getRecommendations(recommendPayload).then(data => {
+        console.log("Got recommendations:", data);
+          dispatch({
+            type: "SET_RECOMMENDATIONS",
+            tracks: data.similar_list,
+            stats: data.stats,
+          });
+      }).catch(() => {
+          dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: false });
+      });
+    });
+  }, [playbackState.pendingTrack, playerState.isReady, dispatch]);
 
   const onYouTubeStateChange = useEffectEvent((e: any) => {
     const YT = window.YT;
@@ -120,30 +155,8 @@ export default function Player({ ref }: PlayerProps) {
     };
   }, []);
 
-  // Methods callable by parent component
-  useImperativeHandle(ref, () => ({
-    /**
-     * @param track The track to play.
-     * @param shouldMaximise Whether to maximize the player when the track starts.
-     */
-    loadAndPlay: (track: Track) => {
-      setPlayerState(() => ({...defaultPlayerState, track}));
-      dispatch({ type: "RESET_RECOMMENDATIONS" });
-      playTrack(track);
-    },
-    /**
-     * Stops playback and resets the player state.
-     */
-    reset: () => {
-      iframeRef.current?.stopVideo();
-      setPlayerState(defaultPlayerState);
-      dispatch({ type: "SET_PLAYING", value: false });
-      dispatch({ type: "RESET_RECOMMENDATIONS" });
-    }
-  }));
-
   const onFiltersChange = (payload: FiltersPayload) => {
-    const track = playerState.track;
+    const track = playbackState.currentTrack;
 
     dispatch({ type: "SET_FILTERS", filters: payload });
 
@@ -169,48 +182,12 @@ export default function Player({ ref }: PlayerProps) {
     });
   };
 
-  /**
-   * Loads and plays a track.
-   *
-   * @param track The track to load and play.
-   * @param shouldMaximize Whether the player should open in its expanded/maximized state.
-   *
-   * @todo When current track is moved to global context make this fn just emit a dispatch and
-   * the rest of the loading video logic can happen as an effect.
-   * Removes issues with syncing `TRACK_STARTED` and `listened_mbids`.
-   */
+
+  // Loads and plays a track.
   const playTrack = (track: Track) => {
-    console.log("I've been told to play this track:", track);
-    getTrackSources(track.mbid).then(sources => {
-      if (!sources[0]) {
-        console.error(`No sources found for mbid ${track.mbid}`)
-        return;
-      }
-
-      iframeRef.current.loadVideoById({ videoId: sources[0].id });
-      setPlayerState(playerState => ({ ...playerState, track }));
-
-      dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: true });
-      const recommendPayload: RecommendRequest = {
-        mbid: track.mbid,
-        listened_mbids: [
-          ...playbackState.history.map(({ mbid }) => mbid),
-          track.mbid,
-        ],
-        ...playbackState.filters
-      };
-      dispatch({type: "TRACK_STARTED", track});
-
-      getRecommendations(recommendPayload).then(data => {
-        console.log("Got recommendations:", data);
-          dispatch({
-            type: "SET_RECOMMENDATIONS",
-            tracks: data.similar_list,
-            stats: data.stats,
-          });
-      }).catch(() => {
-          dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: false });
-      });
+    dispatch({
+      type: "PLAY_TRACK",
+      track,
     });
   };
 
@@ -236,11 +213,23 @@ export default function Player({ ref }: PlayerProps) {
   }
 
   const renderContent = () => {
-    if (!playerState.track) {
-      return;
+    const track = playbackState.currentTrack;
+
+    if (!track) {
+      return (
+        <div className="player__footer">
+          <div className="player__controls">
+            <button type="button" className="btn btn-dark" aria-label="Minimize/Maximize" onClick={toggleMaximize}>
+              { playbackState.isMaximized
+                ? <i className="fa-solid fa-caret-down"></i>
+                : <i className="fa-solid fa-caret-up"></i>
+              }
+            </button>
+          </div>
+        </div>
+      )
     }
 
-    const track = playerState.track;
     const artists = track.artists?.map(a => a.name).join(", ") || "Unknown artist";
     const album = track.album?.name ?? null;
     const year = track.album?.date ? new Date(track.album.date).getFullYear() : null;
@@ -262,7 +251,13 @@ export default function Player({ ref }: PlayerProps) {
         </div>
 
         <div className="player__controls">
-          <button type="button" className="btn btn-metal" aria-label="Play/Pause" onClick={togglePlayback}>
+          <button
+            type="button"
+            className="btn btn-metal"
+            aria-label="Play/Pause"
+            disabled={!playerState.isReady}
+            onClick={togglePlayback}
+          >
             { playbackState.isPlaying
               ? <i className="fa-solid fa-pause"></i>
               : <i className="fa-solid fa-play"></i>
@@ -272,6 +267,7 @@ export default function Player({ ref }: PlayerProps) {
             type="button"
             className="btn btn-amber"
             aria-label="Next Track"
+            disabled={!playerState.isReady}
             onClick={playNextTrack}
           >
             <i className="fa-solid fa-forward"></i>
@@ -291,6 +287,10 @@ export default function Player({ ref }: PlayerProps) {
     const stats = playbackState.recommendationStats;
     if (!stats) {
       return;
+    }
+
+    if (playbackState.pendingTrack) {
+      return <LoadingSpinner></LoadingSpinner>
     }
 
     return(
@@ -342,7 +342,7 @@ export default function Player({ ref }: PlayerProps) {
 
   const renderRecommendations = () => {
     const recommendations = playbackState.recommendations;
-    const isLoading = playbackState.recommendationsLoading;
+    const isLoading = playbackState.recommendationsLoading || playbackState.pendingTrack;
     const hasRecommendations = recommendations.length > 0;
 
     if (!hasRecommendations && !isLoading) {
@@ -384,7 +384,8 @@ export default function Player({ ref }: PlayerProps) {
   const overlayClass = playbackState.isMaximized
     ? "player__overlay player__overlay--maximized"
     : "player__overlay player__overlay--minimized";
-  const playerClass = playerState.track ? "player" : "player player--empty";
+  const showPlayer = playbackState.currentTrack || playbackState.pendingTrack || playbackState.isMaximized;
+  const playerClass = showPlayer ? "player" : "player player--empty";
 
   return (
     <div className={playerClass}>
@@ -428,11 +429,11 @@ export default function Player({ ref }: PlayerProps) {
         <div
           className={`player__stats player__mobile-panel ${mobileTab === "stats" ? "is-active" : ""}`}
         >
-          {renderStats()}
+          {playbackState.pendingTrack ? <LoadingSpinner /> : renderStats()}
         </div>
         {renderRecommendations()}
       </div>
-      {playerState.track && renderContent()}
+      {renderContent()}
     </div>
   );
 }

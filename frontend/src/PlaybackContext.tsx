@@ -9,6 +9,7 @@ import type { FiltersPayload } from "./components/Filters";
  * provided by `PlaybackContextProvider`.
  * */
 export type PlaybackState = {
+  pendingTrack: Track | null;
   currentTrack: Track | null;
 
   queue: Track[];
@@ -29,6 +30,7 @@ export type PlaybackAction =
   | { type: "CLOSE_PLAYER" }
   | { type: "TOGGLE_PLAYER" }
   | { type: "PLAY_TRACK"; track: Track }
+  | { type: "PLAY_TRACK_FAILED" }
   | { type: "TRACK_STARTED"; track: Track }
   | { type: "ENQUEUE"; track: Track }
   | { type: "REMOVE_FROM_QUEUE"; index: number }
@@ -41,6 +43,7 @@ export type PlaybackAction =
   | { type: "SET_PLAYING"; value: boolean };
 
 export const initialPlaybackState: PlaybackState = {
+  pendingTrack: null,
   currentTrack: null,
   queue: [],
   history: [],
@@ -103,9 +106,30 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
       };
     }
     // Playback actions
+    case "PLAY_TRACK": {
+      return {
+          ...state,
+          // We intend to play this, but it hasn't started yet.
+          pendingTrack: action.track,
+          isPlaying: false,
+      };
+    }
+    case "PLAY_TRACK_FAILED": {
+      return {
+        ...state,
+        pendingTrack: null
+      };
+    }
     case "TRACK_STARTED": {
       return {
         ...state,
+        currentTrack: action.track,
+        pendingTrack: null,
+        // Recommendations belong to the previous current track,
+        // so clear them while the new set is fetched.
+        recommendations: [],
+        recommendationsLoading: true,
+        isPlaying: true,
         history: [...state.history, action.track]
       }
     }

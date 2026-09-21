@@ -1,8 +1,8 @@
-import { useEffect, useRef, useLayoutEffect } from "react";
+import { useEffect, useLayoutEffect } from "react";
 import { Outlet, useLocation } from "react-router";
 import { getScrollbarWidth } from "./layout";
 import Header from "./components/Header";
-import Player, { type PlayerRef } from "./components/Player";
+import Player from "./components/Player";
 import { usePlaybackContext } from "./PlaybackContext";
 import "./AppLayout.css";
 import type { Track } from "./types";
@@ -12,7 +12,6 @@ import type { Track } from "./types";
  */
 export default function AppLayout() {
   const { state: playerState, dispatch } = usePlaybackContext();
-  const playerRef = useRef<PlayerRef>(null);
   const location = useLocation();
 
   useLayoutEffect(() => {
@@ -37,7 +36,7 @@ export default function AppLayout() {
 
   function onPlay(track: Track) {
     dispatch({ type: "OPEN_PLAYER" });
-    playerRef.current?.loadAndPlay(track);
+    dispatch({ type: "PLAY_TRACK", track });
   }
 
   return (
@@ -47,7 +46,7 @@ export default function AppLayout() {
       <main className="main" inert={playerState.isMaximized}>
         <Outlet context={{ onPlay }} />
       </main>
-      <Player ref={playerRef} />
+      <Player />
     </>
   )
 }
