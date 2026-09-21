@@ -287,7 +287,7 @@ export default function Player() {
             type="button"
             className="btn btn-metal"
             aria-label="Play/Pause"
-            disabled={!playerState.isReady || playbackBusy}
+            disabled={!playerState.isReady}
             onClick={togglePlayback}
           >
             { playbackState.isPlaying
