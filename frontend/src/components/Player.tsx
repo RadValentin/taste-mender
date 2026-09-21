@@ -101,8 +101,10 @@ export default function Player() {
             stats: data.stats,
           });
       }).catch(() => {
-          dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: false });
+        dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: false });
       });
+    }).catch(() => {
+      dispatch({ type: "PLAY_TRACK_FAILED" });
     });
   }, [playbackState.pendingTrack, playerState.isReady, dispatch]);
 
@@ -255,7 +257,7 @@ export default function Player() {
             type="button"
             className="btn btn-metal"
             aria-label="Play/Pause"
-            disabled={!playerState.isReady}
+            disabled={!playerState.isReady || playbackState.pendingTrack !== null}
             onClick={togglePlayback}
           >
             { playbackState.isPlaying
@@ -267,7 +269,7 @@ export default function Player() {
             type="button"
             className="btn btn-amber"
             aria-label="Next Track"
-            disabled={!playerState.isReady}
+            disabled={!playerState.isReady || playbackState.pendingTrack !== null}
             onClick={playNextTrack}
           >
             <i className="fa-solid fa-forward"></i>

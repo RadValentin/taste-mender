@@ -107,6 +107,10 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
     }
     // Playback actions
     case "PLAY_TRACK": {
+      if (state.pendingTrack || state.recommendationsLoading) {
+        return state;
+      }
+
       return {
           ...state,
           // We intend to play this, but it hasn't started yet.
