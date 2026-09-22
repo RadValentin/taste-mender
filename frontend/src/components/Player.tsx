@@ -82,6 +82,8 @@ export default function Player() {
     getTrackSources(track.mbid, sourcesController.signal).then(sources => {
       if (!sources[0]) {
         console.error(`No sources found for mbid ${track.mbid}`);
+        // Stop previous track's video, error states will be extended in issue #74
+        iframeRef.current?.stopVideo();
         dispatch({
           type: "TRACK_SOURCES_FAILED"
         });
@@ -94,6 +96,7 @@ export default function Player() {
       dispatch({ type: "TRACK_STARTED", track});
     }).catch(() => {
       if (!sourcesController.signal.aborted) {
+        iframeRef.current?.stopVideo();
         dispatch({ type: "TRACK_SOURCES_FAILED" });
       }
     });
@@ -303,7 +306,7 @@ export default function Player() {
             type="button"
             className="btn btn-amber"
             aria-label="Next Track"
-            disabled={!playerState.isReady || !!playbackState.pendingTrack}
+            disabled={disableNext}
             onClick={playNextTrack}
           >
             <i className="fa-solid fa-forward"></i>
