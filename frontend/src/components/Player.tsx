@@ -193,7 +193,9 @@ export default function Player() {
   }, []);
 
   const onFiltersChange = (payload: FiltersPayload) => {
-    const track = playbackState.currentTrack;
+    // Ensure that recommendations are filtered for the loading track if it exists,
+    // otherwise the current track.
+    const track = playbackState.pendingTrack ?? playbackState.currentTrack;
 
     // Cancel any pending filter update and remake the controller
     recommendControllerRef.current?.abort();
