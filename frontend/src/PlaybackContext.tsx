@@ -32,7 +32,7 @@ export type PlaybackAction =
   | { type: "CLOSE_PLAYER" }
   | { type: "TOGGLE_PLAYER" }
   | { type: "PLAY_TRACK"; track: Track }
-  | { type: "PLAY_TRACK_FAILED" }
+  | { type: "TRACK_SOURCES_FAILED" }
   | { type: "TRACK_STARTED"; track: Track }
   // Deferred to issue #52; reviewers should ignore these commented actions for now.
   // | { type: "ENQUEUE"; track: Track }
@@ -123,6 +123,7 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
     }
     // Playback actions
     case "PLAY_TRACK": {
+      // Signal that a track is pending playback.
       // Do nothing if a previous track is pending or trying to play the same track.
       if (
         state.pendingTrack ||
@@ -133,32 +134,35 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
 
       return {
           ...state,
+          // Ensure player is docked at the bottom
+          isDocked: true,
+          // Clear recommendations as new ones will be fetched for the pending track
+          recommendations: [],
+          recommendationsLoading: true,
+          recommendationStats: null,
           // We intend to play this, but it hasn't started yet.
           pendingTrack: action.track,
-          // Ensure player is docked at the bottom
-          isDocked: true
       };
     }
-    case "PLAY_TRACK_FAILED": {
+    case "TRACK_SOURCES_FAILED": {
+      // If a playable source isn't found, load the track anyway but don't add it to history.
       return {
         ...state,
+        currentTrack: state.pendingTrack,
         pendingTrack: null
       };
     }
     case "TRACK_STARTED": {
+      // Track is loaded and should begin playing.
       return {
         ...state,
         currentTrack: action.track,
         pendingTrack: null,
-        // Recommendations belong to the previous current track,
-        // so clear them while the new set is fetched.
-        recommendations: [],
-        recommendationsLoading: true,
-        recommendationStats: null,
         history: [...state.history, action.track]
       }
     }
     case "SET_PLAYING": {
+      // Play/pause status
       return {
         ...state,
         isPlaying: action.value

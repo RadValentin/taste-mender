@@ -77,7 +77,7 @@ export default function Player() {
       if (!sources[0]) {
         console.error(`No sources found for mbid ${track.mbid}`);
         dispatch({
-          type: "PLAY_TRACK_FAILED"
+          type: "TRACK_SOURCES_FAILED"
         });
 
         return;
@@ -85,37 +85,39 @@ export default function Player() {
 
       iframeRef.current.loadVideoById({ videoId: sources[0].id });
 
-      const recommendPayload: RecommendRequest = {
-        mbid: track.mbid,
-        listened_mbids: [
-          ...playbackState.history.map(({ mbid }) => mbid),
-          track.mbid,
-        ],
-        ...playbackState.filters
-      };
-
       dispatch({ type: "TRACK_STARTED", track});
-
-      // A new track invalidates any recommendation request for the previous track or filters.
-      recommendControllerRef.current?.abort();
-      const controller = new AbortController();
-      recommendControllerRef.current = controller;
-
-      getRecommendations(recommendPayload, controller.signal).then(data => {
-        console.log("Got recommendations:", data);
-          dispatch({
-            type: "SET_RECOMMENDATIONS",
-            tracks: data.similar_list,
-            stats: data.stats,
-          });
-      }).catch(() => {
-        if (!controller.signal.aborted) {
-          dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: false });
-        }
-      });
     }).catch(() => {
-      dispatch({ type: "PLAY_TRACK_FAILED" });
+      dispatch({ type: "TRACK_SOURCES_FAILED" });
     });
+
+
+    const recommendPayload: RecommendRequest = {
+      mbid: track.mbid,
+      listened_mbids: [
+        ...playbackState.history.map(({ mbid }) => mbid),
+        track.mbid,
+      ],
+      ...playbackState.filters
+    };
+
+    // A new track invalidates any recommendation request for the previous track or filters.
+    recommendControllerRef.current?.abort();
+    const controller = new AbortController();
+    recommendControllerRef.current = controller;
+
+    getRecommendations(recommendPayload, controller.signal).then(data => {
+      console.log("Got recommendations:", data);
+        dispatch({
+          type: "SET_RECOMMENDATIONS",
+          tracks: data.similar_list,
+          stats: data.stats,
+        });
+    }).catch(() => {
+      if (!controller.signal.aborted) {
+        dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: false });
+      }
+    });
+
   }, [playbackState.pendingTrack, playerState.isReady, dispatch]);
 
   const onYouTubeStateChange = useEffectEvent((e: any) => {
@@ -245,28 +247,13 @@ export default function Player() {
   }
 
   const renderContent = () => {
-    const track = playbackState.currentTrack;
-
-    if (!track) {
-      return (
-        <div className="player__footer">
-          <div className="player__controls">
-            <button type="button" className="btn btn-dark" aria-label="Minimize/Maximize" onClick={toggleMaximize}>
-              { playbackState.isMaximized
-                ? <i className="fa-solid fa-caret-down"></i>
-                : <i className="fa-solid fa-caret-up"></i>
-              }
-            </button>
-          </div>
-        </div>
-      )
-    }
-
-    const artists = track.artists?.map(a => a.name).join(", ") || "Unknown artist";
-    const album = track.album?.name ?? null;
-    const year = track.album?.date ? new Date(track.album.date).getFullYear() : null;
-    const artUrl = track.album?.links?.art ?? null
-    const fallbackText = track.title?.charAt(0)?.toUpperCase() ?? "♪"
+    const track = playbackState.currentTrack || playbackState.pendingTrack;
+    const title = track?.title || "Unknown song";
+    const artists = track?.artists?.map(a => a.name).join(", ") || "Unknown artist";
+    const album = track?.album?.name ?? null;
+    const year = track?.album?.date ? new Date(track.album.date).getFullYear() : null;
+    const artUrl = track?.album?.links?.art ?? null
+    const fallbackText = track?.title?.charAt(0)?.toUpperCase() ?? "♪"
 
     return (
       <div className="player__footer">
@@ -274,7 +261,7 @@ export default function Player() {
           <ImageLoader src={artUrl} alt="cover art" fallback={fallbackText} />
         </div>
         <div className="player__meta">
-          <div className="player__title" title={track.title}>{track.title}</div>
+          <div className="player__title" title={title}>{title}</div>
           <div className="player__artist-album">
             <span className="artist" title={artists}>{artists}</span>
             {album && <> • <span className="album" title={album}>{album}</span></>}
@@ -316,13 +303,13 @@ export default function Player() {
   };
 
   const renderStats = () => {
+    if (playbackState.recommendationsLoading) {
+      return <LoadingSpinner></LoadingSpinner>
+    }
+
     const stats = playbackState.recommendationStats;
     if (!stats) {
       return;
-    }
-
-    if (playbackState.pendingTrack) {
-      return <LoadingSpinner></LoadingSpinner>
     }
 
     return(
@@ -416,8 +403,7 @@ export default function Player() {
   const overlayClass = playbackState.isMaximized
     ? "player__overlay player__overlay--maximized"
     : "player__overlay player__overlay--minimized";
-  const showPlayer = playbackState.currentTrack || playbackState.pendingTrack || playbackState.isMaximized;
-  const playerClass = showPlayer ? "player" : "player player--empty";
+  const playerClass = playbackState.isDocked ? "player" : "player player--empty";
 
   return (
     <div className={playerClass}>
