@@ -110,7 +110,6 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
     case "PLAY_TRACK": {
       if (
         state.pendingTrack ||
-        state.recommendationsLoading ||
         state.currentTrack?.mbid === action.track.mbid
       ) {
         return state;
