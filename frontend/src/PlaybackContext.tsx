@@ -39,8 +39,8 @@ export type PlaybackAction =
   // | { type: "REMOVE_FROM_QUEUE"; index: number }
   // | { type: "REORDER_QUEUE"; from: number; to: number }
   // | { type: "ADVANCE_QUEUE" }
-  | { type: "SET_RECOMMENDATIONS_LOADING"; value: boolean }
-  | { type: "SET_RECOMMENDATIONS"; tracks: SimilarTrack[]; stats: RecommendStats }
+  | { type: "SET_RECOMMENDATIONS_LOADING"; mbid: string; value: boolean }
+  | { type: "SET_RECOMMENDATIONS"; mbid: string;  tracks: SimilarTrack[]; stats: RecommendStats }
   | { type: "RESET_RECOMMENDATIONS" }
   | { type: "SET_FILTERS"; filters: FiltersPayload }
   | { type: "SET_PLAYING"; value: boolean };
@@ -94,12 +94,24 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
     }
     // Recommendation actions
     case "SET_RECOMMENDATIONS_LOADING": {
+      const target = state.pendingTrack ?? state.currentTrack;
+
+      if (action.mbid !== target?.mbid) {
+        return state;
+      }
+
       return {
         ...state,
         recommendationsLoading: action.value
       };
     }
     case "SET_RECOMMENDATIONS": {
+      const target = state.pendingTrack ?? state.currentTrack;
+
+      if (action.mbid !== target?.mbid) {
+        return state;
+      }
+
       return {
         ...state,
         recommendations: action.tracks,

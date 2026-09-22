@@ -121,15 +121,16 @@ export default function Player() {
         return;
       }
 
-      console.log("Got recommendations:", data);
-        dispatch({
-          type: "SET_RECOMMENDATIONS",
-          tracks: data.similar_list,
-          stats: data.stats,
-        });
+      console.log(`Got recommendations on play for track ${track.mbid}:`, data);
+      dispatch({
+        type: "SET_RECOMMENDATIONS",
+        mbid: track.mbid,
+        tracks: data.similar_list,
+        stats: data.stats,
+      });
     }).catch(() => {
       if (!recommendController.signal.aborted) {
-        dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: false });
+        dispatch({ type: "SET_RECOMMENDATIONS_LOADING", mbid: track.mbid, value: false });
       }
     });
 
@@ -210,7 +211,7 @@ export default function Player() {
       return;
     }
 
-    dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: true });
+    dispatch({ type: "SET_RECOMMENDATIONS_LOADING", mbid: track.mbid, value: true });
 
     const recommendPayload: RecommendRequest = {
       mbid: track.mbid,
@@ -228,15 +229,16 @@ export default function Player() {
         return;
       }
 
-      console.log("Got recommendations:", data);
+      console.log(`Got recommendations on filter update for track ${track.mbid}:`, data);
       dispatch({
         type: "SET_RECOMMENDATIONS",
+        mbid: track.mbid,
         tracks: data.similar_list,
         stats: data.stats,
       });
     }).catch(() => {
       if (!recommendController.signal.aborted) {
-        dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: false });
+        dispatch({ type: "SET_RECOMMENDATIONS_LOADING", mbid: track.mbid, value: false });
       }
     });
   };
