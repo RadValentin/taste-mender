@@ -85,7 +85,7 @@ export default function Player() {
         // Stop previous track's video, error states will be extended in issue #74
         iframeRef.current?.stopVideo();
         dispatch({
-          type: "TRACK_SOURCES_FAILED"
+          type: "TRACK_SOURCE_NOT_FOUND"
         });
 
         return;
@@ -93,11 +93,11 @@ export default function Player() {
 
       iframeRef.current.loadVideoById({ videoId: sources[0].id });
 
-      dispatch({ type: "TRACK_STARTED", track});
+      dispatch({ type: "TRACK_SOURCE_FOUND", track});
     }).catch(() => {
       if (!sourcesController.signal.aborted) {
         iframeRef.current?.stopVideo();
-        dispatch({ type: "TRACK_SOURCES_FAILED" });
+        dispatch({ type: "TRACK_SOURCE_NOT_FOUND" });
       }
     });
 

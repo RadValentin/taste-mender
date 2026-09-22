@@ -32,8 +32,8 @@ export type PlaybackAction =
   | { type: "CLOSE_PLAYER" }
   | { type: "TOGGLE_PLAYER" }
   | { type: "PLAY_TRACK"; track: Track }
-  | { type: "TRACK_SOURCES_FAILED" }
-  | { type: "TRACK_STARTED"; track: Track }
+  | { type: "TRACK_SOURCE_NOT_FOUND" }
+  | { type: "TRACK_SOURCE_FOUND"; track: Track }
   // Deferred to issue #52; reviewers should ignore these commented actions for now.
   // | { type: "ENQUEUE"; track: Track }
   // | { type: "REMOVE_FROM_QUEUE"; index: number }
@@ -156,7 +156,7 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
           pendingTrack: action.track,
       };
     }
-    case "TRACK_SOURCES_FAILED": {
+    case "TRACK_SOURCE_NOT_FOUND": {
       // If a playable source isn't found, load the track anyway but don't add it to history.
       return {
         ...state,
@@ -164,7 +164,7 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
         pendingTrack: null
       };
     }
-    case "TRACK_STARTED": {
+    case "TRACK_SOURCE_FOUND": {
       // Track is loaded and should begin playing.
       return {
         ...state,
