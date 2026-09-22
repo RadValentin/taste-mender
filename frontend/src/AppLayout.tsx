@@ -35,7 +35,6 @@ export default function AppLayout() {
   }, [playerState.isMaximized]);
 
   function onPlay(track: Track) {
-    dispatch({ type: "OPEN_PLAYER" });
     dispatch({ type: "PLAY_TRACK", track });
   }
 

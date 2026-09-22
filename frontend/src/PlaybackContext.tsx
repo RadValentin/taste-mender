@@ -5,9 +5,8 @@ import type { FiltersPayload } from "./components/Filters";
 
 /**
  * Context that stores the global audio playback state and the audio player's
- * visibility (minimized / maximized). Consumed via `usePlaybackContext`;
- * provided by `PlaybackContextProvider`.
- * */
+ * visibility. Consumed via `usePlaybackContext` provided by `PlaybackContextProvider`.
+ **/
 export type PlaybackState = {
   pendingTrack: Track | null;
   currentTrack: Track | null;
@@ -23,9 +22,12 @@ export type PlaybackState = {
 
   isPlaying: boolean;
   isMaximized: boolean;
+  isDocked: boolean;
 }
 
 export type PlaybackAction =
+  | { type: "DOCK_PLAYER" }
+  | { type: "UNDOCK_PLAYER" }
   | { type: "OPEN_PLAYER" }
   | { type: "CLOSE_PLAYER" }
   | { type: "TOGGLE_PLAYER" }
@@ -54,11 +56,24 @@ export const initialPlaybackState: PlaybackState = {
   filters: {},
   isPlaying: false,
   isMaximized: false,
+  isDocked: false,
 };
 
 export const playbackReducer = (state: PlaybackState, action: PlaybackAction): PlaybackState => {
   switch (action.type) {
     // UI actions
+    case "DOCK_PLAYER": {
+      return {
+        ...state,
+        isDocked: true
+      };
+    }
+    case "UNDOCK_PLAYER": {
+      return {
+        ...state,
+        isDocked: false
+      };
+    }
     case "OPEN_PLAYER": {
       return {
         ...state,
@@ -108,6 +123,7 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
     }
     // Playback actions
     case "PLAY_TRACK": {
+      // Do nothing if a previous track is pending or trying to play the same track.
       if (
         state.pendingTrack ||
         state.currentTrack?.mbid === action.track.mbid
@@ -119,6 +135,8 @@ export const playbackReducer = (state: PlaybackState, action: PlaybackAction): P
           ...state,
           // We intend to play this, but it hasn't started yet.
           pendingTrack: action.track,
+          // Ensure player is docked at the bottom
+          isDocked: true
       };
     }
     case "PLAY_TRACK_FAILED": {
