@@ -117,6 +117,10 @@ export default function Player() {
     recommendControllerRef.current = recommendController;
 
     getRecommendations(recommendPayload, recommendController.signal).then(data => {
+      if (recommendController.signal.aborted) {
+        return;
+      }
+
       console.log("Got recommendations:", data);
         dispatch({
           type: "SET_RECOMMENDATIONS",
@@ -200,11 +204,6 @@ export default function Player() {
     // otherwise the current track.
     const track = playbackState.pendingTrack ?? playbackState.currentTrack;
 
-    // Cancel any pending filter update and remake the controller
-    recommendControllerRef.current?.abort();
-    const recommendController = new AbortController();
-    recommendControllerRef.current = recommendController;
-
     dispatch({ type: "SET_FILTERS", filters: payload });
 
     if (!track) {
@@ -212,12 +211,23 @@ export default function Player() {
     }
 
     dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: true });
+
     const recommendPayload: RecommendRequest = {
       mbid: track.mbid,
       listened_mbids: playbackState.history.map(t => t.mbid),
       ...payload
     };
+
+    // Cancel any pending filter update and remake the controller
+    recommendControllerRef.current?.abort();
+    const recommendController = new AbortController();
+    recommendControllerRef.current = recommendController;
+
     getRecommendations(recommendPayload, recommendController.signal).then(data => {
+      if (recommendController.signal.aborted) {
+        return;
+      }
+
       console.log("Got recommendations:", data);
       dispatch({
         type: "SET_RECOMMENDATIONS",
