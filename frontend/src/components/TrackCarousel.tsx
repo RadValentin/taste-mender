@@ -20,7 +20,7 @@ type TrackCarouselProps = {
 type LoadState = "LOADING" | "SUCCESS" | "EMPTY" | "ERROR";
 
 export default function TrackCarousel({ title, fetchTracks, onPlay, variant = "list" }: TrackCarouselProps) {
-  const { playbackBusy } = usePlaybackContext();
+  const { state: playbackState } = usePlaybackContext();
   const [state, setState] = useState<LoadState>("LOADING");
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isAtStart, setIsAtStart] = useState(true);
@@ -110,7 +110,7 @@ export default function TrackCarousel({ title, fetchTracks, onPlay, variant = "l
             key={track.mbid}
             track={track}
             variant={variant}
-            disabled={playbackBusy}
+            disabled={!!playbackState.pendingTrack}
             {...(onPlay ? { onPlay } : {})}
           />
         ))}

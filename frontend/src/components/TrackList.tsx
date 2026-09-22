@@ -11,7 +11,7 @@ type TrackListProps = {
 
 /** Renders a scrollable list of TrackItem rows. */
 export default function TrackList({ tracks, onPlay, variant = "list" }: TrackListProps) {
-  const { playbackBusy } = usePlaybackContext();
+  const { state: playbackState } = usePlaybackContext();
 
   return (
     <div className={`track-list track-list--${variant}`}>
@@ -20,7 +20,7 @@ export default function TrackList({ tracks, onPlay, variant = "list" }: TrackLis
           key={track.mbid}
           track={track}
           variant={variant}
-          disabled={playbackBusy}
+          disabled={!!playbackState.pendingTrack}
           {...(onPlay ? { onPlay } : {})}
         />
       ))}

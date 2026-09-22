@@ -191,8 +191,6 @@ export const usePlaybackContext = () => {
     throw new Error("usePlaybackContext must be used within PlaybackProvider");
   }
 
-  const playbackBusy = state.pendingTrack !== null || state.recommendationsLoading;
-
-  return { state, dispatch, playbackBusy };
+  return { state, dispatch };
 };
 
