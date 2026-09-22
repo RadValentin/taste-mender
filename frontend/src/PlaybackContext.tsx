@@ -8,7 +8,10 @@ import type { FiltersPayload } from "./components/Filters";
  * visibility. Consumed via `usePlaybackContext` provided by `PlaybackContextProvider`.
  **/
 export type PlaybackState = {
+  /** The target "next track" that we want to switch to, placed in pending state while
+   * its source is loading. */
   pendingTrack: Track | null;
+  /** Selected track after its source lookup resolves. */
   currentTrack: Track | null;
 
   queue: Track[];
