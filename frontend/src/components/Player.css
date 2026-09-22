@@ -77,6 +77,7 @@
 
 /* Stats panel */
 .player__stats {
+  position: relative;
   grid-area: stats;
   overflow: auto;
 }
@@ -192,7 +193,6 @@
   }
 
   .player__stats {
-    position: relative;
     padding: 1rem;
   }
 
