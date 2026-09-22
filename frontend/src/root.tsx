@@ -5,13 +5,13 @@ import AppLayout from './AppLayout.tsx';
 import HomePage from './pages/HomePage.tsx';
 import SearchPage from './pages/SearchPage.tsx';
 import NotFoundPage from './pages/NotFoundPage.tsx';
-import { PlayerContextProvider } from './PlayerProvider.tsx';
+import { PlaybackContextProvider } from './PlaybackProvider.tsx';
 import './root.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
-      <PlayerContextProvider>
+      <PlaybackContextProvider>
         <Routes>
           <Route element={<AppLayout />}>
             <Route path="/" element={<HomePage />} />
@@ -19,7 +19,7 @@ createRoot(document.getElementById('root')!).render(
             <Route path="*" element={<NotFoundPage />} />
           </Route>
         </Routes>
-      </PlayerContextProvider>
+      </PlaybackContextProvider>
     </BrowserRouter>
   </StrictMode>,
 )

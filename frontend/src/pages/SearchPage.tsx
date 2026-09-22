@@ -8,7 +8,7 @@ import TrackList from "./../components/TrackList";
 import TrackListSkeleton from "./../components/TrackListSkeleton.tsx";
 import StatusMessage from "./../components/StatusMessage";
 import "./../components/StatusMessage.css";
-import { usePlayerContext } from "./../PlayerContext";
+import { usePlaybackContext } from "./../PlaybackContext";
 import "./SearchPage.css";
 
 type AppLayoutContext = {
@@ -32,7 +32,7 @@ export default function SearchPage() {
   const [isLoadingMore, setLoadingMore] = useState(false);
   const loadMoreController = useRef<AbortController | null>(null);
   const { onPlay } = useOutletContext<AppLayoutContext>();
-  const { dispatch } = usePlayerContext();
+  const { dispatch } = usePlaybackContext();
   const [searchParams, setSearchParams] = useSearchParams();
   // QS params
   const query = searchParams.get("q");
@@ -41,7 +41,7 @@ export default function SearchPage() {
   // Initial search (though input or navigation)
   useEffect(() => {
     // Close the player after user search
-    dispatch({ type: "close" });
+    dispatch({ type: "CLOSE_PLAYER" });
     loadMoreController.current?.abort();
 
     if (!query) {
