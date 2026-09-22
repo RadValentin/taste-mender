@@ -55,6 +55,7 @@ export default function Player() {
   const iframeRef = useRef<any>(null);
   const ytPlayerRef = useRef<HTMLDivElement | null>(null);
   const recommendControllerRef = useRef<AbortController | null>(null);
+  const sourcesControllerRef = useRef<AbortController | null>(null);
   // Component state
   const [mobileTab, setMobileTab] = useState<MobileTab>("recommendations");
   const [playerState, setPlayerState] = useState<PlayerState>(defaultPlayerState);
@@ -73,7 +74,12 @@ export default function Player() {
     }
 
     console.log("I've been told to play this track:", track);
-    getTrackSources(track.mbid).then(sources => {
+
+    sourcesControllerRef.current?.abort();
+    const sourcesController = new AbortController();
+    sourcesControllerRef.current = sourcesController;
+
+    getTrackSources(track.mbid, sourcesController.signal).then(sources => {
       if (!sources[0]) {
         console.error(`No sources found for mbid ${track.mbid}`);
         dispatch({
@@ -87,7 +93,9 @@ export default function Player() {
 
       dispatch({ type: "TRACK_STARTED", track});
     }).catch(() => {
-      dispatch({ type: "TRACK_SOURCES_FAILED" });
+      if (!sourcesController.signal.aborted) {
+        dispatch({ type: "TRACK_SOURCES_FAILED" });
+      }
     });
 
 
@@ -102,10 +110,10 @@ export default function Player() {
 
     // A new track invalidates any recommendation request for the previous track or filters.
     recommendControllerRef.current?.abort();
-    const controller = new AbortController();
-    recommendControllerRef.current = controller;
+    const recommendController = new AbortController();
+    recommendControllerRef.current = recommendController;
 
-    getRecommendations(recommendPayload, controller.signal).then(data => {
+    getRecommendations(recommendPayload, recommendController.signal).then(data => {
       console.log("Got recommendations:", data);
         dispatch({
           type: "SET_RECOMMENDATIONS",
@@ -113,7 +121,7 @@ export default function Player() {
           stats: data.stats,
         });
     }).catch(() => {
-      if (!controller.signal.aborted) {
+      if (!recommendController.signal.aborted) {
         dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: false });
       }
     });
@@ -177,6 +185,8 @@ export default function Player() {
         console.error("Could not destroy iframe player");
       }
 
+      // cancel any pending sources requests
+      sourcesControllerRef.current?.abort();
       // cancel any pending recommendations requests
       recommendControllerRef.current?.abort();
     };
@@ -187,8 +197,8 @@ export default function Player() {
 
     // Cancel any pending filter update and remake the controller
     recommendControllerRef.current?.abort();
-    const controller = new AbortController();
-    recommendControllerRef.current = controller;
+    const recommendController = new AbortController();
+    recommendControllerRef.current = recommendController;
 
     dispatch({ type: "SET_FILTERS", filters: payload });
 
@@ -202,7 +212,7 @@ export default function Player() {
       listened_mbids: playbackState.history.map(t => t.mbid),
       ...payload
     };
-    getRecommendations(recommendPayload, controller.signal).then(data => {
+    getRecommendations(recommendPayload, recommendController.signal).then(data => {
       console.log("Got recommendations:", data);
       dispatch({
         type: "SET_RECOMMENDATIONS",
@@ -210,7 +220,7 @@ export default function Player() {
         stats: data.stats,
       });
     }).catch(() => {
-      if (!controller.signal.aborted) {
+      if (!recommendController.signal.aborted) {
         dispatch({ type: "SET_RECOMMENDATIONS_LOADING", value: false });
       }
     });
