@@ -19,7 +19,7 @@ TasteMender is a music discovery app that recommends songs based on acoustic cha
 
 I believe that finding new media to enjoy nowadays is an increasingly arduous task. Consumers' fragmented tastes and the ever-growing breadth of available content make serendipitous discovery a rare event. Online platforms pigeonhole users into highly personalized but restrictive content bubbles and don't offer much direct control over how content recommendations are made. Often, it feels impossible to find media that's outside your usual preferences but that you can still enjoy.
 
-I want TasteMender to be an "eject button" from that behaviour-driven loop. It's deliberately built to give music recommendations based solely on the intrinsic characteristics of the songs themselves. It isn't concerned with user behaviour; at the same time, it gives users as much direct control as possible over what gets recommended. You actively tell the system what you want rather than letting it predict that for you.
+I want TasteMender to be an "eject button" from that behaviour-driven loop. It's deliberately built to give music recommendations based on the intrinsic characteristics of the songs themselves. It isn't concerned with user behaviour; at the same time, it gives users as much direct control as possible over what gets recommended. You actively tell the system what you want rather than letting it predict that for you.
 
 > [!NOTE]
 > The app was originally developed as a final project for the BSc Computer Science degree at Goldsmiths, University of London (available [here](https://github.com/RadValentin/CM3070-FP-Music-Recommendation)). This repository continues that work, aiming to eventually provide a fully-featured music discovery experience.
@@ -35,29 +35,6 @@ The name TasteMender brings together two core ideas:
 TasteMender uses a Django REST API with a React and TypeScript frontend. Audio features and metadata are extracted from the [AcousticBrainz dataset](https://acousticbrainz.org/), with tracks, artists and albums identified through [MusicBrainz IDs](https://musicbrainz.org/doc/MusicBrainz_Identifier) (MBID).
 
 For more information, see the [development guidelines](docs/DEVELOPMENT.md) and [testing guidelines](docs/TESTING.md).
-
-### Repo Structure
-
-- `backend/`
-  - `music_recommendation/` - the main Django project
-  - `recommend_api/` - recommendation API
-    - `api/` - endpoint implementations
-    - `services/`
-      - `recommender.py` - recommendation logic
-      - `youtube_sources.py` - gets playable sources for tracks
-    - `tests/` - API and service tests
-    - `models.py` - database models
-    - `serializers.py` - API response and validation serializers
-  - `ingest/` - AcousticBrainz dataset processing and database-building tools
-    - `management/commands/` - Django commands such as `build_db` and `recommend`
-    - `tests/` - ingest pipeline tests
-  - `features_and_index*.npz` - generated recommendation feature data
-- `frontend/` - React and TypeScript app that consumes the API
-  - `src/pages/` - application pages
-  - `src/components/` - reusable UI components
-  - `src/hooks/` - shared React hooks
-  - `src/api.ts` - API client
-- `docs/` - development, testing, architecture, roadmap, and decision records
 
 ## How It Works
 
@@ -106,7 +83,8 @@ The feature matrix sits at the core of how recommendations are made. It contains
 Making a recommendation starts by providing the service ([/services/recommender.py](/backend/recommend_api/services/recommender.py)) with a target track. The feature matrix is then optionally filtered to a subset of candidates that have the same genre and were released in the same decade. The remaining candidates are ranked by calculating the cosine similarity between their feature vectors. This measures how closely their audio profiles align. Because the feature data is stored in RAM, the process usually takes under 100 ms.
 
 > [!NOTE]
-> Cosine similarity is a standard and widely used metric for making recommendations. However, it is considerably slower than alternatives like [FAISS](https://github.com/facebookresearch/faiss), [ANNOY](https://github.com/spotify/annoy), or [Voyager](https://github.com/spotify/voyager), which trade a small loss in precision for increased speed. These alternatives are attractive candidates for a future enhancement.
+> Cosine similarity is a standard and widely used metric for making recommendations. Currently, it is calculated between the target track and every candidate track. Approximate nearest-neighbour search, supported by libraries such as [FAISS](https://github.com/facebookresearch/faiss), [Annoy](https://github.com/spotify/annoy), and [Voyager](https://github.com/spotify/voyager), could speed up the recommendation engine, with a configurable trade-off between speed and retrieval accuracy.
+
 
 ### Putting users in control of recommendations
 
@@ -122,3 +100,25 @@ Results are limited to one track per artist in order to encourage variety. The f
 
 The frontend player is built around the idea of a _flow of discovery_. You select a track, it becomes the target for recommendations, and you're shown a subset of similar tracks. When the current track finishes, the top recommendation is played and becomes the next target.
 
+## Repo Structure
+
+- `backend/`
+  - `music_recommendation/` - the main Django project
+  - `recommend_api/` - recommendation API
+    - `api/` - endpoint implementations
+    - `services/`
+      - `recommender.py` - recommendation logic
+      - `youtube_sources.py` - gets playable sources for tracks
+    - `tests/` - API and service tests
+    - `models.py` - database models
+    - `serializers.py` - API response and validation serializers
+  - `ingest/` - AcousticBrainz dataset processing and database-building tools
+    - `management/commands/` - Django commands such as `build_db` and `recommend`
+    - `tests/` - ingest pipeline tests
+  - `features_and_index*.npz` - generated recommendation feature data
+- `frontend/` - React and TypeScript app that consumes the API
+  - `src/pages/` - application pages
+  - `src/components/` - reusable UI components
+  - `src/hooks/` - shared React hooks
+  - `src/api.ts` - API client
+- `docs/` - development, testing, architecture, roadmap, and decision records
