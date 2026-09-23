@@ -1,36 +1,19 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import React, { useEffect, useImperativeHandle, useRef, useState } from "react";
-import type { Track, SimilarTrack, RecommendRequest } from "../types";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
+import type { Track, RecommendRequest } from "../types";
 import { getTrackSources, getRecommendations } from "../api.ts"
 import TrackList from "./TrackList.tsx";
 import TrackListSkeleton from "./TrackListSkeleton.tsx";
 import Filters, {type FiltersPayload} from "./Filters.tsx";
 import ImageLoader from "./ImageLoader.tsx";
-import { usePlayerContext } from "../PlayerContext.tsx";
+import { usePlaybackContext } from "../PlaybackContext.tsx";
 import useBeforeUnload from "../hooks/useBeforeUnload.ts";
 import "./Player.css";
+import LoadingSpinner from "./LoadingSpinner.tsx";
 
-export interface PlayerRef {
-  loadAndPlay: (track: Track, shouldMaximise: boolean) => void,
-  reset: () => void
-}
-
-export type PlayerProps = {
-  ref: React.RefObject<PlayerRef | null>
-}
 
 type PlayerState = {
-  track: Track | undefined,
-  isReady: boolean,
-  isPlaying: boolean
-}
-
-type RecState = {
-  isLoading: boolean,
-  similarList: SimilarTrack[],
-  stats: any,
-  listenedMbids: string[],
-  filtersPayload: FiltersPayload
+  isReady: boolean
 }
 
 type MobileTab = "recommendations" | "filters" | "stats";
@@ -58,18 +41,8 @@ const loadYouTubeIframeAPI = (() => {
 })();
 
 const defaultPlayerState: PlayerState = {
-  track: undefined,
-  isReady: false,
-  isPlaying: false
+  isReady: false
 };
-
-const defaultRecState: RecState = {
-  isLoading: false,
-  similarList: [],
-  stats: {},
-  listenedMbids: [],
-  filtersPayload: {}
-}
 
 /**
  * Bottom-drawer player. Manages the YouTube IFrame player lifecycle, fetches and displays
@@ -77,28 +50,114 @@ const defaultRecState: RecState = {
  * "Up Next", and "Other Recommendations" lists. Exposed via `PlayerRef` for imperative
  * `loadAndPlay` and `reset` calls from the parent.
  */
-export default function Player({ ref }: PlayerProps) {
+export default function Player() {
   // Child refs
   const iframeRef = useRef<any>(null);
   const ytPlayerRef = useRef<HTMLDivElement | null>(null);
-  // State refs - needed for methods called by YT player events (closure)
-  const recListRef = useRef<SimilarTrack[]>([]);
-  const recIDsRef = useRef<string[]>([]);
-  const recPayloadRef = useRef({});
+  const recommendControllerRef = useRef<AbortController | null>(null);
+  const sourcesControllerRef = useRef<AbortController | null>(null);
   // Component state
   const [mobileTab, setMobileTab] = useState<MobileTab>("recommendations");
   const [playerState, setPlayerState] = useState<PlayerState>(defaultPlayerState);
-  const [recState, setRecState] = useState<RecState>(defaultRecState);
-  const {state: globalState, dispatch} = usePlayerContext();
+  const {state: playbackState, dispatch} = usePlaybackContext();
 
   // Warns users before they leave the page while playback is active.
-  useBeforeUnload(playerState.isPlaying);
+  useBeforeUnload(playbackState.isPlaying);
 
+  // When a new track is marked as pending try to play it
   useEffect(() => {
-    recListRef.current = recState.similarList;
-    recIDsRef.current = recState.listenedMbids;
-    recPayloadRef.current = recState.filtersPayload;
-  }, [recState.similarList, recState.listenedMbids, recState.filtersPayload]);
+    const track = playbackState.pendingTrack;
+
+    // When player becomes ready, effect runs again, ensuring it picks up the pending track.
+    if (!track || !playerState.isReady || !iframeRef.current) {
+      return;
+    }
+
+    console.log("I've been told to play this track:", track);
+
+    sourcesControllerRef.current?.abort();
+    const sourcesController = new AbortController();
+    sourcesControllerRef.current = sourcesController;
+
+    getTrackSources(track.mbid, sourcesController.signal).then(sources => {
+      if (!sources[0]) {
+        console.error(`No sources found for mbid ${track.mbid}`);
+        // Stop previous track's video, error states will be extended in issue #74
+        iframeRef.current?.stopVideo();
+        dispatch({
+          type: "TRACK_SOURCE_NOT_FOUND"
+        });
+
+        return;
+      }
+
+      iframeRef.current.loadVideoById({ videoId: sources[0].id });
+
+      dispatch({ type: "TRACK_SOURCE_FOUND", track});
+    }).catch(() => {
+      if (!sourcesController.signal.aborted) {
+        iframeRef.current?.stopVideo();
+        dispatch({ type: "TRACK_SOURCE_NOT_FOUND" });
+      }
+    });
+
+
+    const recommendPayload: RecommendRequest = {
+      mbid: track.mbid,
+      listened_mbids: [
+        ...playbackState.history.map(({ mbid }) => mbid),
+        track.mbid,
+      ],
+      ...playbackState.filters
+    };
+
+    // A new track invalidates any recommendation request for the previous track or filters.
+    recommendControllerRef.current?.abort();
+    const recommendController = new AbortController();
+    recommendControllerRef.current = recommendController;
+
+    getRecommendations(recommendPayload, recommendController.signal).then(data => {
+      if (recommendController.signal.aborted) {
+        return;
+      }
+
+      console.log(`Got recommendations on play for track ${track.mbid}:`, data);
+      dispatch({
+        type: "SET_RECOMMENDATIONS",
+        mbid: track.mbid,
+        tracks: data.similar_list,
+        stats: data.stats,
+      });
+    }).catch(() => {
+      if (!recommendController.signal.aborted) {
+        dispatch({ type: "SET_RECOMMENDATIONS_LOADING", mbid: track.mbid, value: false });
+      }
+    });
+
+  }, [playbackState.pendingTrack, playerState.isReady, dispatch]);
+
+  const onYouTubeStateChange = useEffectEvent((e: any) => {
+    const YT = window.YT;
+    if (!YT) return;
+
+    dispatch({
+      type: "SET_PLAYING",
+      value: e.data === YT.PlayerState.PLAYING
+    });
+
+    // If video ended, play first recommendation
+    if (e.data === YT.PlayerState.ENDED) {
+      playNextTrack();
+    }
+  });
+
+  const onYouTubeError = useEffectEvent((e: any) => {
+    console.error("YouTube player error:", e.data);
+    dispatch({
+      type: "SET_PLAYING",
+      value: false
+    });
+  });
 
   // Load the YouTube iframe player on first mount
   useEffect(() => {
@@ -119,126 +178,91 @@ export default function Player({ ref }: PlayerProps) {
           onReady: () => {
             setPlayerState(playerState => ({...playerState, isReady: true}));
           },
-          onStateChange: (e: any) => {
-            const YT = window.YT;
-            if (!YT) return;
-
-            setPlayerState(playerState => ({
-              ...playerState,
-              isPlaying: e.data === YT.PlayerState.PLAYING
-            }));
-
-            // If video ended, play first recommendation
-            if (e.data === YT.PlayerState.ENDED && recListRef.current.length > 0) {
-              playTrack(recListRef.current[0]);
-            }
-          }
+          onStateChange: onYouTubeStateChange,
+          onError: onYouTubeError
         }
       });
     })();
 
     return () => {
+      // component unmount
       mounted = false;
       try {
         iframeRef.current?.destroy?.();
       } catch {
         console.error("Could not destroy iframe player");
       }
+
+      // cancel any pending sources requests
+      sourcesControllerRef.current?.abort();
+      // cancel any pending recommendations requests
+      recommendControllerRef.current?.abort();
     };
   }, []);
 
-  // Methods callable by parent component
-  useImperativeHandle(ref, () => ({
-    /**
-     * @param track The track to play.
-     * @param shouldMaximise Whether to maximize the player when the track starts.
-     */
-    loadAndPlay: (track: Track, shouldMaximise: boolean = false) => {
-      setPlayerState(() => ({...defaultPlayerState, track}));
-      setRecState(defaultRecState);
-      playTrack(track, shouldMaximise);
-    },
-    /**
-     * Stops playback and resets the player state.
-     */
-    reset: () => {
-      iframeRef.current?.stopVideo();
-      setPlayerState(defaultPlayerState);
-      setRecState(defaultRecState);
-    }
-  }));
-
   const onFiltersChange = (payload: FiltersPayload) => {
-    const track = playerState.track;
+    // Ensure that recommendations are filtered for the loading track if it exists,
+    // otherwise the current track.
+    const track = playbackState.pendingTrack ?? playbackState.currentTrack;
+
+    dispatch({ type: "SET_FILTERS", filters: payload });
 
     if (!track) {
       return;
     }
 
-    setRecState(recState => ({...recState, isLoading: true}));
+    dispatch({ type: "SET_RECOMMENDATIONS_LOADING", mbid: track.mbid, value: true });
+
     const recommendPayload: RecommendRequest = {
       mbid: track.mbid,
-      listened_mbids: recIDsRef.current,
+      listened_mbids: playbackState.history.map(t => t.mbid),
       ...payload
     };
-    getRecommendations(recommendPayload).then(data => {
-      console.log("Got recommendations:", data);
-      setRecState(recState => ({
-        ...recState,
-        isLoading: false,
-        similarList: data.similar_list,
-        stats: data.stats,
-        filtersPayload: payload
-      }))
-    }).catch(() => {
-      setRecState(recState => ({...recState, isLoading:false}));
-    });
-  };
 
-  /**
-   * Loads and plays a track.
-   *
-   * @param track The track to load and play.
-   * @param shouldMaximize Whether the player should open in its expanded/maximized state.
-   */
-  const playTrack = (track: Track, shouldMaximize: boolean = false) => {
-    console.log("I've been told to play this track:", track);
-    getTrackSources(track.mbid).then(sources => {
-      if (!sources[0]) {
-        console.error(`No sources found for mbid ${track.mbid}`)
+    // Cancel any pending filter update and remake the controller
+    recommendControllerRef.current?.abort();
+    const recommendController = new AbortController();
+    recommendControllerRef.current = recommendController;
+
+    getRecommendations(recommendPayload, recommendController.signal).then(data => {
+      if (recommendController.signal.aborted) {
         return;
       }
 
-      iframeRef.current.loadVideoById({ videoId: sources[0].id });
-      setPlayerState(playerState => ({ ...playerState, track }));
-
-      if (shouldMaximize) {
-        dispatch({type: "open"});
-      }
-
-      setRecState(recState => ({...recState, isLoading: true}));
-      const recommendPayload: RecommendRequest = {
+      console.log(`Got recommendations on filter update for track ${track.mbid}:`, data);
+      dispatch({
+        type: "SET_RECOMMENDATIONS",
         mbid: track.mbid,
-        listened_mbids: recIDsRef.current,
-        ...recPayloadRef.current
-      };
-      getRecommendations(recommendPayload).then(data => {
-        console.log("Got recommendations:", data);
-        setRecState(recState => ({
-          ...recState,
-          isLoading: false,
-          similarList: data.similar_list,
-          stats: data.stats,
-          listenedMbids: [track.mbid, ...recState.listenedMbids]
-        }))
-      }).catch(() => {
-        setRecState(recState => ({...recState, isLoading:false}));
+        tracks: data.similar_list,
+        stats: data.stats,
       });
+    }).catch(() => {
+      if (!recommendController.signal.aborted) {
+        dispatch({ type: "SET_RECOMMENDATIONS_LOADING", mbid: track.mbid, value: false });
+      }
     });
   };
 
+
+  // Loads and plays a track.
+  const playTrack = (track: Track) => {
+    dispatch({
+      type: "PLAY_TRACK",
+      track,
+    });
+  };
+
+  const playNextTrack = () => {
+    const nextTrack = playbackState.recommendations[0];
+    if (nextTrack) {
+      playTrack(nextTrack);
+    } else {
+      console.warn("No next track is available", playbackState);
+    }
+  };
+
   const togglePlayback = () => {
-    if (playerState.isPlaying) {
+    if (playbackState.isPlaying) {
       iframeRef.current?.pauseVideo();
     } else {
       iframeRef.current?.playVideo();
@@ -246,20 +270,22 @@ export default function Player({ ref }: PlayerProps) {
   };
 
   const toggleMaximize = () => {
-    dispatch({type: "toggle" });
+    dispatch({ type: "TOGGLE_PLAYER" });
   }
 
   const renderContent = () => {
-    if (!playerState.track) {
-      return;
-    }
+    const track = playbackState.currentTrack || playbackState.pendingTrack;
+    const title = track?.title || "Unknown song";
+    const artists = track?.artists?.map(a => a.name).join(", ") || "Unknown artist";
+    const album = track?.album?.name ?? null;
+    const year = track?.album?.date ? new Date(track.album.date).getFullYear() : null;
+    const artUrl = track?.album?.links?.art ?? null;
+    const fallbackText = track?.title?.charAt(0)?.toUpperCase() ?? "♪";
 
-    const track = playerState.track;
-    const artists = track.artists?.map(a => a.name).join(", ") || "Unknown artist";
-    const album = track.album?.name ?? null;
-    const year = track.album?.date ? new Date(track.album.date).getFullYear() : null;
-    const artUrl = track.album?.links?.art ?? null
-    const fallbackText = track.title?.charAt(0)?.toUpperCase() ?? "♪"
+    const disableNext =
+      !playerState.isReady ||
+      !!playbackState.pendingTrack ||
+      playbackState.recommendations.length === 0;
 
     return (
       <div className="player__footer">
@@ -267,7 +293,7 @@ export default function Player({ ref }: PlayerProps) {
           <ImageLoader src={artUrl} alt="cover art" fallback={fallbackText} />
         </div>
         <div className="player__meta">
-          <div className="player__title" title={track.title}>{track.title}</div>
+          <div className="player__title" title={title}>{title}</div>
           <div className="player__artist-album">
             <span className="artist" title={artists}>{artists}</span>
             {album && <> • <span className="album" title={album}>{album}</span></>}
@@ -276,17 +302,29 @@ export default function Player({ ref }: PlayerProps) {
         </div>
 
         <div className="player__controls">
-          <button type="button" className="btn btn-metal" aria-label="Play/Pause" onClick={togglePlayback}>
-            { playerState.isPlaying
+          <button
+            type="button"
+            className="btn btn-metal"
+            aria-label="Play/Pause"
+            disabled={!playerState.isReady}
+            onClick={togglePlayback}
+          >
+            { playbackState.isPlaying
               ? <i className="fa-solid fa-pause"></i>
               : <i className="fa-solid fa-play"></i>
             }
           </button>
-          <button type="button" className="btn btn-amber" aria-label="Next Track" onClick={() => { playTrack(recListRef.current[0]) }}>
+          <button
+            type="button"
+            className="btn btn-amber"
+            aria-label="Next Track"
+            disabled={disableNext}
+            onClick={playNextTrack}
+          >
             <i className="fa-solid fa-forward"></i>
           </button>
           <button type="button" className="btn btn-dark" aria-label="Minimize/Maximize" onClick={toggleMaximize}>
-            { globalState.isMaximized
+            { playbackState.isMaximized
               ? <i className="fa-solid fa-caret-down"></i>
               : <i className="fa-solid fa-caret-up"></i>
             }
@@ -297,45 +335,56 @@ export default function Player({ ref }: PlayerProps) {
   };
 
   const renderStats = () => {
+    if (playbackState.recommendationsLoading) {
+      return <LoadingSpinner></LoadingSpinner>
+    }
+
+    const stats = playbackState.recommendationStats;
+    if (!stats) {
+      return;
+    }
+
     return(
       <>
         <h4 className="heading mobile-hidden">Stats</h4>
         <div className="player__stats-container">
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Tracks analyzed</p>
-            <p className="player__stats-box-counter">{Number(recState.stats.candidate_count).toLocaleString()}</p>
+            <p className="player__stats-box-counter">{stats.candidate_count.toLocaleString()}</p>
           </div>
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Best match</p>
             <p className="player__stats-box-counter">
-              {Math.floor(Number(recState.stats.max) * 100)}%
+              {stats.max === null ? "-" : `${Math.floor(stats.max * 100)}%`}
             </p>
           </div>
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Average match</p>
             <p className="player__stats-box-counter">
-              {Math.floor(Number(recState.stats.mean) * 100)}%
+              {stats.mean === null ? "-" : `${Math.floor(stats.mean * 100)}%`}
             </p>
           </div>
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Top-tier match (95th percentile)</p>
             <p className="player__stats-box-counter">
-              {Math.floor(Number(recState.stats.p95) * 100)}%
+              {stats.p95 === null ? "-" : `${Math.floor(stats.p95 * 100)}%`}
             </p>
           </div>
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Score spread (STD)</p>
-            <p className="player__stats-box-counter">{Number(recState.stats.std).toFixed(3)}</p>
+            <p className="player__stats-box-counter">
+              {stats.std === null ? "-" : stats.std.toFixed(3)}
+            </p>
           </div>
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Search time</p>
             <p className="player__stats-box-counter">
-              {Number(recState.stats.search_time * 1000).toFixed(0)}ms
+              {(stats.search_time * 1000).toFixed(0)}ms
             </p>
           </div>
           <div className="player__stats-box">
             <p className="player__stats-box-heading">Listened tracks</p>
-            <p className="player__stats-box-counter">{recState.listenedMbids.length}</p>
+            <p className="player__stats-box-counter">{playbackState.history.length}</p>
           </div>
         </div>
       </>
@@ -343,22 +392,24 @@ export default function Player({ ref }: PlayerProps) {
   }
 
   const renderRecommendations = () => {
-    const hasRecommendations = !!recState.similarList && recState.similarList.length > 0;
+    const recommendations = playbackState.recommendations;
+    const isLoading = playbackState.recommendationsLoading || playbackState.pendingTrack;
+    const hasRecommendations = recommendations.length > 0;
 
-    if (!hasRecommendations && !recState.isLoading) {
+    if (!hasRecommendations && !isLoading) {
       return;
     }
 
-    const firstRecList = recState.similarList.slice(0, 1);
-    const otherRec = recState.similarList.slice(1);
-    const numSkeletons = recState.similarList.length || 9;
+    const firstRecList = recommendations.slice(0, 1);
+    const otherRec = recommendations.slice(1);
+    const numSkeletons = recommendations.length || 9;
 
     return (
       <div
         className={`player__recommendations player__mobile-panel ${mobileTab === "recommendations" ? "is-active" : ""}`}
       >
         <h4 className="heading">Up Next:</h4>
-        {recState.isLoading ? (
+        {isLoading ? (
           <TrackListSkeleton count={1} variant="list" />
         ) : (
           <TrackList
@@ -368,7 +419,7 @@ export default function Player({ ref }: PlayerProps) {
           />
         )}
         <h4 className="heading">Other Recommendations:</h4>
-        {recState.isLoading ? (
+        {isLoading ? (
           <TrackListSkeleton count={numSkeletons} variant="list" />
         ) : (
           <TrackList
@@ -381,10 +432,10 @@ export default function Player({ ref }: PlayerProps) {
     );
   };
 
-  const overlayClass = globalState.isMaximized
+  const overlayClass = playbackState.isMaximized
     ? "player__overlay player__overlay--maximized"
     : "player__overlay player__overlay--minimized";
-  const playerClass = playerState.track ? "player" : "player player--empty";
+  const playerClass = playbackState.isDocked ? "player" : "player player--empty";
 
   return (
     <div className={playerClass}>
@@ -428,11 +479,11 @@ export default function Player({ ref }: PlayerProps) {
         <div
           className={`player__stats player__mobile-panel ${mobileTab === "stats" ? "is-active" : ""}`}
         >
-          {recState && recState.stats && renderStats()}
+          {playbackState.pendingTrack ? <LoadingSpinner /> : renderStats()}
         </div>
         {renderRecommendations()}
       </div>
-      {playerState.track && renderContent()}
+      {renderContent()}
     </div>
   );
 }

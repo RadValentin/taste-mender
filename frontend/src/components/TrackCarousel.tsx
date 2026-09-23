@@ -1,6 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { SkeletonTheme } from "react-loading-skeleton";
 import type { Paginated, Track } from "../types";
+import { usePlaybackContext } from "../PlaybackContext";
 import StatusMessage from "./StatusMessage";
 import TrackItem from "./TrackItem.tsx";
 import TrackItemSkeleton from "./TrackItemSkeleton.tsx";
@@ -19,6 +20,7 @@ type TrackCarouselProps = {
 type LoadState = "LOADING" | "SUCCESS" | "EMPTY" | "ERROR";
 
 export default function TrackCarousel({ title, fetchTracks, onPlay, variant = "list" }: TrackCarouselProps) {
+  const { state: playbackState } = usePlaybackContext();
   const [state, setState] = useState<LoadState>("LOADING");
   const [tracks, setTracks] = useState<Track[]>([]);
   const [isAtStart, setIsAtStart] = useState(true);
@@ -108,6 +110,7 @@ export default function TrackCarousel({ title, fetchTracks, onPlay, variant = "l
             key={track.mbid}
             track={track}
             variant={variant}
+            disabled={!!playbackState.pendingTrack}
             {...(onPlay ? { onPlay } : {})}
           />
         ))}
