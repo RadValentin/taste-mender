@@ -37,7 +37,7 @@ class ExtractDataFromJsonStrTests(TestCase):
         })
 
     def test_valid_json(self):
-        result = tph.extract_data_from_json_str(self.valid_json)
+        result = tph.extract_data_from_json(self.valid_json)
         self.assertIsInstance(result, dict)
         self.assertEqual(result["title"], "Test Song")
         self.assertEqual(result["genre_dortmund"], "rock")
@@ -46,28 +46,28 @@ class ExtractDataFromJsonStrTests(TestCase):
         self.assertIn("album_info", result)
 
     def test_invalid_json(self):
-        result = tph.extract_data_from_json_str("YOLO")
+        result = tph.extract_data_from_json(b"YOLO")
         self.assertIsNone(result)
 
     def test_invalid_mbid(self):
         data = orjson.loads(self.valid_json)
         data["metadata"]["tags"]["musicbrainz_recordingid"] = ["BADMBID"]
         modified_json = orjson.dumps(data)
-        result = tph.extract_data_from_json_str(modified_json)
+        result = tph.extract_data_from_json(modified_json)
         self.assertIsNone(result)
 
     def test_missing_mbid(self):
         data = orjson.loads(self.valid_json)
         del data["metadata"]["tags"]["musicbrainz_recordingid"]
         modified_json = orjson.dumps(data)
-        result = tph.extract_data_from_json_str(modified_json)
+        result = tph.extract_data_from_json(modified_json)
         self.assertIsNone(result)
 
     def test_missing_field(self):
         data = orjson.loads(self.valid_json)
         data["metadata"]["tags"].pop("title", None)
         modified_json = orjson.dumps(data)
-        result = tph.extract_data_from_json_str(modified_json)
+        result = tph.extract_data_from_json(modified_json)
         self.assertIsNone(result)
 
     def test_invalid_date(self):
@@ -75,7 +75,7 @@ class ExtractDataFromJsonStrTests(TestCase):
         data["metadata"]["tags"]["date"] = ["0000-00-00"]
         data["metadata"]["tags"]["originaldate"] = ["0000-00-00"]
         modified_json = orjson.dumps(data)
-        result = tph.extract_data_from_json_str(modified_json)
+        result = tph.extract_data_from_json(modified_json)
         self.assertEqual(
             result["album_info"],
             ("11223344-5566-7788-99aa-bbccddeeff00", "Test Album", None),
@@ -85,7 +85,7 @@ class ExtractDataFromJsonStrTests(TestCase):
         data = orjson.loads(self.valid_json)
         del data["metadata"]["tags"]["album"]
         modified_json = orjson.dumps(data)
-        result = tph.extract_data_from_json_str(modified_json)
+        result = tph.extract_data_from_json(modified_json)
         self.assertEqual(
             result["album_info"],
             ("11223344-5566-7788-99aa-bbccddeeff00", None, "2005-07-14"),
@@ -95,5 +95,5 @@ class ExtractDataFromJsonStrTests(TestCase):
         data = orjson.loads(self.valid_json)
         data["metadata"]["tags"]["title"] = [""]
         modified_json = orjson.dumps(data)
-        result = tph.extract_data_from_json_str(modified_json)
+        result = tph.extract_data_from_json(modified_json)
         self.assertIsNone(result)
