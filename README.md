@@ -5,36 +5,30 @@
 </p>
 
 <p align="center">
-  <a href="https://taste-mender.com/">
-    <img src="https://img.shields.io/badge/demo-taste--mender.com-blue" alt="Live demo">
-  </a>
-  <a href="https://github.com/RadValentin/taste-mender/actions/workflows/django.yml">
-    <img src="https://github.com/RadValentin/taste-mender/actions/workflows/django.yml/badge.svg?branch=main&amp;event=push" alt="Django CI">
-  </a>
-  <a href="https://codecov.io/gh/RadValentin/taste-mender">
-    <img src="https://codecov.io/gh/RadValentin/taste-mender/graph/badge.svg?token=JfbmGuIWGl" alt="codecov">
-  </a>
-  <a href="LICENSE">
-    <img src="https://img.shields.io/github/license/RadValentin/taste-mender" alt="License">
-  </a>
+  <a href="https://taste-mender.com/"><img src="https://img.shields.io/badge/demo-taste--mender.com-blue" alt="Live demo"></a>
+  <a href="https://github.com/RadValentin/taste-mender/actions/workflows/django.yml"><img src="https://github.com/RadValentin/taste-mender/actions/workflows/django.yml/badge.svg?branch=main&amp;event=push" alt="Django CI"></a>
+  <a href="https://codecov.io/gh/RadValentin/taste-mender"><img src="https://codecov.io/gh/RadValentin/taste-mender/graph/badge.svg?token=JfbmGuIWGl" alt="codecov"></a>
+  <a href="LICENSE"><img src="https://img.shields.io/github/license/RadValentin/taste-mender" alt="License"></a>
 </p>
 
 ## Overview
 
-TasteMender is a music discovery app that recommends songs based on acoustic characteristics such as danceability, energy, mood, and genre. It takes a privacy-first approach: user behaviour is not tracked, and recommendations are based solely on each song's characteristics. Users have full control over how recommendations are generated through a robust set of filters.
+TasteMender is a music discovery app that recommends songs based on acoustic characteristics such as danceability, energy, mood, and genre. You start with a song and shape the recommendations through genre and decade filters, audio-feature settings, and a balance between similarity and popularity. It takes a privacy-first approach, recommendations don't depend on a persistent profile of your listening habits.
 
-It uses a Django REST API with a React frontend, and identifies tracks, artists, and albums using MusicBrainz IDs. Audio features and metadata are extracted from the [AcousticBrainz dataset](https://acousticbrainz.org/). Entities (tracks, artists, albums) are identified through [MusicBrainz IDs](https://musicbrainz.org/doc/MusicBrainz_Identifier) (MBID).
+### Motivation
 
-For more information, see the [development guidelines](docs/DEVELOPMENT.md) and [testing guidelines](docs/TESTING.md).
+I believe that finding new media to enjoy nowadays is an increasingly arduous task. Consumers' fragmenting tastes and the ever growing breadth of available content makes serendipitous discovery a rare event. Online platforms pigeonhole users into highly personalized but restrictive content bubbles and don't offer much direct control over how content recommendations are made. Often times it feels impossible to find media that's outside of your usual preferences but that you can still enjoy.
+
+I want for TasteMender to be an "eject button" from that behaviour-driven loop. It's purposely built to give music recommendations solely based on the intrinsic characteristics of the songs themselves. It's not concerned with user behaviour in any way while at the same time giving them as much direct control as possible over what gets recommended. You actively tell the system what you want rather than it predicting that for you.
 
 > [!NOTE]
 > The app was originally developed as a final project for the BSc Computer Science degree at Goldsmiths, University of London (available [here](https://github.com/RadValentin/CM3070-FP-Music-Recommendation)). This repository continues that work, aiming to eventually provide a fully-featured music discovery experience.
 
-### Motivation
+### Technology
 
-I believe that finding new media to enjoy nowadays is an increasingly arduous task. Consumers' fragmenting tastes are tied to the ever growing breadth of available content and serendipitous discovery of interesting music, movies, games, etc. is a rare event. Online platforms pigeonhole users into highly personalized but restrictive content bubbles and don't offer much direct control over how content recommendations are made. Often times it feels impossible to find media that's outside of your own interests but that you can still enjoy.
+TasteMender uses a Django REST API with a React and TypeScript frontend. Audio features and metadata are extracted from the [AcousticBrainz dataset](https://acousticbrainz.org/), with tracks, artists and albums identified through [MusicBrainz IDs](https://musicbrainz.org/doc/MusicBrainz_Identifier) (MBID).
 
-I want for TasteMender to be an "eject button" from the behavior-driven machine. It's purposely built to give music recommendations solely based on the intrinsic characteristics of the songs themselves. It's not concerned with user behaviour in any way while at the same time giving them as much direct control as possible over what gets recommended. You actively tell the system what you want rather than it predicting that for you.
+For more information, see the [development guidelines](docs/DEVELOPMENT.md) and [testing guidelines](docs/TESTING.md).
 
 ### Repo Structure
 
@@ -61,6 +55,32 @@ I want for TasteMender to be an "eject button" from the behavior-driven machine.
 
 ## How It Works
 
+### The dataset
+
+[AcousticBrainz](https://acousticbrainz.org/) is a project which ran between 2015 - 2022 and gathered acoustic information of music recordings through crowdsourcing. Its goal was to provide an open dataset that developers and researchers could use to build or study music recommendation engines.
+
+The dataset contains almost 30 million submissions which, when deduplicated, cover 7.5 million recordings. Each submission is made up of:
+- *metadata* -  MusicBrainz IDs, title, artist, album, etc.
+- *low-level features* - raw mathematical metrics extracted directly from the audio waves
+- *high-level features* - statistical predictions generated by feeding the low-level features into machine learning models
+
+The high-level features are suitable for building a recommender around while keeping resource usage manageable for a small project. They take up ~40 GB for the whole dataset (vs 600 GB for low-level) and contain categorical predictions which can easily be used in comparison algorithms. Below is an example of a prediction whether the sound has a "party" mood. A complete submission with all predictions is included in [high-level-sample.json](/assets/high-level-sample.json).
+
+```json
+"mood_party": {
+  "all": {
+    "not_party": 0.993278443813,
+    "party": 0.00672157853842
+  },
+  "probability": 0.993278443813,
+  "value": "not_party"
+}
+```
+
+### Building the database
+
+
+
 ### Dataset Ingest
 
 Track data is loaded from the [DB dumps](https://acousticbrainz.org/download) of the AcousticBrainz dataset. The build pipeline does the following:
@@ -81,3 +101,4 @@ $$finalSize = datasetSize - duplicateCount - tracksMissingData - tracksMissingAr
 For the sample dataset (100k tracks), 85732 unique entries will be loaded:
 $$85732 = 100000 - 11182 - 4 - 3082$$
 
+### Generating recommendations
