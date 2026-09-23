@@ -24,6 +24,12 @@ I want for TasteMender to be an "eject button" from that behaviour-driven loop. 
 > [!NOTE]
 > The app was originally developed as a final project for the BSc Computer Science degree at Goldsmiths, University of London (available [here](https://github.com/RadValentin/CM3070-FP-Music-Recommendation)). This repository continues that work, aiming to eventually provide a fully-featured music discovery experience.
 
+### Etymology
+
+The name TasteMender brings together two core ideas:
+- _Taste_, as in shaping your musical tastes through discovery.
+- _Mender_, a nod to "recommender" and the idea of mending listening habits that have grown stale.
+
 ### Technology
 
 TasteMender uses a Django REST API with a React and TypeScript frontend. Audio features and metadata are extracted from the [AcousticBrainz dataset](https://acousticbrainz.org/), with tracks, artists and albums identified through [MusicBrainz IDs](https://musicbrainz.org/doc/MusicBrainz_Identifier) (MBID).
