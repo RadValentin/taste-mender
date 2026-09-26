@@ -17,7 +17,7 @@ TasteMender is a music discovery app that recommends songs based on acoustic cha
 
 ### Motivation
 
-I believe that finding new media to enjoy nowadays is an increasingly arduous task. Consumers' fragmented tastes and the ever-growing breadth of available content make serendipitous discovery a rare event. Online platforms pigeonhole users into highly personalized but restrictive content bubbles and don't offer much direct control over how content recommendations are made. Often, it feels impossible to find media that's outside your usual preferences but that you can still enjoy.
+I believe that finding new media to enjoy nowadays is an increasingly arduous task. Consumers' fragmented tastes and the ever-growing breadth of available content make serendipitous discovery a rare event. Online platforms pigeonhole users into highly personalized but restrictive content bubbles and don't offer much direct control over how content recommendations are made. Often, it feels impossible to find interesting media that's outside your usual preferences.
 
 I want TasteMender to be an "eject button" from that behaviour-driven loop. It's deliberately built to give music recommendations based on the intrinsic characteristics of the songs themselves. It isn't concerned with user behaviour; at the same time, it gives users as much direct control as possible over what gets recommended. You actively tell the system what you want rather than letting it predict that for you.
 
@@ -40,7 +40,7 @@ For more information, see the [development guidelines](docs/DEVELOPMENT.md) and 
 
 ### The dataset
 
-[AcousticBrainz](https://acousticbrainz.org/) is a project that ran from 2015 to 2022 and gathered acoustic information about music recordings through crowdsourcing. Its goal was to provide an open dataset that developers and researchers could use to build or study music recommendation engines.
+[AcousticBrainz](https://acousticbrainz.org/) is a project that ran from 2015 to 2022, and gathered acoustic information about music recordings through crowdsourcing. Its goal was to provide an open dataset that developers and researchers could use to build or study music recommendation engines.
 
 The dataset contains almost 30 million submissions which, when deduplicated, cover 7.5 million recordings. Each submission is made up of:
 - *metadata* - MusicBrainz IDs, title, artist, album, etc.
@@ -60,14 +60,14 @@ The high-level features are suitable for building a recommender while keeping re
 }
 ```
 
-A complete submission with all predictions is included in [high-level-sample.json](/assets/high-level-sample.json).
+A complete submission with all predictions is included in [high-level-sample.json](assets/high-level-sample.json).
 
 ### Building the database
 
-The crowdsourced nature of the dataset makes it difficult to map its data directly to a database. Popular recordings can have thousands of duplicates, and many submissions have missing or incomplete data. The ingest pipeline ([/backend/ingest/pipeline.py](/backend/ingest/pipeline.py)) is responsible for cleaning and normalizing the data. It also splits the data based on how it will be used:
+The crowdsourced nature of the dataset makes it difficult to map its data directly to a database. Popular recordings can have thousands of duplicates, and many submissions have missing or incomplete data. The ingest pipeline ([backend/ingest/pipeline.py](backend/ingest/pipeline.py)) is responsible for cleaning and normalizing the data. It also splits the data based on how it will be used:
 
 - Track metadata is stored in a database because it maps well to the relational model.
-- Audio features are stored in a feature matrix file (`features_and_index.npz`), which is loaded into RAM. This eliminates the bottleneck of having to access disk storage when making comparisons between tracks.
+- Audio features are stored in a feature matrix file (`features_and_index.npz`), which is loaded into RAM, avoiding repeated disk access during recommendation comparisons.
 
 The two data stores are linked together through track MBIDs. They only need to be synced once, during ingest, as the dataset is stable and most likely won't receive any updates in the foreseeable future.
 
@@ -76,11 +76,11 @@ The two data stores are linked together through track MBIDs. They only need to b
 The feature matrix sits at the core of how recommendations are made. It contains unique entries for each track of the dataset, consisting of:
 
 - A unique identifier: the MBID.
-- A 16-dimensional audio feature vector made up of high-level prediction probabilities for audio moods.
+- A 16-dimensional audio feature vector built from high-level prediction probabilities, including danceability, moods, voice/instrumentalness, tonality, brightness, and MIREX mood clusters.
 - Dortmund and Rosamerica categories used to group tracks by genre.
 - Release year used to group tracks by decade (70s, 80s, 90s).
 
-Making a recommendation starts by providing the service ([/services/recommender.py](/backend/recommend_api/services/recommender.py)) with a target track. The feature matrix is then optionally filtered to a subset of candidates that have the same genre and were released in the same decade. The remaining candidates are ranked by calculating the cosine similarity between their feature vectors. This measures how closely their audio profiles align. Because the feature data is stored in RAM, the process usually takes under 100 ms.
+Making a recommendation starts by providing the service ([services/recommender.py](backend/recommend_api/services/recommender.py)) with a target track. The feature matrix is then optionally filtered to a subset of candidates that have the same genre and were released in the same decade. The remaining candidates are ranked by calculating the cosine similarity between their feature vectors. This measures how closely their audio profiles align. Because the feature data is stored in RAM, the process usually takes under 100 ms.
 
 > [!NOTE]
 > Cosine similarity is a standard and widely used metric for making recommendations. Currently, it is calculated between the target track and every candidate track. Approximate nearest-neighbour search, supported by libraries such as [FAISS](https://github.com/facebookresearch/faiss), [Annoy](https://github.com/spotify/annoy), and [Voyager](https://github.com/spotify/voyager), could speed up the recommendation engine, with a configurable trade-off between speed and retrieval accuracy.
