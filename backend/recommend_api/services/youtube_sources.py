@@ -33,12 +33,12 @@ class YTSource:
 
 def get_youtube_source(track: Track) -> YTSource | None:
     config: Dict[str, str | None] = dotenv_values(BASE_DIR / ".env")
-    YOUTUBE_API_KEY: str = config.get("YOUTUBE_API_KEY")
+    YOUTUBE_API_KEY = config.get("YOUTUBE_API_KEY")
 
     if not YOUTUBE_API_KEY:
         raise RuntimeError("Missing YOUTUBE_API_KEY")
 
-    artist: Artist = track.artists.first()
+    artist = track.artists.first()
     artist_name: str = getattr(artist, "name", "") or ""
     query: str = f"{track.title} {artist_name}".strip()
 
@@ -55,13 +55,10 @@ def get_youtube_source(track: Track) -> YTSource | None:
     items: list[dict] = response.json().get("items", [])
 
     if not items:
-        Track.objects.filter(pk=track.pk).update(source_not_found_count=F('source_not_found_count') + 1)
         return None
 
     source: dict = items[0]
     video_id: str = source["id"]["videoId"]
-
-    Track.objects.filter(pk=track.pk).update(source_found_count=F('source_found_count') + 1)
 
     return YTSource(
         video_id=video_id,

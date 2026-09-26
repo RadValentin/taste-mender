@@ -71,9 +71,6 @@ class Track(models.Model):
     # Denormalized plain-text artist names kept in sync for fast full-text search queries.
     artists_text = models.TextField(default="", blank=True)
     search_vector = SearchVectorField(null=True)
-    # Tracks how often a YouTube video source was successfully resolved for this track.
-    source_found_count = models.IntegerField(default=0)
-    source_not_found_count = models.IntegerField(default=0)
 
     class Meta:
         indexes = [
