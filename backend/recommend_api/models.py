@@ -1,3 +1,4 @@
+from __future__ import annotations
 from django.db import models
 from django.contrib.postgres.search import SearchVectorField
 from django.contrib.postgres.indexes import GinIndex, GistIndex
@@ -17,7 +18,9 @@ class Artist(models.Model):
 class Album(models.Model):
     musicbrainz_albumid = models.CharField(primary_key=True, max_length=36)
     name = models.CharField(max_length=255)
-    artists = models.ManyToManyField(Artist, through="AlbumArtist")
+    artists: models.ManyToManyField[Artist, AlbumArtist] = models.ManyToManyField(
+        Artist, through="AlbumArtist"
+    )
     date = models.DateField(null=True, blank=True)
 
     class Meta:
@@ -55,7 +58,7 @@ class GenreRosamerica(models.Model):
 class Track(models.Model):
     musicbrainz_recordingid = models.CharField(primary_key=True, max_length=36)
     album = models.ForeignKey(Album, on_delete=models.CASCADE, null=True, blank=True)
-    artists = models.ManyToManyField(
+    artists: models.ManyToManyField[Artist, TrackArtist] = models.ManyToManyField(
         Artist, through="TrackArtist", related_name="tracks"
     )
     title = models.TextField()
@@ -68,9 +71,6 @@ class Track(models.Model):
     # Denormalized plain-text artist names kept in sync for fast full-text search queries.
     artists_text = models.TextField(default="", blank=True)
     search_vector = SearchVectorField(null=True)
-    # Tracks how often a YouTube video source was successfully resolved for this track.
-    source_found_count = models.IntegerField(default=0)
-    source_not_found_count = models.IntegerField(default=0)
 
     class Meta:
         indexes = [
@@ -85,10 +85,52 @@ class Track(models.Model):
             models.Index(fields=["submissions"], name="track_subs_idx"),
         ]
 
-
 class TrackArtist(models.Model):
     artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
     track = models.ForeignKey(Track, on_delete=models.CASCADE)
 
     class Meta:
         unique_together = [("track", "artist")]
+
+
+class TrackSource(models.Model):
+    """
+    Caches playable sources for tracks to prevent becoming rate-limited by source providers.
+    At most one track source should exist for every provider.
+    """
+    class Provider(models.TextChoices):
+        YOUTUBE = "youtube", "YouTube"
+
+    track = models.ForeignKey(Track, on_delete=models.CASCADE)
+    source_id = models.CharField(max_length=255)
+    title = models.CharField(max_length=255)
+    channel = models.CharField(max_length=255)
+    thumbnail = models.URLField(max_length=255)
+    url = models.URLField(max_length=255)
+    provider = models.CharField(
+        choices=Provider.choices,
+        default=Provider.YOUTUBE,
+        max_length=15,
+    )
+    refreshed_at = models.DateTimeField(auto_now=True)
+    source_request_count = models.IntegerField(default=1)
+
+    class Meta:
+        unique_together = [("track", "provider")]
+        constraints = [
+            models.CheckConstraint(
+                condition=models.Q(provider="youtube"),
+                name="track_source_provider_youtube",
+            ),
+        ]
+
+    def __str__(self):
+        title = (self.title or "").strip()
+        channel = (self.channel or "").strip()
+        return f"{title} - {channel} ({self.url})"
+
+    def __repr__(self):
+        return (
+            f"TrackSource(source_id={self.source_id!r}, title={self.title!r}, "
+            f"channel={self.channel!r}, thumbnail={self.thumbnail!r}, url={self.url!r})"
+        )

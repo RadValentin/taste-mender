@@ -4,8 +4,7 @@ from datetime import date, datetime, timedelta
 from unittest.mock import patch
 from django.urls import reverse
 from rest_framework.test import APITestCase
-from recommend_api.services.youtube_sources import YTSource
-from recommend_api.models import Album, Track
+from recommend_api.models import Track, TrackSource
 from recommend_api.tests.factories import (
     TrackFactory,
     AlbumFactory,
@@ -103,8 +102,9 @@ class TrackAPITests(APITestCase):
     def test_get_sources(self):
         mbid = self.track_tuples[0][0]
         with patch("recommend_api.api.track.get_youtube_source") as mock_source:
-            source = YTSource(
-                video_id="foo-id",
+            source = TrackSource(
+                track=self.tracks[0],
+                source_id="foo-id",
                 title="I Fooed 1000 Bars",
                 channel="Mr. Foo",
                 thumbnail="foo.png",
@@ -117,7 +117,7 @@ class TrackAPITests(APITestCase):
             self.assertEqual(resp.data["track"]["mbid"], mbid)
             self.assertEqual(resp.data["sources"][0], {
                 "provider": "youtube",
-                "id": source.video_id,
+                "id": source.source_id,
                 "title": source.title,
                 "channel": source.channel,
                 "thumbnail": source.thumbnail,

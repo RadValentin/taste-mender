@@ -1,8 +1,8 @@
 from django.test import TestCase
 from unittest.mock import patch, MagicMock
-from recommend_api.models import Track, Artist
+from recommend_api.models import Track, Artist, TrackSource
 from recommend_api.tests.factories import TrackFactory, ArtistFactory
-from recommend_api.services.youtube_sources import YTSource, get_youtube_source, YOUTUBE_SEARCH_URL
+from recommend_api.services.youtube_sources import get_youtube_source, YOUTUBE_SEARCH_URL
 
 
 class YoutubeSourcesTests(TestCase):
@@ -59,30 +59,17 @@ class YoutubeSourcesTests(TestCase):
         self.assertIsNone(get_youtube_source(self.track))
 
     def test_returns_youtube_sources(self):
-        result: YTSource = get_youtube_source(self.track)
+        result: TrackSource | None = get_youtube_source(self.track)
         json_source = self.search_response["items"][0]
 
-        self.assertIsInstance(result, YTSource)
-        self.assertEqual(result.video_id, json_source["id"]["videoId"])
+        assert result is not None
+        self.assertIsInstance(result, TrackSource)
+
+        self.assertEqual(result.source_id, json_source["id"]["videoId"])
         self.assertEqual(result.title, json_source["snippet"]["title"])
         self.assertEqual(result.channel, json_source["snippet"]["channelTitle"])
         self.assertEqual(result.thumbnail, json_source["snippet"]["thumbnails"]["medium"]["url"])
         self.assertIn(json_source["id"]["videoId"], result.url)
-
-    def test_found_counter_is_incremented(self):
-        get_youtube_source(self.track)
-        self.track.refresh_from_db()
-        self.assertEqual(self.track.source_found_count, 1)
-        self.assertEqual(self.track.source_not_found_count, 0)
-
-    def test_not_found_counter_is_incremented(self):
-        empty_response = MagicMock()
-        empty_response.json.return_value = {}
-        self.mock_get.return_value = empty_response
-        get_youtube_source(self.track)
-        self.track.refresh_from_db()
-        self.assertEqual(self.track.source_found_count, 0)
-        self.assertEqual(self.track.source_not_found_count, 1)
 
     def tearDown(self):
         self.patched_dotenv.stop()
