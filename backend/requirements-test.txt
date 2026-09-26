@@ -6,6 +6,7 @@ colorlog==6.10.1
 coverage==7.15.0
 dj-database-url==3.0.1
 Django==5.2.16
+django-stubs==5.2.9
 django-cors-headers==4.9.0
 django-extensions==4.1
 django-filter==26.1

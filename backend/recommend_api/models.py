@@ -1,3 +1,4 @@
+from __future__ import annotations
 from django.db import models
 from django.contrib.postgres.search import SearchVectorField
 from django.contrib.postgres.indexes import GinIndex, GistIndex
@@ -17,7 +18,9 @@ class Artist(models.Model):
 class Album(models.Model):
     musicbrainz_albumid = models.CharField(primary_key=True, max_length=36)
     name = models.CharField(max_length=255)
-    artists = models.ManyToManyField(Artist, through="AlbumArtist")
+    artists: models.ManyToManyField[Artist, AlbumArtist] = models.ManyToManyField(
+        Artist, through="AlbumArtist"
+    )
     date = models.DateField(null=True, blank=True)
 
     class Meta:
@@ -55,7 +58,7 @@ class GenreRosamerica(models.Model):
 class Track(models.Model):
     musicbrainz_recordingid = models.CharField(primary_key=True, max_length=36)
     album = models.ForeignKey(Album, on_delete=models.CASCADE, null=True, blank=True)
-    artists = models.ManyToManyField(
+    artists: models.ManyToManyField[Artist, TrackArtist] = models.ManyToManyField(
         Artist, through="TrackArtist", related_name="tracks"
     )
     title = models.TextField()
