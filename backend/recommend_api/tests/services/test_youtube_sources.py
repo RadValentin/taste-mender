@@ -1,8 +1,8 @@
 from django.test import TestCase
 from unittest.mock import patch, MagicMock
-from recommend_api.models import Track, Artist
+from recommend_api.models import Track, Artist, TrackSource
 from recommend_api.tests.factories import TrackFactory, ArtistFactory
-from recommend_api.services.youtube_sources import YTSource, get_youtube_source, YOUTUBE_SEARCH_URL
+from recommend_api.services.youtube_sources import get_youtube_source, YOUTUBE_SEARCH_URL
 
 
 class YoutubeSourcesTests(TestCase):
@@ -59,13 +59,13 @@ class YoutubeSourcesTests(TestCase):
         self.assertIsNone(get_youtube_source(self.track))
 
     def test_returns_youtube_sources(self):
-        result: YTSource | None = get_youtube_source(self.track)
+        result: TrackSource | None = get_youtube_source(self.track)
         json_source = self.search_response["items"][0]
 
         assert result is not None
-        self.assertIsInstance(result, YTSource)
+        self.assertIsInstance(result, TrackSource)
 
-        self.assertEqual(result.video_id, json_source["id"]["videoId"])
+        self.assertEqual(result.source_id, json_source["id"]["videoId"])
         self.assertEqual(result.title, json_source["snippet"]["title"])
         self.assertEqual(result.channel, json_source["snippet"]["channelTitle"])
         self.assertEqual(result.thumbnail, json_source["snippet"]["thumbnails"]["medium"]["url"])
