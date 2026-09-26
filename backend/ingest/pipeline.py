@@ -28,7 +28,7 @@ from ingest.cli_helpers import print_banner, confirm, spinner, show_progress_bar
 log = logging.getLogger(__name__)
 
 
-def ingest_parsed_track(result: dict, track_index: LMDBTrackIndex, counters):
+def ingest_parsed_track(result: dict | None, track_index: LMDBTrackIndex, counters):
     if not result:
         return
 
@@ -87,9 +87,13 @@ def build_database(
     if use_sample:
         # 100k records
         dataset_path = config.get("AB_SAMPLE_ROOT")
+        if not dataset_path:
+            raise ValueError("Path to sample dataset is not defined in .env, please set a value for AB_SAMPLE_ROOT")
     else:
         # 1M records
         dataset_path = config.get("AB_HIGHLEVEL_ROOT")
+        if not dataset_path:
+            raise ValueError("Path to datasets is not defined in .env, please set a value for AB_HIGHLEVEL_ROOT")
 
     # Clean old records
     print("Cleaning up old records", flush=True)
@@ -259,7 +263,7 @@ def build_database(
     artist_index = defaultdict(list)  # keep track of unique artist names, indexed by MBID
     genre_dortmund_codes = {}  # map genre label -> compact numeric code
     genre_rosamerica_codes = {}  # map genre label -> compact numeric code
-    trackartist_set: Set[Tuple[bytes, str]] = set() # set of all Track-Artist M2M pairings, to avoid duplication
+    trackartist_set: Set[Tuple[str, str]] = set() # set of all Track-Artist M2M pairings, to avoid duplication
     albumartist_set = set()  # set of all Album-Artist M2M pairings
     track_features_list = []  # list of feature values for each track
     track_list: List[Track] = [] # ORM Track objects

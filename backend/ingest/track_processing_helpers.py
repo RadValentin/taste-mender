@@ -3,6 +3,7 @@ import zstandard as zstd
 from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from statistics import median_low
+from typing import Any
 
 log = logging.getLogger(__name__)
 invalid_date_count = 0
@@ -48,7 +49,7 @@ def is_mbid(s: str) -> bool:
         return False
 
 
-def parse_flexible_date(date_str: str = None) -> str | None:
+def parse_flexible_date(date_str: str | None = None) -> str | None:
     """
     Given a date as a string, try to extract its information as a ISO date string
     """
@@ -185,7 +186,7 @@ def extract_prob_vector(highlevel: dict, parent_key: str, order: list[str]) -> l
     return [x / s for x in vec] if s > 0 else vec
 
 
-def extract_data_from_json_str(json_str: str, file_path: str | None = None) -> dict | None:
+def extract_data_from_json(json: bytes, file_path: str | None = None) -> dict[str, Any] | None:
     """
     Returns a track dictionary with:
 
@@ -199,7 +200,7 @@ def extract_data_from_json_str(json_str: str, file_path: str | None = None) -> d
     global invalid_mbid_count
 
     try:
-        data = orjson.loads(json_str)
+        data = orjson.loads(json)
     except orjson.JSONDecodeError:
         log.warning(f"Bad JSON string")
         missing_data_count += 1
@@ -344,14 +345,14 @@ def merge_distribution(tracks, key) -> list:
     return [x / s for x in merged] if s > 0 else merged
 
 
-def process_file(json_path: str) -> dict | None:
+def process_file(json_path: str) -> dict[str, Any] | None:
     """
     Utility function for loading and parsing individual JSON files in parallel
     """
     try:
         with open(json_path, "rb") as f:
             json_string = f.read()
-        return extract_data_from_json_str(json_string, json_path)
+        return extract_data_from_json(json_string, json_path)
     except Exception as ex:
         log.warning(f"Could not process file ({ex}): '{os.path.normpath(json_path)}'")
         return None
@@ -371,7 +372,7 @@ def stream_json_from_tar_zst(path: str, read_size=2*1024*1024):
                             log.warning(f"Skipping {member.name}")
                             continue
                         with fileobj:
-                            data = fileobj.read().decode("utf-8", errors="replace")
+                            data = fileobj.read()
                             yield member.name, data
                     except Exception as e:
                         log.warning(f"Failed reading archive {member.name}: {e}")
@@ -380,7 +381,7 @@ def iter_archive(archive_path: str, limit: int | None = None):
     print(f"Loading {os.path.normpath(archive_path)}", end="", flush=True)
     count = 0
     for filename, raw_json in stream_json_from_tar_zst(archive_path):
-        result = extract_data_from_json_str(raw_json, filename)
+        result = extract_data_from_json(raw_json, filename)
         if result:
             yield result
             count += 1

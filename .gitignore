@@ -180,6 +180,7 @@ cython_debug/
 staticfiles/
 lmdb_data/
 features_and_index.npz
+features_and_index_sample.npz
 output.txt
 db.sqbpro
 .ssh/
