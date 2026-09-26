@@ -100,6 +100,14 @@ Results are limited to one track per artist in order to encourage variety. The f
 
 The frontend player is built around the idea of a _flow of discovery_. You select a track, it becomes the target for recommendations, and you're shown a subset of similar tracks. When the current track finishes, the top recommendation is played and becomes the next target.
 
+### Limitations
+
+The AcousticBrainz dataset is frozen at the June 2022 dump, and coverage is uneven, so some artists, genres, and release periods are better represented than others. Because the data is crowdsourced and deduplicated, metadata may be incomplete or inaccurate, including occasional mismatches between artists and songs.
+
+The API is stateless, so filter preferences, listening sessions, and playback history are not persisted across page refreshes or devices.
+
+There is no direct mapping between MBIDs and YouTube videos. Playback therefore depends on searching for `{track.title} {artist_name}`, which can return incorrect results. Strict YouTube Data API quotas also make it difficult to scale the app beyond a small number of users.
+
 ## Repo Structure
 
 - `backend/`
