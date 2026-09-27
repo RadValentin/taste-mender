@@ -3,7 +3,7 @@ from datetime import timedelta
 from requests import Response
 from django.utils import timezone
 from dotenv import dotenv_values
-from music_recommendation.settings import BASE_DIR
+from music_recommendation.settings import BASE_DIR, YOUTUBE_SOURCE_CACHE_DAYS
 from recommend_api.models import Track, TrackSource
 from typing import Dict
 
@@ -19,7 +19,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
 
     is_stale = (
         cached_source is None
-        or timezone.now() - cached_source.refreshed_at > timedelta(days=30)
+        or timezone.now() - cached_source.refreshed_at > timedelta(days=YOUTUBE_SOURCE_CACHE_DAYS)
     )
 
     if is_stale:
