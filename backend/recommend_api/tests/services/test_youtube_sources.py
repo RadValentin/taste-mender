@@ -1,18 +1,18 @@
-from django.test import TestCase
+from datetime import timedelta
 from unittest.mock import patch, MagicMock
+from django.test import TestCase
+from django.utils import timezone
 from recommend_api.models import Track, Artist, TrackSource
-from recommend_api.tests.factories import TrackFactory, ArtistFactory
+from recommend_api.tests.factories import TrackFactory, ArtistFactory, TrackSourceFactory
 from recommend_api.services.youtube_sources import get_youtube_source, YOUTUBE_SEARCH_URL
 
 
 class YoutubeSourcesTests(TestCase):
-    def setUp(self):
-        # Test data
-        self.artist: Artist = ArtistFactory()
-        self.track: Track = TrackFactory()
-        self.track.artists.add(self.artist)
-        self.mock_yt_api_key = "foo-bar-key"
-        self.search_response = {
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.mock_yt_api_key = "foo-bar-key"
+        # YT API search response
+        cls.search_response = {
             "items": [{
                 "id": {"videoId": "vid123"},
                 "snippet": {
@@ -22,6 +22,25 @@ class YoutubeSourcesTests(TestCase):
                 },
             }]
         }
+        # YT API videos list response
+        cls.list_response = {
+            "items": [{
+                "id": "vid6969",
+                "snippet": {
+                    "title": "List Track Title",
+                    "channelTitle": "List Channel X",
+                    "thumbnails": {"medium": {"url": "http://list-thumb"}},
+                },
+            }]
+        }
+
+        return super().setUpClass()
+
+    def setUp(self):
+        # Test data
+        self.artist: Artist = ArtistFactory()
+        self.track: Track = TrackFactory()
+        self.track.artists.add(self.artist)
 
         # Mocks
         self.patched_dotenv = patch("recommend_api.services.youtube_sources.dotenv_values",
@@ -58,6 +77,20 @@ class YoutubeSourcesTests(TestCase):
         self.mock_get.return_value = empty_response
         self.assertIsNone(get_youtube_source(self.track))
 
+    def test_uses_configured_cache_duration(self):
+        TrackSourceFactory(
+            track=self.track,
+            source_id="cached-video",
+            refreshed_at=timezone.now() - timedelta(days=31)
+        )
+
+        with patch("recommend_api.services.youtube_sources.YOUTUBE_SOURCE_CACHE_DAYS", 60):
+            result = get_youtube_source(self.track)
+
+        self.assertIsNotNone(result)
+        self.assertEqual(result.source_id, "cached-video")
+        self.mock_get.assert_not_called()
+
     def test_returns_youtube_sources(self):
         result: TrackSource | None = get_youtube_source(self.track)
         json_source = self.search_response["items"][0]
@@ -70,7 +103,20 @@ class YoutubeSourcesTests(TestCase):
         self.assertEqual(result.channel, json_source["snippet"]["channelTitle"])
         self.assertEqual(result.thumbnail, json_source["snippet"]["thumbnails"]["medium"]["url"])
         self.assertIn(json_source["id"]["videoId"], result.url)
+        self.assertEqual(result.source_request_count, 1)
+
+    def test_increments_request_count_for_cached_source(self):
+        cached_source = TrackSourceFactory(track=self.track)
+        self.assertEqual(cached_source.source_request_count, 1)
+
+        result = get_youtube_source(self.track)
+        cached_source.refresh_from_db()
+
+        self.assertIsNotNone(result)
+        self.assertEqual(cached_source.source_request_count, 2)
+        self.mock_get.assert_not_called()
 
     def tearDown(self):
+        TrackSource.objects.all().delete()
         self.patched_dotenv.stop()
         self.patched_requests.stop()

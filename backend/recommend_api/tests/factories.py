@@ -25,7 +25,7 @@ ROSAMERICA_GENRES = [
     {"code": 6, "label": "jaz"},
     {"code": 7, "label": "spe"},
 ]
-from recommend_api.models import Artist, Album, Track, GenreDortmund, GenreRosamerica
+from recommend_api.models import Artist, Album, Track, GenreDortmund, GenreRosamerica, TrackSource
 
 
 class ArtistFactory(DjangoModelFactory):
@@ -93,3 +93,17 @@ class TrackFactory(DjangoModelFactory):
             )
             Track.objects.filter(pk=obj.pk).update(search_vector=search_vector)
             obj.refresh_from_db()
+
+
+class TrackSourceFactory(DjangoModelFactory):
+    class Meta:
+        model = TrackSource
+
+    track = factory.SubFactory(TrackFactory)
+    source_id = factory.Sequence(lambda n: f"youtube-video-{n}")
+    title = factory.Faker("sentence", nb_words=3)
+    channel = factory.Faker("company")
+    thumbnail = factory.Faker("image_url")
+    url = factory.LazyAttribute(lambda o: f"https://www.youtube.com/watch?v={o.source_id}")
+    provider = TrackSource.Provider.YOUTUBE
+    source_request_count = 1
