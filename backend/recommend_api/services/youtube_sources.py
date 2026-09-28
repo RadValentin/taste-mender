@@ -51,32 +51,30 @@ def get_youtube_source(track: Track) -> TrackSource | None:
             "key": YOUTUBE_API_KEY
         }, timeout=8)
         response.raise_for_status()
-        print(response.json())
 
         items = response.json().get("items", [])
-        if not items:
-            return None
-
-        source = items[0]
-        video_id = source["id"]
 
         # If the source is still up and still embeddable, refresh its metadata.
         # Otherwise we'll assume the source as missing.
-        if source and (source.get("status", {}).get("embeddable", False) is True):
-            TrackSource.objects.filter(pk=cached_source.pk).update(
-                track=track,
-                provider=TrackSource.Provider.YOUTUBE,
-                source_id=video_id,
-                title=source["snippet"]["title"],
-                channel=source["snippet"]["channelTitle"],
-                thumbnail=source["snippet"]["thumbnails"]["medium"]["url"],
-                url=f"https://www.youtube.com/watch?v={video_id}",
-                source_request_count=F("source_request_count") + 1,
-                refreshed_at=timezone.now(),
-            )
+        if items:
+            source = items[0]
+            video_id = source["id"]
 
-            cached_source.refresh_from_db()
-            return cached_source
+            if source and (source.get("status", {}).get("embeddable", False) is True):
+                TrackSource.objects.filter(pk=cached_source.pk).update(
+                    track=track,
+                    provider=TrackSource.Provider.YOUTUBE,
+                    source_id=video_id,
+                    title=source["snippet"]["title"],
+                    channel=source["snippet"]["channelTitle"],
+                    thumbnail=source["snippet"]["thumbnails"]["medium"]["url"],
+                    url=f"https://www.youtube.com/watch?v={video_id}",
+                    source_request_count=F("source_request_count") + 1,
+                    refreshed_at=timezone.now(),
+                )
+
+                cached_source.refresh_from_db()
+                return cached_source
 
     # Source is either missing from the DB cache or unavailable on YT so search for a new video on YT.
     artist = track.artists.first()
@@ -92,7 +90,6 @@ def get_youtube_source(track: Track) -> TrackSource | None:
         "key": YOUTUBE_API_KEY
     }, timeout=8)
     response.raise_for_status()
-    print(response.json())
 
     results: list[dict] = response.json().get("items", [])
     if not results:
