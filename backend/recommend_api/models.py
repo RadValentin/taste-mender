@@ -1,5 +1,6 @@
 from __future__ import annotations
 from django.db import models
+from django.utils import timezone
 from django.contrib.postgres.search import SearchVectorField
 from django.contrib.postgres.indexes import GinIndex, GistIndex
 
@@ -112,7 +113,7 @@ class TrackSource(models.Model):
         default=Provider.YOUTUBE,
         max_length=15,
     )
-    refreshed_at = models.DateTimeField(auto_now=True)
+    refreshed_at = models.DateTimeField(default=timezone.now)
     source_request_count = models.IntegerField(default=1)
 
     class Meta:
