@@ -23,14 +23,14 @@ def get_youtube_source(track: Track) -> TrackSource | None:
         provider=TrackSource.Provider.YOUTUBE,
     ).first()
 
-    is_missing = cached_source is None
+    is_cached = cached_source is not None
     is_stale = (
-        not is_missing and
+        is_cached and
         timezone.now() - cached_source.refreshed_at > timedelta(days=YOUTUBE_SOURCE_CACHE_DAYS)
     )
 
     # If source is in DB cache and it's not stale, return it.
-    if not is_missing and not is_stale:
+    if is_cached and not is_stale:
         TrackSource.objects.filter(pk=cached_source.pk).update(
             source_request_count=F("source_request_count") + 1,
         )
@@ -44,7 +44,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
         raise RuntimeError("Missing YOUTUBE_API_KEY")
 
     # If source is out of date, ping YT to check that video is still up and update metadata.
-    if not is_missing and is_stale:
+    if is_cached and is_stale:
         response: Response = requests.get(YOUTUBE_VIDEOS_URL, params={
             "part": "snippet,status,id",
             "id": cached_source.source_id,
