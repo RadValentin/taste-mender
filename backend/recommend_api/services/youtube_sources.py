@@ -1,4 +1,4 @@
-import requests
+import logging, requests
 from datetime import timedelta
 from requests import Response
 from django.db.models import F
@@ -7,6 +7,8 @@ from dotenv import dotenv_values
 from music_recommendation.settings import BASE_DIR, YOUTUBE_SOURCE_CACHE_DAYS
 from recommend_api.models import Track, TrackSource
 from typing import Dict
+
+log = logging.getLogger(__name__)
 
 YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 YOUTUBE_VIDEOS_URL = "https://www.googleapis.com/youtube/v3/videos"
@@ -70,6 +72,11 @@ def get_youtube_source(track: Track) -> TrackSource | None:
                 source_request_count=F("source_request_count") + 1,
             )
             # A stale source should not be returned to stay compliant with YT API terms.
+            log.warning(
+                "YouTube source verification failed for stale track=%s; returning no source",
+                track.pk,
+                exc_info=True,
+            )
             return None
 
         items = response.json().get("items", [])
@@ -94,6 +101,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
                 )
 
                 cached_source.refresh_from_db()
+                log.info("Refreshed YouTube source for track=%s", track.pk)
                 return cached_source
 
     # If a source search failed recently, prevent duplicate requests for a while.
@@ -105,6 +113,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
         TrackSource.objects.filter(pk=cached_source.pk).update(
             source_request_count=F("source_request_count") + 1,
         )
+        log.debug("Skipping YouTube search during failure cooldown for track=%s", track.pk)
         return None
 
     # Source is either missing from the DB cache or unavailable on YT so search for a new video on YT.
@@ -125,6 +134,11 @@ def get_youtube_source(track: Track) -> TrackSource | None:
         results: list[dict] = response.json().get("items", [])
     except requests.RequestException:
         results = []
+        log.warning(
+            "YouTube source search failed for track=%s",
+            track.pk,
+            exc_info=True,
+        )
 
     if not results:
         # If the video wasn't found, create a empty cache entry or update existing one
@@ -145,6 +159,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
             TrackSource.objects.filter(pk=cached_source.pk).update(
                 source_request_count=F("source_request_count") + 1,
             )
+        log.info("No YouTube source found for track=%s", track.pk)
         return None
 
     source: dict = results[0]
@@ -172,4 +187,5 @@ def get_youtube_source(track: Track) -> TrackSource | None:
         )
         cached_source.refresh_from_db()
 
+    log.info("Cached YouTube source for track=%s", track.pk)
     return cached_source
