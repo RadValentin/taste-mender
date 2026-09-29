@@ -106,4 +106,5 @@ class TrackSourceFactory(DjangoModelFactory):
     thumbnail = factory.Faker("image_url")
     url = factory.LazyAttribute(lambda o: f"https://www.youtube.com/watch?v={o.source_id}")
     provider = TrackSource.Provider.YOUTUBE
+    last_lookup_failed_at = None
     source_request_count = 1

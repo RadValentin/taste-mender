@@ -102,18 +102,26 @@ class TrackSource(models.Model):
     class Provider(models.TextChoices):
         YOUTUBE = "youtube", "YouTube"
 
-    track = models.ForeignKey(Track, on_delete=models.CASCADE)
-    source_id = models.CharField(max_length=255)
-    title = models.CharField(max_length=255)
-    channel = models.CharField(max_length=255)
-    thumbnail = models.URLField(max_length=255)
-    url = models.URLField(max_length=255)
+    track = models.ForeignKey(Track, on_delete=models.CASCADE, related_name="sources")
     provider = models.CharField(
         choices=Provider.choices,
         default=Provider.YOUTUBE,
         max_length=15,
     )
+
+    # Source metadata, optional in case lookup fails
+    source_id = models.CharField(max_length=255, null=True, blank=True)
+    title = models.CharField(max_length=255, null=True, blank=True)
+    channel = models.CharField(max_length=255, null=True, blank=True)
+    thumbnail = models.URLField(max_length=255, null=True, blank=True)
+    url = models.URLField(max_length=255, null=True, blank=True)
+
+    # Cache and retry state
     refreshed_at = models.DateTimeField(default=timezone.now)
+    last_lookup_failed_at = models.DateTimeField(null=True, blank=True)
+
+    # Insights
+    # How many times a source has been requested by clients
     source_request_count = models.IntegerField(default=1)
 
     class Meta:

@@ -10,13 +10,21 @@ from typing import Dict
 
 YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 YOUTUBE_VIDEOS_URL = "https://www.googleapis.com/youtube/v3/videos"
+SOURCE_LOOKUP_FAILURE_TTL = timedelta(hours=24)
 
 
 def get_youtube_source(track: Track) -> TrackSource | None:
     """
-    Returns a playable YouTube source for a Track.
-    Tries to locate the source in DB cache. If it's missing, does a YT search.
-    If it's stale, re-pings YT to check that the video is still up and refreshes metadata.
+    Returns a playable YouTube source for a Track and manages DB caching for sources.
+
+    - If source is in cache and not stale, return it directly without querying YT.
+    - If the source is out of date (stale), refresh its metadata by querying YT `/videos/`.
+    If video has been removed or is not embeddable, fall back to search.
+    - If the video is missing, query YT `/search/` for a source.
+
+    Searching YT massively drains API quota so a failed search for a source results in a 24h
+    timeout on future requests. Sources that fail on the first attempt will be stored without their
+    metadata.
     """
     cached_source = TrackSource.objects.filter(
         track=track,
@@ -24,13 +32,17 @@ def get_youtube_source(track: Track) -> TrackSource | None:
     ).first()
 
     is_cached = cached_source is not None
+    is_invalid = (
+        is_cached and
+        cached_source.last_lookup_failed_at is not None
+    )
     is_stale = (
         is_cached and
         timezone.now() - cached_source.refreshed_at > timedelta(days=YOUTUBE_SOURCE_CACHE_DAYS)
     )
 
     # If source is in DB cache and it's not stale, return it.
-    if is_cached and not is_stale:
+    if is_cached and not is_invalid and not is_stale:
         TrackSource.objects.filter(pk=cached_source.pk).update(
             source_request_count=F("source_request_count") + 1,
         )
@@ -44,13 +56,21 @@ def get_youtube_source(track: Track) -> TrackSource | None:
         raise RuntimeError("Missing YOUTUBE_API_KEY")
 
     # If source is out of date, ping YT to check that video is still up and update metadata.
-    if is_cached and is_stale:
-        response: Response = requests.get(YOUTUBE_VIDEOS_URL, params={
-            "part": "snippet,status,id",
-            "id": cached_source.source_id,
-            "key": YOUTUBE_API_KEY
-        }, timeout=8)
-        response.raise_for_status()
+    if is_cached and not is_invalid and is_stale:
+        try:
+            response: Response = requests.get(YOUTUBE_VIDEOS_URL, params={
+                "part": "snippet,status,id",
+                "id": cached_source.source_id,
+                "key": YOUTUBE_API_KEY
+            }, timeout=8)
+            response.raise_for_status()
+        except requests.RequestException:
+            # We couldn't verify it, but we also don't know that it's invalid.
+            TrackSource.objects.filter(pk=cached_source.pk).update(
+                source_request_count=F("source_request_count") + 1,
+            )
+            # A stale source should not be returned to stay compliant with YT API terms.
+            return None
 
         items = response.json().get("items", [])
 
@@ -76,23 +96,55 @@ def get_youtube_source(track: Track) -> TrackSource | None:
                 cached_source.refresh_from_db()
                 return cached_source
 
+    # If a source search failed recently, prevent duplicate requests for a while.
+    if (
+        is_cached and
+        cached_source.last_lookup_failed_at and
+        timezone.now() - cached_source.last_lookup_failed_at < SOURCE_LOOKUP_FAILURE_TTL
+    ):
+        TrackSource.objects.filter(pk=cached_source.pk).update(
+            source_request_count=F("source_request_count") + 1,
+        )
+        return None
+
     # Source is either missing from the DB cache or unavailable on YT so search for a new video on YT.
     artist = track.artists.first()
     artist_name: str = getattr(artist, "name", "") or ""
     query: str = f"{track.title} {artist_name}".strip()
 
-    response: Response = requests.get(YOUTUBE_SEARCH_URL, params={
-        "part": "snippet",
-        "q": query,
-        "videoEmbeddable": "true",
-        "type": "video",
-        "maxResults": 10,
-        "key": YOUTUBE_API_KEY
-    }, timeout=8)
-    response.raise_for_status()
+    try:
+        response: Response = requests.get(YOUTUBE_SEARCH_URL, params={
+            "part": "snippet",
+            "q": query,
+            "videoEmbeddable": "true",
+            "type": "video",
+            "maxResults": 10,
+            "key": YOUTUBE_API_KEY
+        }, timeout=8)
+        response.raise_for_status()
+        results: list[dict] = response.json().get("items", [])
+    except requests.RequestException:
+        results = []
 
-    results: list[dict] = response.json().get("items", [])
     if not results:
+        # If the video wasn't found, create a empty cache entry or update existing one
+        # and set a failure timestamp.
+        cached_source, created = TrackSource.objects.update_or_create(
+            track=track,
+            provider=TrackSource.Provider.YOUTUBE,
+            defaults={
+                "source_id": None,
+                "title": None,
+                "channel": None,
+                "thumbnail": None,
+                "url": None,
+                "last_lookup_failed_at": timezone.now(),
+            },
+        )
+        if not created:
+            TrackSource.objects.filter(pk=cached_source.pk).update(
+                source_request_count=F("source_request_count") + 1,
+            )
         return None
 
     source: dict = results[0]
@@ -107,6 +159,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
             "channel": source["snippet"]["channelTitle"],
             "thumbnail": source["snippet"]["thumbnails"]["medium"]["url"],
             "url": f"https://www.youtube.com/watch?v={video_id}",
+            "last_lookup_failed_at": None,
         },
     )
 
@@ -114,7 +167,8 @@ def get_youtube_source(track: Track) -> TrackSource | None:
     if (not created):
         TrackSource.objects.filter(pk=cached_source.pk).update(
             source_request_count=F("source_request_count") + 1,
-            refreshed_at=timezone.now()
+            refreshed_at=timezone.now(),
+            last_lookup_failed_at=None
         )
         cached_source.refresh_from_db()
 
