@@ -1,10 +1,16 @@
+import requests
 from datetime import timedelta
 from unittest.mock import patch, MagicMock
 from django.test import TestCase
 from django.utils import timezone
 from recommend_api.models import Track, Artist, TrackSource
 from recommend_api.tests.factories import TrackFactory, ArtistFactory, TrackSourceFactory
-from recommend_api.services.youtube_sources import get_youtube_source, YOUTUBE_SEARCH_URL, YOUTUBE_VIDEOS_URL
+from recommend_api.services.youtube_sources import (
+    get_youtube_source,
+    YOUTUBE_SEARCH_URL,
+    YOUTUBE_VIDEOS_URL,
+    SOURCE_LOOKUP_FAILURE_TTL,
+)
 
 
 class YoutubeSourcesTests(TestCase):
@@ -130,17 +136,63 @@ class YoutubeSourcesTests(TestCase):
         self.assertNotEqual(cached_source.refreshed_at, old_refreshed_at)
         self.assertEqual(cached_source.source_request_count, 2)
 
+    def test_returns_none_when_stale_source_verification_fails(self):
+        cached_source = TrackSourceFactory(
+            track=self.track,
+            source_id="cached-video",
+            refreshed_at=timezone.now() - timedelta(days=31),
+        )
+        self.mock_get.side_effect = requests.RequestException("YouTube unavailable")
+
+        with patch("recommend_api.services.youtube_sources.YOUTUBE_SOURCE_CACHE_DAYS", 30):
+            result = get_youtube_source(self.track)
+
+        cached_source.refresh_from_db()
+        self.assertIsNone(result)
+        self.mock_get.assert_called_once_with(YOUTUBE_VIDEOS_URL, params={
+            "part": "snippet,status,id",
+            "id": cached_source.source_id,
+            "key": self.mock_yt_api_key,
+        }, timeout=8)
+        self.assertEqual(cached_source.source_request_count, 2)
+
     def test_fallback_to_search_when_stale_source_not_on_yt(self):
         TrackSourceFactory(track=self.track, refreshed_at=timezone.now() - timedelta(days=31))
 
         with patch("recommend_api.services.youtube_sources.YOUTUBE_SOURCE_CACHE_DAYS", 30):
             self.list_response.json.return_value = {"items": []}
-            get_youtube_source(self.track)
+            result = get_youtube_source(self.track)
 
         urls = [call.args[0] for call in self.mock_get.call_args_list]
         self.assertEqual(self.mock_get.call_count, 2)
         self.assertIn(YOUTUBE_VIDEOS_URL, urls)
         self.assertIn(YOUTUBE_SEARCH_URL, urls)
+        self.assertIsNotNone(result)
+        self.assertEqual(result.source_id, self.search_response_json["items"][0]["id"]["videoId"])
+
+    def test_clears_stale_source_when_fallback_search_fails(self):
+        cached_source = TrackSourceFactory(
+            track=self.track,
+            source_id="cached-video",
+            title="Cached title",
+            channel="Cached channel",
+            refreshed_at=timezone.now() - timedelta(days=31),
+        )
+        self.list_response.json.return_value = {"items": []}
+        self.search_response.json.return_value = {"items": []}
+
+        with patch("recommend_api.services.youtube_sources.YOUTUBE_SOURCE_CACHE_DAYS", 30):
+            result = get_youtube_source(self.track)
+
+        cached_source.refresh_from_db()
+        self.assertIsNone(result)
+        self.assertIsNotNone(cached_source.last_lookup_failed_at)
+        self.assertIsNone(cached_source.source_id)
+        self.assertIsNone(cached_source.title)
+        self.assertIsNone(cached_source.channel)
+        self.assertIsNone(cached_source.thumbnail)
+        self.assertIsNone(cached_source.url)
+        self.assertEqual(cached_source.source_request_count, 2)
 
     def test_fallback_to_search_when_stale_source_not_embeddable(self):
         TrackSourceFactory(track=self.track, refreshed_at=timezone.now() - timedelta(days=31))
@@ -149,12 +201,14 @@ class YoutubeSourcesTests(TestCase):
             self.list_response.json.return_value = {
                 "items": [{"id": "test", "status": {"embeddable": False}}]
             }
-            get_youtube_source(self.track)
+            result = get_youtube_source(self.track)
 
         urls = [call.args[0] for call in self.mock_get.call_args_list]
         self.assertEqual(self.mock_get.call_count, 2)
         self.assertIn(YOUTUBE_VIDEOS_URL, urls)
         self.assertIn(YOUTUBE_SEARCH_URL, urls)
+        self.assertIsNotNone(result)
+        self.assertEqual(result.source_id, self.search_response_json["items"][0]["id"]["videoId"])
 
     # Source is missing from DB cache
     def test_raises_for_missing_api_key_when_source_missing(self):
@@ -180,6 +234,56 @@ class YoutubeSourcesTests(TestCase):
     def test_returns_no_items_for_empty_yt_response(self):
         self.search_response.json.return_value = {}
         self.assertIsNone(get_youtube_source(self.track))
+
+    def test_records_search_request_failure(self):
+        self.mock_get.side_effect = requests.RequestException("YouTube unavailable")
+
+        result = get_youtube_source(self.track)
+        cached_source = TrackSource.objects.get(track=self.track)
+
+        self.assertIsNone(result)
+        self.mock_get.assert_called_once()
+        self.assertIsNotNone(cached_source.last_lookup_failed_at)
+        self.assertIsNone(cached_source.source_id)
+        self.assertIsNone(cached_source.url)
+        self.assertEqual(cached_source.source_request_count, 1)
+
+    def test_does_not_search_again_within_failure_ttl(self):
+        self.search_response.json.return_value = {"items": []}
+
+        self.assertIsNone(get_youtube_source(self.track))
+        self.mock_get.assert_called()
+        self.mock_get.reset_mock()
+
+        result = get_youtube_source(self.track)
+        cached_source = TrackSource.objects.get(track=self.track)
+
+        self.assertIsNone(result)
+        self.mock_get.assert_not_called()
+        self.assertIsNotNone(cached_source.last_lookup_failed_at)
+        self.assertEqual(cached_source.source_request_count, 2)
+
+    def test_searches_again_after_failure_ttl(self):
+        TrackSourceFactory(
+            track=self.track,
+            last_lookup_failed_at=(
+                timezone.now() - SOURCE_LOOKUP_FAILURE_TTL - timedelta(seconds=1)
+            ),
+        )
+        result = get_youtube_source(self.track)
+
+        self.assertIsNotNone(result)
+        self.mock_get.assert_called_once()
+        self.mock_get.assert_called_once_with(YOUTUBE_SEARCH_URL, params={
+            "part": "snippet",
+            "q": f"{self.track.title} {self.artist.name}".strip(),
+            "videoEmbeddable": "true",
+            "type": "video",
+            "maxResults": 10,
+            "key": self.mock_yt_api_key
+        }, timeout=8)
+        cached_source = TrackSource.objects.get(track=self.track)
+        self.assertIsNone(cached_source.last_lookup_failed_at)
 
     def test_returns_new_source_from_yt_search(self):
         result: TrackSource | None = get_youtube_source(self.track)
