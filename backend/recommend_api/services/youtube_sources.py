@@ -148,15 +148,20 @@ def get_youtube_source(track: Track) -> TrackSource | None:
             "key": YOUTUBE_API_KEY
         }, timeout=8)
         response.raise_for_status()
-        results: list[dict] = response.json().get("items", [])
     except requests.RequestException:
-        results = []
+        if cached_source:
+            TrackSource.objects.filter(pk=cached_source.pk).update(
+                source_request_count=F("source_request_count") + 1,
+            )
         cache.set(YOUTUBE_API_ERROR_CACHE_KEY, True, timeout=YOUTUBE_API_ERROR_TTL)
         log.warning(
             "YouTube source search failed for track=%s",
             track.pk,
             exc_info=True,
         )
+        return None
+
+    results: list[dict] = response.json().get("items", [])
 
     if not results:
         # If the video wasn't found, create a empty cache entry or update existing one

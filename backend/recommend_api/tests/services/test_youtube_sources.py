@@ -11,6 +11,7 @@ from recommend_api.services.youtube_sources import (
     YOUTUBE_VIDEOS_URL,
     SOURCE_LOOKUP_FAILURE_TTL,
     YOUTUBE_API_ERROR_CACHE_KEY,
+    YOUTUBE_API_ERROR_TTL
 )
 
 
@@ -266,18 +267,20 @@ class YoutubeSourcesTests(TestCase):
         self.search_response.json.return_value = {}
         self.assertIsNone(get_youtube_source(self.track))
 
-    def test_records_search_request_failure(self):
+    def test_does_not_create_source_on_api_outages(self):
         self.mock_get.side_effect = requests.RequestException("YouTube unavailable")
 
-        result = get_youtube_source(self.track)
-        cached_source = TrackSource.objects.get(track=self.track)
+        with patch(
+            "recommend_api.services.youtube_sources.cache.set",
+            return_value=True,
+        ) as mock_cache_set:
+            get_youtube_source(self.track)
 
-        self.assertIsNone(result)
+        self.assertFalse(TrackSource.objects.filter(track=self.track).exists())
         self.mock_get.assert_called_once()
-        self.assertIsNotNone(cached_source.last_lookup_failed_at)
-        self.assertIsNone(cached_source.source_id)
-        self.assertIsNone(cached_source.url)
-        self.assertEqual(cached_source.source_request_count, 1)
+        mock_cache_set.assert_called_once_with(
+            YOUTUBE_API_ERROR_CACHE_KEY, True, timeout=YOUTUBE_API_ERROR_TTL
+        )
 
     def test_does_not_search_again_within_failure_ttl(self):
         self.search_response.json.return_value = {"items": []}
