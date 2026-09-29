@@ -10,6 +10,7 @@ from recommend_api.services.youtube_sources import (
     YOUTUBE_SEARCH_URL,
     YOUTUBE_VIDEOS_URL,
     SOURCE_LOOKUP_FAILURE_TTL,
+    YOUTUBE_API_ERROR_CACHE_KEY,
 )
 
 
@@ -217,6 +218,36 @@ class YoutubeSourcesTests(TestCase):
             return_value={"YOUTUBE_API_KEY": None},
         ):
             self.assertRaises(RuntimeError, get_youtube_source, self.track)
+
+    def test_skips_youtube_request_when_api_error_is_cached(self):
+        with patch(
+            "recommend_api.services.youtube_sources.cache.get",
+            return_value=True,
+        ) as mock_cache_get:
+            result = get_youtube_source(self.track)
+
+        self.assertIsNone(result)
+        self.mock_get.assert_not_called()
+        mock_cache_get.assert_called_once_with(YOUTUBE_API_ERROR_CACHE_KEY)
+
+    def test_counts_client_request_when_api_error_is_cached_for_source(self):
+        cached_source = TrackSourceFactory(
+            track=self.track,
+            source_request_count=4,
+            refreshed_at=timezone.now() - timedelta(days=31),
+        )
+
+        with patch("recommend_api.services.youtube_sources.YOUTUBE_SOURCE_CACHE_DAYS", 30):
+            with patch(
+                "recommend_api.services.youtube_sources.cache.get",
+                return_value=True,
+            ):
+                result = get_youtube_source(self.track)
+
+        cached_source.refresh_from_db()
+        self.assertIsNone(result)
+        self.assertEqual(cached_source.source_request_count, 5)
+        self.mock_get.assert_not_called()
 
     def test_makes_request_to_youtube_search(self):
         get_youtube_source(self.track)

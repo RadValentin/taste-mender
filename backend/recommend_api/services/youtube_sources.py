@@ -1,6 +1,7 @@
 import logging, requests
 from datetime import timedelta
 from requests import Response
+from django.core.cache import cache
 from django.db.models import F
 from django.utils import timezone
 from dotenv import dotenv_values
@@ -10,9 +11,14 @@ from typing import Dict
 
 log = logging.getLogger(__name__)
 
+# YT API URLs
 YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 YOUTUBE_VIDEOS_URL = "https://www.googleapis.com/youtube/v3/videos"
+# Timeout for when a source for a track isn't found through YT /search/
 SOURCE_LOOKUP_FAILURE_TTL = timedelta(hours=24)
+# Short timeout for YT API outages
+YOUTUBE_API_ERROR_CACHE_KEY = "youtube:api_error"
+YOUTUBE_API_ERROR_TTL = 60
 
 
 def get_youtube_source(track: Track) -> TrackSource | None:
@@ -51,11 +57,21 @@ def get_youtube_source(track: Track) -> TrackSource | None:
         cached_source.refresh_from_db()
         return cached_source
 
+    # Check that YT API key is present in config
     config: Dict[str, str | None] = dotenv_values(BASE_DIR / ".env")
     YOUTUBE_API_KEY = config.get("YOUTUBE_API_KEY")
 
     if not YOUTUBE_API_KEY:
         raise RuntimeError("Missing YOUTUBE_API_KEY")
+
+    # In case a recent call to YT API failed, pause all requests to it for a while.
+    if cache.get(YOUTUBE_API_ERROR_CACHE_KEY):
+        if cached_source:
+            TrackSource.objects.filter(pk=cached_source.pk).update(
+                source_request_count=F("source_request_count") + 1,
+            )
+        log.warning("Skipping YouTube request while API outage circuit is open")
+        return None
 
     # If source is out of date, ping YT to check that video is still up and update metadata.
     if is_cached and not is_invalid and is_stale:
@@ -71,6 +87,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
             TrackSource.objects.filter(pk=cached_source.pk).update(
                 source_request_count=F("source_request_count") + 1,
             )
+            cache.set(YOUTUBE_API_ERROR_CACHE_KEY, True, timeout=YOUTUBE_API_ERROR_TTL)
             # A stale source should not be returned to stay compliant with YT API terms.
             log.warning(
                 "YouTube source verification failed for stale track=%s; returning no source",
@@ -134,6 +151,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
         results: list[dict] = response.json().get("items", [])
     except requests.RequestException:
         results = []
+        cache.set(YOUTUBE_API_ERROR_CACHE_KEY, True, timeout=YOUTUBE_API_ERROR_TTL)
         log.warning(
             "YouTube source search failed for track=%s",
             track.pk,
