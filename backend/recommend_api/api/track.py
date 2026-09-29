@@ -102,8 +102,8 @@ class TrackViewSet(viewsets.ReadOnlyModelViewSet):
             return Response(payload, status=200)
 
         data = [{
-            "provider": "youtube",
-            "id": source.video_id,
+            "provider": source.provider,
+            "id": source.source_id,
             "title": source.title,
             "channel": source.channel,
             "thumbnail": source.thumbnail,

@@ -14,14 +14,28 @@ import os
 import sys, logging, dj_database_url
 from pathlib import Path
 from dotenv import dotenv_values
+from typing import overload
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 ENV_CONFIG = dotenv_values(BASE_DIR / ".env")
 
-def env_get(key, default=None):
+@overload
+def env_get(key: str) -> str | None: ...
+
+@overload
+def env_get(key: str, default: str) -> str: ...
+
+def env_get(key: str, default: str | None = None) -> str | None:
     # Prefer real environment variables (CI, container, runtime) over .env values.
-    return os.getenv(key, ENV_CONFIG.get(key, default))
+    value = os.getenv(key)
+    if value is not None:
+        return value
+
+    value = ENV_CONFIG.get(key)
+    return default if value is None else value
+
+YOUTUBE_SOURCE_CACHE_DAYS = int(env_get("YOUTUBE_SOURCE_CACHE_DAYS", "30"))
 
 if "test" not in sys.argv:
     REQUIRED_ENV_VARS = ["DJANGO_SECRET_KEY", "DATABASE_URL", "YOUTUBE_API_KEY"]
@@ -204,7 +218,7 @@ CORS_ALLOW_HEADERS = [
 ]
 
 try:
-    DAILY_PICKS_MIN_SUBMISSIONS = int(env_get("DAILY_PICKS_MIN_SUBMISSIONS", "100") or "100")
+    DAILY_PICKS_MIN_SUBMISSIONS = int(env_get("DAILY_PICKS_MIN_SUBMISSIONS", "100"))
 except (TypeError, ValueError):
     DAILY_PICKS_MIN_SUBMISSIONS = 100
 DAILY_PICKS_MIN_SUBMISSIONS = max(0, DAILY_PICKS_MIN_SUBMISSIONS)

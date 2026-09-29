@@ -3,9 +3,9 @@ import uuid
 from datetime import date, datetime, timedelta
 from unittest.mock import patch
 from django.urls import reverse
+from music_recommendation.settings import DAILY_PICKS_MIN_SUBMISSIONS
 from rest_framework.test import APITestCase
-from recommend_api.services.youtube_sources import YTSource
-from recommend_api.models import Album, Track
+from recommend_api.models import Track, TrackSource
 from recommend_api.tests.factories import (
     TrackFactory,
     AlbumFactory,
@@ -103,8 +103,9 @@ class TrackAPITests(APITestCase):
     def test_get_sources(self):
         mbid = self.track_tuples[0][0]
         with patch("recommend_api.api.track.get_youtube_source") as mock_source:
-            source = YTSource(
-                video_id="foo-id",
+            source = TrackSource(
+                track=self.tracks[0],
+                source_id="foo-id",
                 title="I Fooed 1000 Bars",
                 channel="Mr. Foo",
                 thumbnail="foo.png",
@@ -117,7 +118,7 @@ class TrackAPITests(APITestCase):
             self.assertEqual(resp.data["track"]["mbid"], mbid)
             self.assertEqual(resp.data["sources"][0], {
                 "provider": "youtube",
-                "id": source.video_id,
+                "id": source.source_id,
                 "title": source.title,
                 "channel": source.channel,
                 "thumbnail": source.thumbnail,
@@ -241,7 +242,11 @@ class TrackAPITests_DailyPicks(APITestCase):
 
         cls.track_tuples = []
         for i in range(100):
-            submissions = 50 if i < 10 else 100 + i
+            submissions = (
+                (DAILY_PICKS_MIN_SUBMISSIONS - 1)
+                if (i < 10)
+                else (DAILY_PICKS_MIN_SUBMISSIONS + i)
+            )
             cls.track_tuples.append((str(uuid.uuid4()), f"Daily Pick Song {i}", submissions))
 
         Track.objects.bulk_create([
@@ -262,7 +267,7 @@ class TrackAPITests_DailyPicks(APITestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.data["count"], 90)
         for result in resp.data["results"]:
-            self.assertGreaterEqual(result["submissions"], 100)
+            self.assertGreaterEqual(result["submissions"], DAILY_PICKS_MIN_SUBMISSIONS)
 
     def test_daily_picks_stable_order(self):
         url = reverse("api:track-daily-picks")
