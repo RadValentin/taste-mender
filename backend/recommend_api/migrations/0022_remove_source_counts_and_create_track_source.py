@@ -3,6 +3,7 @@
 import django.db.models.deletion
 import django.utils.timezone
 from django.db import migrations, models
+from django.db.models import Q
 from datetime import timedelta
 
 
@@ -17,18 +18,27 @@ def migrate_source_request_counts(apps, schema_editor):
     TrackSource = apps.get_model('recommend_api', 'TrackSource')
     expired_failure_time = django.utils.timezone.now() - timedelta(days=2)
 
-    sources = []
-    for track in Track.objects.iterator():
-        request_count = track.source_found_count + track.source_not_found_count
-        if request_count > 0:
-            sources.append(
-                TrackSource(
-                    track_id=track.pk,
-                    provider='youtube',
-                    source_request_count=request_count,
-                    last_lookup_failed_at=expired_failure_time,
-                )
-            )
+    tracks = (
+        Track.objects.filter(
+            Q(source_found_count__gt=0) | Q(source_not_found_count__gt=0)
+        )
+        .values_list(
+            'pk',
+            'source_found_count',
+            'source_not_found_count',
+        )
+        .iterator()
+    )
+
+    sources = [
+        TrackSource(
+            track_id=pk,
+            provider='youtube',
+            source_request_count=found + not_found,
+            last_lookup_failed_at=expired_failure_time,
+        )
+        for pk, found, not_found in tracks
+    ]
 
     TrackSource.objects.bulk_create(sources, batch_size=1000)
 
