@@ -36,6 +36,11 @@ def env_get(key: str, default: str | None = None) -> str | None:
     return default if value is None else value
 
 YOUTUBE_SOURCE_CACHE_DAYS = int(env_get("YOUTUBE_SOURCE_CACHE_DAYS", "30"))
+APP_NAME = env_get("APP_NAME", "TasteMender")
+APP_VERSION = env_get("APP_VERSION", "1.0.0")
+APP_AUTHOR_NAME = env_get("APP_AUTHOR_NAME", "Valentin Radulescu")
+APP_AUTHOR_EMAIL = env_get("APP_AUTHOR_EMAIL", "hi@valentin.io")
+APP_AUTHOR_URL = env_get("APP_AUTHOR_URL", "https://valentin.io/")
 
 if "test" not in sys.argv:
     REQUIRED_ENV_VARS = ["DJANGO_SECRET_KEY", "DATABASE_URL", "YOUTUBE_API_KEY"]
@@ -196,9 +201,14 @@ REST_FRAMEWORK = {
 }
 
 SPECTACULAR_SETTINGS = {
-    "TITLE": "TasteMender API",
+    "TITLE": f"{APP_NAME} API",
     "DESCRIPTION": "Stateless music recommendation API.",
-    "VERSION": "1.0.0",
+    "VERSION": APP_VERSION,
+    "CONTACT": {
+        "name": APP_AUTHOR_NAME,
+        "email": APP_AUTHOR_EMAIL,
+        "url": APP_AUTHOR_URL,
+    },
 }
 
 # allow Vite dev server to hit API in dev
