@@ -1,6 +1,6 @@
 from django.test import SimpleTestCase
 from datetime import date
-from ingest.track_processing_helpers import merge_album_info
+from ingest.core.track_processing_helpers import merge_album_info
 
 
 class MergeAlbumInfoTests(SimpleTestCase):
@@ -31,7 +31,7 @@ class MergeAlbumInfoTests(SimpleTestCase):
         merged = merge_album_info(tracks)
         self.assertEqual(merged[1], "Album One")
 
-    def test_handles_median_date(self):    
+    def test_handles_median_date(self):
         tracks = [
             {"album_info": ("id1", "Album One", "1999-01-01")},
             {"album_info": ("id1", "Album One", "1999-01-01")},
@@ -47,7 +47,7 @@ class MergeAlbumInfoTests(SimpleTestCase):
         tracks = []
         merged = merge_album_info(tracks)
         self.assertIsNone(merged)
-    
+
     def test_returns_none_if_no_album_info(self):
         tracks = [{"album_info": None}, {}]
         merged = merge_album_info(tracks)

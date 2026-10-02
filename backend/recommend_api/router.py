@@ -1,4 +1,5 @@
 from collections import OrderedDict
+from django.conf import settings
 from django.urls import reverse
 from django.utils.safestring import mark_safe
 from rest_framework.response import Response
@@ -6,7 +7,7 @@ from rest_framework.routers import DefaultRouter, APIRootView
 
 class CustomAPIRootView(APIRootView):
     def get_view_name(self) -> str:
-        return "TasteMender API"
+        return f"{settings.APP_NAME} API"
 
     def get_view_description(self, html=False) -> str:
         text = "A stateless music recommendation REST API"
@@ -25,8 +26,14 @@ class CustomAPIRootView(APIRootView):
         resp = super().get(request, *args, **kwargs)
 
         info = OrderedDict()
-        info["message"] = "Welcome to the TasteMender API"
+        info["message"] = f"Welcome to the {settings.APP_NAME} API"
         info["version"] = "v1"
+        info["app_version"] = settings.APP_VERSION
+        info["author"] = {
+            "name": settings.APP_AUTHOR_NAME,
+            "email": settings.APP_AUTHOR_EMAIL,
+            "url": settings.APP_AUTHOR_URL,
+        }
         data = OrderedDict(**info, **resp.data or {})
 
         extras = OrderedDict()

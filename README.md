@@ -64,7 +64,7 @@ A complete submission with all predictions is included in [high-level-sample.jso
 
 ### Building the database
 
-The crowdsourced nature of the dataset makes it difficult to map its data directly to a database. Popular recordings can have thousands of duplicates, and many submissions have missing or incomplete data. The ingest pipeline ([backend/ingest/pipeline.py](backend/ingest/pipeline.py)) is responsible for cleaning and normalizing the data. It also splits the data based on how it will be used:
+The crowdsourced nature of the dataset makes it difficult to map its data directly to a database. Popular recordings can have thousands of duplicates, and many submissions have missing or incomplete data. The ingest pipeline ([backend/ingest/core/pipeline.py](backend/ingest/core/pipeline.py)) is responsible for cleaning and normalizing the data. It also splits the data based on how it will be used:
 
 - Track metadata is stored in a database because it maps well to the relational model.
 - Audio features are stored in a feature matrix file (`features_and_index.npz`), which is loaded into RAM, avoiding repeated disk access during recommendation comparisons.

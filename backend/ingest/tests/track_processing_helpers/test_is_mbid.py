@@ -1,5 +1,5 @@
 from django.test import SimpleTestCase
-from ingest.track_processing_helpers import is_mbid
+from ingest.core.track_processing_helpers import is_mbid
 
 
 class IsMbidTests(SimpleTestCase):

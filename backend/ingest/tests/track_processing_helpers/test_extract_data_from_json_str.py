@@ -1,5 +1,5 @@
 from django.test import TestCase
-import ingest.track_processing_helpers as tph
+import ingest.core.track_processing_helpers as tph
 import orjson
 
 class ExtractDataFromJsonStrTests(TestCase):

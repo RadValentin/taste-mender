@@ -1,10 +1,17 @@
 from __future__ import annotations
+from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
+from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.search import SearchVectorField
 from django.contrib.postgres.indexes import GinIndex, GistIndex
 
 
+# Validators
+isrc_validator = RegexValidator(r"^[A-Z]{2}[A-Z0-9]{3}[0-9]{7}$", "The string is not a valid ISRC")
+
+
+# Models
 class Artist(models.Model):
     musicbrainz_artistid = models.CharField(primary_key=True, max_length=36)
     name = models.CharField(max_length=255)
@@ -72,6 +79,12 @@ class Track(models.Model):
     # Denormalized plain-text artist names kept in sync for fast full-text search queries.
     artists_text = models.TextField(default="", blank=True)
     search_vector = SearchVectorField(null=True)
+    # International Standard Recording Codes. Each array element is a validated 12-character ISRC.
+    isrc = ArrayField(
+        models.CharField(max_length=12, validators=[isrc_validator]),
+        default=list,
+        blank=True,
+    )
 
     class Meta:
         indexes = [
