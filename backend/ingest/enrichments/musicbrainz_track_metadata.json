@@ -1,1 +1,35 @@
-{"schema_version":1,"run_started_at":"2026-10-05T14:56:31.929001","run_finished_at":null,"tracks":{"foo":{"bar":"baz"}}}
+{
+  "schema_version": 1,
+  "run_started_at": "2026-10-05T16:19:20.531455",
+  "run_finished_at": null,
+  "tracks": {
+    "9fcfee07-36ce-4159-b13e-5a4ab23a38ec": {
+      "title": "Dr. Feelgood",
+      "first-release-date": "1989-08-28",
+      "video": false,
+      "disambiguation": "",
+      "isrcs": [
+        "GBFWU0300278",
+        "QMRSZ2400864",
+        "USBY29900212",
+        "USDPK2000026"
+      ],
+      "length": 289973,
+      "id": "9fcfee07-36ce-4159-b13e-5a4ab23a38ec"
+    },
+    "7cc48e9f-fcbf-49be-8729-08a81de7ad73": {
+      "first-release-date": "1989-08-28",
+      "title": "Kickstart My Heart",
+      "length": 283000,
+      "video": false,
+      "disambiguation": "",
+      "id": "7cc48e9f-fcbf-49be-8729-08a81de7ad73",
+      "isrcs": [
+        "GBFWU0300281",
+        "QMRSZ2400867",
+        "USBY29900215",
+        "USDPK2000029"
+      ]
+    }
+  }
+}

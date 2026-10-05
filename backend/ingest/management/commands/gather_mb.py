@@ -8,7 +8,7 @@ class Command(BaseCommand):
 
     def handle(self, *args: Any, **options: Any) -> str | None:
         try:
-            completed = gather_musicbrainz_metadata(override_file=True)
+            completed = gather_musicbrainz_metadata()
         except Exception as ex:
             raise CommandError(str(ex))
 
