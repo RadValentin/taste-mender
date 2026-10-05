@@ -1,35 +1,188 @@
 {
   "schema_version": 1,
-  "run_started_at": "2026-10-05T16:19:20.531455",
-  "run_finished_at": null,
+  "first_ran_at": "2026-10-05T17:31:37.439496",
+  "last_run_finished_at": "2026-10-05T17:33:31.751341",
   "tracks": {
     "9fcfee07-36ce-4159-b13e-5a4ab23a38ec": {
-      "title": "Dr. Feelgood",
       "first-release-date": "1989-08-28",
-      "video": false,
-      "disambiguation": "",
+      "title": "Dr. Feelgood",
+      "length": 289973,
       "isrcs": [
         "GBFWU0300278",
         "QMRSZ2400864",
         "USBY29900212",
         "USDPK2000026"
       ],
-      "length": 289973,
-      "id": "9fcfee07-36ce-4159-b13e-5a4ab23a38ec"
+      "id": "9fcfee07-36ce-4159-b13e-5a4ab23a38ec",
+      "disambiguation": "",
+      "video": false,
+      "checked_at": "2026-10-05T17:31:38.101171"
     },
     "7cc48e9f-fcbf-49be-8729-08a81de7ad73": {
-      "first-release-date": "1989-08-28",
       "title": "Kickstart My Heart",
-      "length": 283000,
+      "first-release-date": "1989-08-28",
       "video": false,
       "disambiguation": "",
-      "id": "7cc48e9f-fcbf-49be-8729-08a81de7ad73",
       "isrcs": [
         "GBFWU0300281",
         "QMRSZ2400867",
         "USBY29900215",
         "USDPK2000029"
-      ]
+      ],
+      "length": 283000,
+      "id": "7cc48e9f-fcbf-49be-8729-08a81de7ad73",
+      "checked_at": "2026-10-05T17:32:49.828656"
+    },
+    "81003c10-cc48-4d68-950a-5e40afa3c93e": {
+      "first-release-date": "1989-08-28",
+      "disambiguation": "",
+      "title": "Same Ol’ Situation (S.O.S.)",
+      "isrcs": [
+        "GBFWU0300284",
+        "QMRSZ2400869",
+        "USBY29900217",
+        "USDPK2000031"
+      ],
+      "length": 253000,
+      "id": "81003c10-cc48-4d68-950a-5e40afa3c93e",
+      "video": false,
+      "checked_at": "2026-10-05T17:33:16.002546"
+    },
+    "49af3ae2-a738-4e2c-8801-f607098b380b": {
+      "disambiguation": "original stereo studio mix",
+      "title": "Sunshine of Your Love",
+      "first-release-date": "1967-11-02",
+      "length": 252000,
+      "id": "49af3ae2-a738-4e2c-8801-f607098b380b",
+      "video": false,
+      "isrcs": [
+        "GBA076700020",
+        "NLF056790030",
+        "NLFO56790030"
+      ],
+      "checked_at": "2026-10-05T17:33:18.024164"
+    },
+    "bad38f02-f179-4cb5-af07-c0319d082d9d": {
+      "first-release-date": "1989-08-28",
+      "isrcs": [
+        "GBFWU0300277",
+        "QMRSZ2400872",
+        "USDPK2000034",
+        "USUG10200174"
+      ],
+      "video": false,
+      "length": 280000,
+      "title": "Don’t Go Away Mad (Just Go Away)",
+      "disambiguation": "",
+      "id": "bad38f02-f179-4cb5-af07-c0319d082d9d",
+      "checked_at": "2026-10-05T17:33:19.480408"
+    },
+    "dd0a5e9f-2c96-444c-b095-7a467898ccf1": {
+      "first-release-date": "1989-08-28",
+      "id": "dd0a5e9f-2c96-444c-b095-7a467898ccf1",
+      "length": 269000,
+      "isrcs": [
+        "GBFWU0300290",
+        "QMRSZ2400868",
+        "USBY29900216",
+        "USDPK2000030"
+      ],
+      "disambiguation": "",
+      "title": "Without You",
+      "video": false,
+      "checked_at": "2026-10-05T17:33:20.916403"
+    },
+    "e7b022c5-bce7-4bee-8136-7889af2f4162": {
+      "length": 215440,
+      "first-release-date": "1971-12-17",
+      "title": "Changes",
+      "disambiguation": "",
+      "video": false,
+      "id": "e7b022c5-bce7-4bee-8136-7889af2f4162",
+      "isrcs": [
+        "USJT10500013",
+        "USJT11400002",
+        "USJT11500128",
+        "USJT11500139",
+        "USJT19900027"
+      ],
+      "checked_at": "2026-10-05T17:33:22.340329"
+    },
+    "5935ec91-8124-42ff-937f-f31a20ffe58f": {
+      "length": 208000,
+      "first-release-date": "1979-07-27",
+      "title": "Highway to Hell",
+      "disambiguation": "",
+      "video": false,
+      "id": "5935ec91-8124-42ff-937f-f31a20ffe58f",
+      "isrcs": [
+        "AUAP07900028"
+      ],
+      "checked_at": "2026-10-05T17:33:23.772822"
+    },
+    "4ce20795-0558-4302-943a-7f621f49aad6": {
+      "id": "4ce20795-0558-4302-943a-7f621f49aad6",
+      "isrcs": [
+        "SUJT10200028",
+        "USJT10200028",
+        "USJT10300110",
+        "USJT10500008",
+        "USJT10700200",
+        "USJT11200010",
+        "USJT19900061"
+      ],
+      "length": 205933,
+      "disambiguation": "original 1972 mix",
+      "video": false,
+      "first-release-date": "1972-06-06",
+      "title": "Suffragette City",
+      "checked_at": "2026-10-05T17:33:25.181365"
+    },
+    "60572fab-c835-4733-aa5a-2864c318c9c8": {
+      "title": "Your Song",
+      "length": 241786,
+      "video": false,
+      "first-release-date": "1970-07-22",
+      "disambiguation": "",
+      "id": "60572fab-c835-4733-aa5a-2864c318c9c8",
+      "isrcs": [
+        "GBAMB9500072",
+        "GBUM71604260"
+      ],
+      "checked_at": "2026-10-05T17:33:26.890521"
+    },
+    "a0ca0cc0-cc0d-431c-8a36-dd917ea0dfa2": {
+      "length": 193266,
+      "id": "a0ca0cc0-cc0d-431c-8a36-dd917ea0dfa2",
+      "first-release-date": "1972-06-06",
+      "video": false,
+      "disambiguation": "",
+      "isrcs": [
+        "USJT10200027",
+        "USJT10300109",
+        "USJT10500004",
+        "USJT10700128",
+        "USJT11200009",
+        "USJT19900060"
+      ],
+      "title": "Ziggy Stardust",
+      "checked_at": "2026-10-05T17:33:28.305564"
+    },
+    "7a933538-2fb2-4d43-9fac-030840935409": {
+      "first-release-date": "1967-01-04",
+      "title": "Light My Fire",
+      "disambiguation": "",
+      "isrcs": [
+        "USEE10608278",
+        "USEE11200525",
+        "USEE19900203",
+        "USRH11605641",
+        "USRH11605702"
+      ],
+      "length": 428000,
+      "video": false,
+      "id": "628b1e02-54a0-4259-a6e7-5455f2869d22",
+      "checked_at": "2026-10-05T17:33:30.749949"
     }
   }
 }

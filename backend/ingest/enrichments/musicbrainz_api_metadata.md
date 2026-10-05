@@ -1,9 +1,15 @@
-# Match Tracks to playable videos
+## Summary - Match Tracks to playable videos
 We have a database with `Track` data and we need a way to match the tracks to playable YouTube videos (`TrackSource`). Right now this is done lazily, when users try to play a track in the app. However, we're limited by the YT Data API to only 100 searches per day so it's highly likely we'll be rate-limited with any real traffic.
 
 We need to implement a way of decreasing the likeliness of hitting YT API daily quotas. Our `Tracks` are the subset/counterpart of MusicBrains' `Recording`, both identified by MBIDs. Recordings can have one or more ISRC codes, multiple recordings can have the same ISRC, only one ISRC needs be matched to a source. Searching for a song by ISRC on Youtube will return the official playable video, this is more accurate than searching by title + artist. The plan is to gather the data in multiple phases:
 - Match tracks to their ISRCs (if available) and ingest into the DB as an enrichment
 - Match tracks to sources by searching YT by ISRC with fallback to title + artist and ingest into the DB as an enrichment
+
+### Data concepts
+
+The **ingest pipeline** builds the main database from the AcousticBrainz dataset. This should be enough for the app to run.
+
+**Enrichments** are supplemental data that get applied on top of the main DB but are not essential for running the app.
 
 ## Phase 1 - Enrich Track model with MusicBrainz metadata
 Define a JSON schema for enriching Track model, should include:
