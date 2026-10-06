@@ -144,8 +144,39 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
     return True
 
 
-def ingest_musicbrainz_metadata():
-    pass
+def load_musicbrainz_metadata():
+    if not os.path.exists(OUTPUT_FILENAME):
+        print(f"{OUTPUT_FILENAME} not found, cannot continue.")
+        return False
+
+    with open(OUTPUT_FILENAME, "rb") as f:
+        bytes = f.read()
+        try:
+            data: dict[str, Any] = orjson.loads(bytes)
+        except orjson.JSONDecodeError as ex:
+            print(f"Error parsing JSON, cannot continue. Exception {ex}")
+            return False
+
+        json_tracks: dict[str, dict] = data.get("tracks", {})
+        enriched_mbids: list = list(json_tracks.keys())
+
+        for mbid in enriched_mbids:
+            track = Track.objects.filter(musicbrainz_recordingid=mbid).prefetch_related("artists").first()
+
+            if track is None:
+                print(f"Track with MBID: {mbid} not found in database")
+                continue
+
+            artist = track.artists.first()
+            print(f"Updating track: {track.title} by {artist.name if artist else "Unknown Artist"} ({track.musicbrainz_recordingid})")
+
+            raw_isrcs = json_tracks.get(mbid, {}).get("isrcs", [])
+            json_isrcs = set(raw_isrcs) if isinstance(raw_isrcs, list) else set()
+            track_isrcs = set(track.isrc)
+            track.isrc = list(json_isrcs | track_isrcs)
+            track.save(update_fields=["isrc"])
+
+    return True
 
 
 if __name__ == "__main__":

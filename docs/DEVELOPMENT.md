@@ -100,8 +100,11 @@ The data loaded into the database is conceptually split in two categories:
 Queries the MusicBrainz API for track metadata which gets stored as JSON and then ingested into the DB. Useful for getting ISRC codes for the most popular tracks but it's not mean to run for the whole database.
 
 ```bash
-# Get metadata for the top 100 tracks
+# Get metadata for the top 100 tracks and save as JSON
 python manage.py gather_mb --batch 100
+
+# Insert metadata from JSON to DB
+python manage.py load_mb
 ```
 
 ### Frontend
