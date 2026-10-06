@@ -1,4 +1,4 @@
-import os, requests, orjson, time
+import os, requests, orjson, time, logging
 from random import random
 from django.db.models import Q
 from django.conf import settings
@@ -6,6 +6,8 @@ from datetime import datetime
 from functools import reduce
 from recommend_api.models import Track
 from typing import Any
+
+log = logging.getLogger(__name__)
 
 OUTBOUND_USER_AGENT = (
     f"{settings.APP_NAME}/{settings.APP_VERSION} ({settings.APP_AUTHOR_EMAIL})"
@@ -39,7 +41,7 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
 
     # Create the output file if it doesn't exist
     if not os.path.exists(OUTPUT_FILENAME) or override_file:
-        print(f"{OUTPUT_FILENAME} not found, will create it from scratch.")
+        log.info("%s not found, will create it from scratch.", OUTPUT_FILENAME)
         try:
             with open(OUTPUT_FILENAME, "wb+") as f:
                 output_json = {
@@ -49,21 +51,21 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
                     "tracks": {},
                 }
                 count = f.write(orjson.dumps(output_json))
-                print(f"Created {OUTPUT_FILENAME} ({count} bytes).")
+                log.info("Created %s (%s bytes).", OUTPUT_FILENAME, count)
 
         except Exception as ex:
             os.remove(OUTPUT_FILENAME)
-            print(f"Could not create file, aborting. Exception: {ex}")
+            log.exception("Could not create file, aborting.")
             return
 
     # Load enrichment data from disk
-    print("Loading enrichment data from disk.")
+    log.info("Loading enrichment data from disk.")
     try:
         with open(OUTPUT_FILENAME, "rb") as f:
             bytes = f.read()
             data: dict[str, Any] = orjson.loads(bytes)
     except Exception as ex:
-        print(ex)
+        log.exception("Could not load enrichment data from disk.")
         return False
 
     # Tracks and ids for which enrichment was previously run
@@ -81,7 +83,12 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
 
     for track in target_tracks:
         artist = track.artists.first()
-        print(f"Checking track: {track.title} by {artist.name if artist else "Unknown Artist"} ({track.musicbrainz_recordingid})")
+        log.info(
+            "Checking track: %s by %s (%s)",
+            track.title,
+            artist.name if artist else "Unknown Artist",
+            track.musicbrainz_recordingid,
+        )
         try:
             mbid = track.musicbrainz_recordingid
             response = requests.get(
@@ -92,7 +99,7 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
             )
             response.raise_for_status()
         except requests.RequestException as ex:
-            print(f"Could not fetch metadata for track {mbid}. Exception: {ex}")
+            log.warning("Could not fetch metadata for track %s.", mbid, exc_info=True)
             if Counters.errors > 5:
                 break
             else:
@@ -103,11 +110,16 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
         try:
             meta = response.json()
         except requests.exceptions.JSONDecodeError as ex:
-            print(f"Could not parse metadata for track {mbid}. Exception: {ex}")
+            log.warning("Could not parse metadata for track %s.", mbid, exc_info=True)
             continue
 
         if not isinstance(meta, dict):
-            print(f"API response for track {mbid} was not a dict. Got {type(meta)} with contents {meta}")
+            log.warning(
+                "API response for track %s was not a dict. Got %s with contents %s",
+                mbid,
+                type(meta),
+                meta,
+            )
             continue
 
         json_tracks[mbid] = meta
@@ -122,7 +134,7 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
             with open(TEMP_FILENAME, "wb+") as f:
                 f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2))
         except Exception as ex:
-            print(f"Could not write metadata to temp file for track {mbid}. Exception: {ex}")
+            log.exception("Could not write metadata to temp file for track %s.", mbid)
 
         # Wait a bit before making the next request
         time.sleep(1 + (random() * 4))
@@ -135,18 +147,26 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
                 f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2))
             os.replace(TEMP_FILENAME, OUTPUT_FILENAME)
     except Exception as ex:
-        print(f"Could not write metadata to disk. Exception: {ex}")
+        log.exception("Could not write metadata to disk.")
 
     # Display stats before exiting
-    print(f"The current run checked {Counters.current_run_checked} tracks, {Counters.current_run_isrcs} has ISRC codes.")
-    print(f"Previous runs had checked {Counters.all_runs_checked} tracks, {Counters.all_runs_isrcs} had ISRC codes.")
+    log.info(
+        "The current run checked %s tracks, %s had ISRC codes.",
+        Counters.current_run_checked,
+        Counters.current_run_isrcs,
+    )
+    log.info(
+        "Previous runs had checked %s tracks, %s had ISRC codes.",
+        Counters.all_runs_checked,
+        Counters.all_runs_isrcs,
+    )
 
     return True
 
 
 def load_musicbrainz_metadata():
     if not os.path.exists(OUTPUT_FILENAME):
-        print(f"{OUTPUT_FILENAME} not found, cannot continue.")
+        log.error("%s not found, cannot continue.", OUTPUT_FILENAME)
         return False
 
     with open(OUTPUT_FILENAME, "rb") as f:
@@ -154,7 +174,7 @@ def load_musicbrainz_metadata():
         try:
             data: dict[str, Any] = orjson.loads(bytes)
         except orjson.JSONDecodeError as ex:
-            print(f"Error parsing JSON, cannot continue. Exception {ex}")
+            log.exception("Error parsing JSON, cannot continue.")
             return False
 
         json_tracks: dict[str, dict] = data.get("tracks", {})
@@ -164,11 +184,16 @@ def load_musicbrainz_metadata():
             track = Track.objects.filter(musicbrainz_recordingid=mbid).prefetch_related("artists").first()
 
             if track is None:
-                print(f"Track with MBID: {mbid} not found in database")
+                log.warning("Track with MBID %s not found in database.", mbid)
                 continue
 
             artist = track.artists.first()
-            print(f"Updating track: {track.title} by {artist.name if artist else "Unknown Artist"} ({track.musicbrainz_recordingid})")
+            log.info(
+                "Updating track: %s by %s (%s)",
+                track.title,
+                artist.name if artist else "Unknown Artist",
+                track.musicbrainz_recordingid,
+            )
 
             raw_isrcs = json_tracks.get(mbid, {}).get("isrcs", [])
             json_isrcs = set(raw_isrcs) if isinstance(raw_isrcs, list) else set()
