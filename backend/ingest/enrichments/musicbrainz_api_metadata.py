@@ -68,6 +68,7 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
         log.exception("Could not load enrichment data from disk.")
         return False
 
+    log.info("Will begin querying MusicBrainz API for track metadata.")
     # Tracks and ids for which enrichment was previously run
     json_tracks: dict[str, dict] = data.get("tracks", {})
     enriched_mbids: list = list(json_tracks.keys())
@@ -132,7 +133,7 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
         # Save data to a temp file. In case of errors we'll not lose all the data.
         try:
             with open(TEMP_FILENAME, "wb+") as f:
-                f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2))
+                f.write(orjson.dumps(data))
         except Exception as ex:
             log.exception("Could not write metadata to temp file for track %s.", mbid)
 
@@ -144,7 +145,7 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
         if os.path.exists(TEMP_FILENAME):
             with open(TEMP_FILENAME, "wb") as f:
                 data["last_run_finished_at"] = datetime.now()
-                f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2))
+                f.write(orjson.dumps(data))
             os.replace(TEMP_FILENAME, OUTPUT_FILENAME)
     except Exception as ex:
         log.exception("Could not write metadata to disk.")
