@@ -1,21 +1,5 @@
-# url: https://musicbrainz.org/ws/2/recording/00000baf-9215-483a-8900-93756eaf1cfc?inc=isrcs&fmt=json
-# response:
-# {
-#     "isrcs": [
-#         "DEG189810182"
-#     ],
-#     "video": false,
-#     "first-release-date": "1998-05-01",
-#     "title": "Como Poden",
-#     "length": 201853,
-#     "id": "00000baf-9215-483a-8900-93756eaf1cfc",
-#     "disambiguation": ""
-# }
-
-
-# NOTE: since I'm getting data from MusicBrainz anyway, why not get the most out of it.
-# Let's enhance Track with as much metadata as possible.
 import os, requests, orjson, time
+from random import random
 from django.db.models import Q
 from django.conf import settings
 from datetime import datetime
@@ -36,6 +20,15 @@ MB_RECORDING_URL = "https://musicbrainz.org/ws/2/recording/"
 
 
 def gather_musicbrainz_metadata(batch_size=10, override_file=False):
+    """
+    Builds a JSON file with metadata from MusicBrainz API for the Tracks with most submissions.
+    The file is used as an index to check which Tracks were already processed in previous runs.
+    Script will give up after encountering repeated errors.
+
+    Args:
+        batch_size: how many tracks to check
+        override_file: If true, build the output file from scratch on every run
+    """
     class Counters:
         # Count errors so we can abort after a certain number of them.
         errors: int = 0
@@ -87,7 +80,8 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
     ).prefetch_related("artists").order_by("-submissions")[:batch_size]
 
     for track in target_tracks:
-        print(f"Checking track: {track.title} by {track.artists.first()} ({track.musicbrainz_recordingid})")
+        artist = track.artists.first()
+        print(f"Checking track: {track.title} by {artist.name if artist else "Unknown Artist"} ({track.musicbrainz_recordingid})")
         try:
             mbid = track.musicbrainz_recordingid
             response = requests.get(
@@ -106,7 +100,16 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
                 continue
 
         # Add the retrieved metadata to current state
-        meta = response.json()
+        try:
+            meta = response.json()
+        except requests.exceptions.JSONDecodeError as ex:
+            print(f"Could not parse metadata for track {mbid}. Exception: {ex}")
+            continue
+
+        if not isinstance(meta, dict):
+            print(f"API response for track {mbid} was not a dict. Got {type(meta)} with contents {meta}")
+            continue
+
         json_tracks[mbid] = meta
         json_tracks[mbid]["checked_at"] = datetime.now()
         data["tracks"] = json_tracks
@@ -122,14 +125,15 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
             print(f"Could not write metadata to temp file for track {mbid}. Exception: {ex}")
 
         # Wait a bit before making the next request
-        time.sleep(1)
+        time.sleep(1 + (random() * 4))
 
     # Update the enrichment file
-    data["last_run_finished_at"] = datetime.now()
     try:
-        with open(OUTPUT_FILENAME, "wb") as f:
-            f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2))
-        os.remove(TEMP_FILENAME)
+        if os.path.exists(TEMP_FILENAME):
+            with open(TEMP_FILENAME, "wb") as f:
+                data["last_run_finished_at"] = datetime.now()
+                f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2))
+            os.replace(TEMP_FILENAME, OUTPUT_FILENAME)
     except Exception as ex:
         print(f"Could not write metadata to disk. Exception: {ex}")
 
@@ -138,6 +142,10 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
     print(f"Previous runs had checked {Counters.all_runs_checked} tracks, {Counters.all_runs_isrcs} had ISRC codes.")
 
     return True
+
+
+def ingest_musicbrainz_metadata():
+    pass
 
 
 if __name__ == "__main__":

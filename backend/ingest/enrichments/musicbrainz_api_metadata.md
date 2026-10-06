@@ -24,7 +24,7 @@ A JSON file matching the schema will be produced by the following implementation
 - Filter tracks in the DB to ones that: haven't been checked, have no MB metadata fields populated (ISRC)
 - Sort tracks by number of submissions, we'll check only the most popular ones, limit to 1000 tracks
 - Retrieve metadata from MusicBrainz by each track MBID, with a sensible timeout to not overload the API (1s)
-  - On API outage/rate limit errors, retry 5 times with progressively increasing timeouts before giving up
+  - ~~On API outage/rate limit errors, retry 5 times with progressively increasing timeouts before giving up~~
   - Include `User-Agent` header
   - Empty responses don't count as errors
 - Update JSON with each track's new metadata

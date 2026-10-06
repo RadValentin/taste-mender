@@ -6,9 +6,19 @@ from ingest.enrichments.musicbrainz_api_metadata import gather_musicbrainz_metad
 class Command(BaseCommand):
     help = "Fetches track metadata from MusicBrainz and stores it to disk."
 
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--batch",
+            type=int,
+            default=10,
+            help="How many tracks to process.",
+        )
+
     def handle(self, *args: Any, **options: Any) -> str | None:
+        batch_size = options.get("batch", 10)
+
         try:
-            completed = gather_musicbrainz_metadata()
+            completed = gather_musicbrainz_metadata(batch_size=batch_size)
         except Exception as ex:
             raise CommandError(str(ex))
 
