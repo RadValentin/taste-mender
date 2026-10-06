@@ -79,7 +79,10 @@ class Track(models.Model):
     # Denormalized plain-text artist names kept in sync for fast full-text search queries.
     artists_text = models.TextField(default="", blank=True)
     search_vector = SearchVectorField(null=True)
-    # International Standard Recording Codes. Each array element is a validated 12-character ISRC.
+
+    # Optional metadata retrieved from MusicBrainz API, which isn't available in the
+    # AcousticBrainz dataset.
+    # ISRC - International Standard Recording Codes. Each element is a validated 12-character string.
     isrc = ArrayField(
         models.CharField(max_length=12, validators=[isrc_validator]),
         default=list,
@@ -98,6 +101,7 @@ class Track(models.Model):
             # Optimize retrieving most popular tracks
             models.Index(fields=["submissions"], name="track_subs_idx"),
         ]
+
 
 class TrackArtist(models.Model):
     artist = models.ForeignKey(Artist, on_delete=models.CASCADE)
