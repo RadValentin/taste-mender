@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "first_ran_at": "2026-10-05T17:31:37.439496",
-  "last_run_finished_at": "2026-10-05T19:29:16.435467",
+  "last_run_finished_at": "2026-10-06T14:42:26.572967",
   "tracks": {
     "9fcfee07-36ce-4159-b13e-5a4ab23a38ec": {
       "first-release-date": "1989-08-28",
@@ -15745,6 +15745,56 @@
         "USAT20901708"
       ],
       "checked_at": "2026-10-05T19:29:13.563443"
+    },
+    "cf9053d1-d116-407e-a989-1f30abd6702c": {
+      "id": "cf9053d1-d116-407e-a989-1f30abd6702c",
+      "isrcs": [
+        "SEAYD7901080",
+        "SEUV71000394"
+      ],
+      "length": 326000,
+      "title": "Chiquitita",
+      "first-release-date": "1979-01-16",
+      "disambiguation": "",
+      "video": false,
+      "checked_at": "2026-10-06T14:35:09.821077"
+    },
+    "efe365d3-a1d8-42dc-a63d-0b4cc6ecfaed": {
+      "isrcs": [],
+      "video": false,
+      "first-release-date": "1967-05-26",
+      "title": "With a Little Help From My Friends",
+      "length": 164000,
+      "id": "5605fb20-7739-489c-8dcf-99b6faa9b0be",
+      "disambiguation": "original stereo studio mix",
+      "checked_at": "2026-10-06T14:39:06.958650"
+    },
+    "39d891c0-b550-4568-a8a9-43c66900734b": {
+      "isrcs": [
+        "GBF087800019",
+        "GBUM72201774",
+        "USRH12200549"
+      ],
+      "disambiguation": "",
+      "id": "39d891c0-b550-4568-a8a9-43c66900734b",
+      "first-release-date": "1978-06-02",
+      "video": false,
+      "length": 241000,
+      "title": "Down to the Waterline",
+      "checked_at": "2026-10-06T14:39:39.974867"
+    },
+    "5bfbc273-73f4-42df-971b-8075b0414aae": {
+      "first-release-date": "1982-04-08",
+      "video": false,
+      "isrcs": [
+        "USSM18200245",
+        "USSM19801976"
+      ],
+      "disambiguation": "",
+      "id": "5bfbc273-73f4-42df-971b-8075b0414aae",
+      "length": 332000,
+      "title": "Rosanna",
+      "checked_at": "2026-10-06T14:42:22.232893"
     }
   }
 }

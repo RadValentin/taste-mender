@@ -280,6 +280,9 @@ LOGGING = {
                 "CRITICAL": "bold_red",
             },
         },
+        "ingest": {
+            "format": "%(message)s",
+        },
     },
     "handlers": {
         "console": {
@@ -287,8 +290,18 @@ LOGGING = {
             "level": "DEBUG",
             "formatter": "simple",
         },
+        "ingest_console": {
+            "class": "logging.StreamHandler",
+            "level": "INFO",
+            "formatter": "ingest",
+        },
     },
     "loggers": {
+        "ingest": {
+            "handlers": ["ingest_console"],
+            "level": "INFO",
+            "propagate": False,
+        },
         "recommend_api": {
             "handlers": ["console"],
             "level": "DEBUG",
@@ -300,4 +313,4 @@ LOGGING = {
 # Custom settings for running tests
 if "test" in sys.argv:
     # Disable logging
-    logging.disable(logging.WARNING)
+    logging.disable(logging.CRITICAL)
