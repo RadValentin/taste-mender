@@ -14,6 +14,7 @@ from recommend_api.tests.factories import TrackFactory
 class MusicbrainzAPIMetadataTests_Gather(TestCase):
     @classmethod
     def setUpClass(cls) -> None:
+        super().setUpClass()
         cls.temp_dir = tempfile.TemporaryDirectory()
         cls.output_filename = os.path.join(cls.temp_dir.name, "metadata.json")
         cls.temp_filename = os.path.join(cls.temp_dir.name, "metadata.tmp.json")
@@ -33,6 +34,7 @@ class MusicbrainzAPIMetadataTests_Gather(TestCase):
         cls.sleep_patcher.start()
 
     def setUp(self) -> None:
+        super().setUp()
         self.tracks: list[Track] = []
         for i in range(10):
             self.tracks.append(TrackFactory.create(title=f"Track {i}", submissions=10-i))
@@ -171,6 +173,7 @@ class MusicbrainzAPIMetadataTests_Gather(TestCase):
             self.assertEqual(data["tracks"], {})
 
     def tearDown(self) -> None:
+        super().tearDown()
         self.patched_requests.stop()
         TrackFactory.reset_sequence(0)
         if os.path.exists(self.output_filename):
@@ -184,7 +187,133 @@ class MusicbrainzAPIMetadataTests_Gather(TestCase):
         cls.output_filename_patcher.stop()
         cls.temp_dir.cleanup()
         cls.sleep_patcher.stop()
+        super().tearDownClass()
 
 
 class MusicbrainzAPIMetadataTests_Load(TestCase):
-    pass
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.temp_dir = tempfile.TemporaryDirectory()
+        cls.output_filename = os.path.join(cls.temp_dir.name, "metadata.json")
+        cls.output_filename_patcher = patch(
+            "ingest.enrichments.musicbrainz_api_metadata.OUTPUT_FILENAME",
+            cls.output_filename,
+        )
+        cls.output_filename_patcher.start()
+
+    def setUp(self) -> None:
+        self.tracks: list[Track] = []
+        for i in range(10):
+            self.tracks.append(TrackFactory.create(title=f"Track {i}", submissions=10-i))
+
+    def test_should_exit_when_artifact_not_found(self):
+        result = load_musicbrainz_metadata()
+
+        self.assertFalse(result)
+        self.assertEqual(Track.objects.filter(isrc__len__gt=0).count(), 0)
+
+    def test_should_exit_when_artifact_has_malformed_json(self):
+        with open(self.output_filename, "wt") as f:
+            f.write("poo poo")
+
+        result = load_musicbrainz_metadata()
+        self.assertFalse(result)
+
+    def test_should_update_isrcs_from_artifact(self):
+        first_mbid = self.tracks[0].musicbrainz_recordingid
+        second_mbid = self.tracks[1].musicbrainz_recordingid
+
+        with open(self.output_filename, "wb") as f:
+            f.write(orjson.dumps({
+                "schema_version": 1,
+                "first_ran_at": "2026-10-06T00:00:00",
+                "last_run_finished_at": None,
+                "tracks": {
+                    first_mbid : { "isrcs": ["USABC1234567"] },
+                    second_mbid: { "isrcs": ["VALIX6666666"] }
+                },
+            }))
+
+        result = load_musicbrainz_metadata()
+        self.tracks[0].refresh_from_db()
+        self.tracks[1].refresh_from_db()
+
+        self.assertTrue(result)
+        self.assertEqual(self.tracks[0].isrc, ["USABC1234567"])
+        self.assertEqual(self.tracks[1].isrc, ["VALIX6666666"])
+        for i in range(2, 10):
+            self.tracks[i].refresh_from_db()
+            self.assertEqual(len(self.tracks[i].isrc), 0)
+
+    def test_should_preserve_existing_isrcs(self):
+        track = self.tracks[0]
+        track.isrc = ["USOLD1234567"]
+        track.save(update_fields=["isrc"])
+
+        with open(self.output_filename, "wb") as f:
+            f.write(orjson.dumps({
+                "schema_version": 1,
+                "tracks": {
+                    track.musicbrainz_recordingid: { "isrcs": ["USNEW1234567"] }
+                }
+            }))
+
+        result = load_musicbrainz_metadata()
+        track.refresh_from_db()
+
+        self.assertTrue(result)
+        self.assertCountEqual(track.isrc, ["USOLD1234567", "USNEW1234567"])
+
+    def test_should_deduplicate_isrcs(self):
+        track = self.tracks[0]
+
+        with open(self.output_filename, "wb") as f:
+            f.write(orjson.dumps({
+                "tracks": {
+                    track.musicbrainz_recordingid: { "isrcs": ["USABC1234567", "USABC1234567"] }
+                }
+            }))
+
+        load_musicbrainz_metadata()
+        track.refresh_from_db()
+
+        self.assertEqual(track.isrc, ["USABC1234567"])
+
+    def test_should_skip_unknown_mbid(self):
+        with open(self.output_filename, "wb") as f:
+            f.write(orjson.dumps({
+                "tracks": {
+                    "unknown-mbid": { "isrcs": ["USABC1234567"] }
+                }
+            }))
+
+        self.assertTrue(load_musicbrainz_metadata())
+        self.assertEqual(Track.objects.filter(isrc__len__gt=0).count(), 0)
+
+    def test_should_ignore_invalid_isrc_payload(self):
+        track = self.tracks[0]
+
+        with open(self.output_filename, "wb") as f:
+            f.write(orjson.dumps({
+                "tracks": {
+                    track.musicbrainz_recordingid: { "isrcs": "not-a-list" }
+                }
+            }))
+
+        track.refresh_from_db()
+
+        self.assertTrue(load_musicbrainz_metadata())
+        self.assertEqual(track.isrc, [])
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        TrackFactory.reset_sequence(0)
+        if os.path.exists(self.output_filename):
+            os.remove(self.output_filename)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.output_filename_patcher.stop()
+        cls.temp_dir.cleanup()
+        super().tearDownClass()

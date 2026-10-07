@@ -178,29 +178,29 @@ def load_musicbrainz_metadata():
             log.exception("Error parsing JSON, cannot continue.")
             return False
 
-        json_tracks: dict[str, dict] = data.get("tracks", {})
-        enriched_mbids: list = list(json_tracks.keys())
+    json_tracks: dict[str, dict] = data.get("tracks", {})
+    enriched_mbids: list = list(json_tracks.keys())
 
-        for mbid in enriched_mbids:
-            track = Track.objects.filter(musicbrainz_recordingid=mbid).prefetch_related("artists").first()
+    for mbid in enriched_mbids:
+        track = Track.objects.filter(musicbrainz_recordingid=mbid).prefetch_related("artists").first()
 
-            if track is None:
-                log.warning("Track with MBID %s not found in database.", mbid)
-                continue
+        if track is None:
+            log.warning("Track with MBID %s not found in database.", mbid)
+            continue
 
-            artist = track.artists.first()
-            log.info(
-                "Updating track: %s by %s (%s)",
-                track.title,
-                artist.name if artist else "Unknown Artist",
-                track.musicbrainz_recordingid,
-            )
+        artist = track.artists.first()
+        log.info(
+            "Updating track: %s by %s (%s)",
+            track.title,
+            artist.name if artist else "Unknown Artist",
+            track.musicbrainz_recordingid,
+        )
 
-            raw_isrcs = json_tracks.get(mbid, {}).get("isrcs", [])
-            json_isrcs = set(raw_isrcs) if isinstance(raw_isrcs, list) else set()
-            track_isrcs = set(track.isrc)
-            track.isrc = list(json_isrcs | track_isrcs)
-            track.save(update_fields=["isrc"])
+        raw_isrcs = json_tracks.get(mbid, {}).get("isrcs", [])
+        json_isrcs = set(raw_isrcs) if isinstance(raw_isrcs, list) else set()
+        track_isrcs = set(track.isrc)
+        track.isrc = list(json_isrcs | track_isrcs)
+        track.save(update_fields=["isrc"])
 
     return True
 
