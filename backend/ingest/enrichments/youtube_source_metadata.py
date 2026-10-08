@@ -52,7 +52,7 @@ def titles_are_for_same_track(
     # We consider this a strong indicator of correctness and relax the search to a partial match.
     if (is_isrc):
         match_score = fuzz.partial_ratio(original_title, comparison_title)
-        print(f"ISRC match_score: {match_score}")
+        #print(f"ISRC match_score: {match_score}")
         return match_score > 80, match_score
 
     # Otherwise, the search was made for title + artist, not a strong indicator of correctness
@@ -62,7 +62,7 @@ def titles_are_for_same_track(
         all_artists = " ".join(artists).strip()
         artist_first_match_score = fuzz.partial_ratio(f"{all_artists} {original_title}", comparison_title)
         artist_last_match_score = fuzz.partial_ratio(f"{original_title} {all_artists}", comparison_title)
-        # print(f"Search match_score: {artist_first_match_score}, {artist_last_match_score}")
+        #print(f"Search match_score: {artist_first_match_score}, {artist_last_match_score}")
 
         match_score = max(artist_first_match_score, artist_last_match_score)
 
