@@ -16,7 +16,7 @@ OUTPUT_FILENAME = os.path.join(
     settings.BASE_DIR, "ingest", "enrichments", "musicbrainz_track_metadata.json"
 )
 TEMP_FILENAME = os.path.join(
-    settings.BASE_DIR, "ingest", "enrichments", "musicbrainz_track_metadata_temp.json"
+    settings.BASE_DIR, "ingest", "enrichments", "musicbrainz_track_metadata.temp.json"
 )
 MB_RECORDING_URL = "https://musicbrainz.org/ws/2/recording/"
 
