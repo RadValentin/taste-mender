@@ -1,5 +1,5 @@
 from django.test import SimpleTestCase
-from ingest.track_processing_helpers import merge_artist_pairs
+from ingest.core.track_processing_helpers import merge_artist_pairs
 
 
 class MergeArtistPairsTests(SimpleTestCase):

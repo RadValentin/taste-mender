@@ -1,3 +1,6 @@
+aiohappyeyeballs==2.7.1
+aiohttp==3.14.4
+aiosignal==1.4.0
 asgiref==3.10.0
 asttokens==3.0.0
 attrs==25.4.0
@@ -13,16 +16,18 @@ debugpy==1.8.15
 decorator==5.2.1
 dj-database-url==3.0.1
 Django==5.2.16
-django-stubs==5.2.9
 django-cors-headers==4.9.0
 django-extensions==4.1
 django-filter==26.1
+django-stubs==5.2.9
+django-stubs-ext==6.1.2
 djangorestframework==3.17.1
 drf-spectacular==0.30.0
 executing==2.2.0
 factory_boy==3.3.3
 Faker==40.28.1
 fonttools==4.60.2
+frozenlist==1.8.0
 graphviz==0.21
 gunicorn==26.0.0
 idna==3.10
@@ -40,6 +45,7 @@ kiwisolver==1.4.9
 lmdb==1.7.5
 matplotlib==3.11.0
 matplotlib-inline==0.1.7
+multidict==6.9.1
 nest-asyncio==1.6.0
 numpy==2.3.3
 orjson==3.11.9
@@ -49,9 +55,11 @@ parso==0.8.4
 pillow==12.3.0
 platformdirs==4.3.8
 prompt_toolkit==3.0.51
+propcache==0.5.4
 psutil==7.0.0
 psycopg2-binary==2.9.12
 pure_eval==0.2.3
+py-yt-search==0.8.0
 pydot==4.0.1
 Pygments==2.19.2
 Pympler==1.1
@@ -61,6 +69,7 @@ python-dotenv==1.2.2
 pytz==2025.2
 PyYAML==6.0.3
 pyzmq==27.0.0
+RapidFuzz==3.14.6
 referencing==0.36.2
 requests==2.34.2
 rpds-py==0.27.1
@@ -73,10 +82,12 @@ threadpoolctl==3.6.0
 tornado==6.5.9
 tqdm==4.67.1
 traitlets==5.14.3
+types-PyYAML==6.0.12.20260906
 typing_extensions==4.16.0
 tzdata==2025.2
 uritemplate==4.2.0
 urllib3==2.7.0
 wcwidth==0.2.13
 whitenoise==6.11.0
+yarl==1.25.1
 zstandard==0.24.0

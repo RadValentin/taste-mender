@@ -33,8 +33,8 @@ Testing guidance is documented in **[`docs/TESTING.md`](docs/TESTING.md)**.
 
 ## Quick Commands
 
+### Backend – run from `backend/`
 ```bash
-# Backend – run from backend/
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py test          # unit tests (uses factory_boy + Faker)
@@ -42,8 +42,10 @@ python manage.py runserver     # dev server on :8000
 
 # Ingest (requires AcousticBrainz dumps, see README.md)
 python manage.py build_db --sample   # ~85k tracks for dev
+```
 
-# Frontend – run from frontend/
+### Frontend – run from `frontend/`
+```bash
 npm install
 npm run dev    # Vite dev server
 npm run build  # production build (output goes to frontend/dist/, served by WhiteNoise)

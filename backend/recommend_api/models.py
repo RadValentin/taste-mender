@@ -1,10 +1,17 @@
 from __future__ import annotations
+from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
+from django.contrib.postgres.fields import ArrayField
 from django.contrib.postgres.search import SearchVectorField
 from django.contrib.postgres.indexes import GinIndex, GistIndex
 
 
+# Validators
+isrc_validator = RegexValidator(r"^[A-Z]{2}[A-Z0-9]{3}[0-9]{7}$", "The string is not a valid ISRC")
+
+
+# Models
 class Artist(models.Model):
     musicbrainz_artistid = models.CharField(primary_key=True, max_length=36)
     name = models.CharField(max_length=255)
@@ -73,6 +80,15 @@ class Track(models.Model):
     artists_text = models.TextField(default="", blank=True)
     search_vector = SearchVectorField(null=True)
 
+    # Optional metadata retrieved from MusicBrainz API, which isn't available in the
+    # AcousticBrainz dataset.
+    # ISRC - International Standard Recording Codes. Each element is a validated 12-character string.
+    isrc = ArrayField(
+        models.CharField(max_length=12, validators=[isrc_validator]),
+        default=list,
+        blank=True,
+    )
+
     class Meta:
         indexes = [
             # Speed up searching tracks by title for short queries (<= 3 chars)
@@ -85,6 +101,7 @@ class Track(models.Model):
             # Optimize retrieving most popular tracks
             models.Index(fields=["submissions"], name="track_subs_idx"),
         ]
+
 
 class TrackArtist(models.Model):
     artist = models.ForeignKey(Artist, on_delete=models.CASCADE)

@@ -91,6 +91,22 @@ python manage.py build_db --sample # Use the sample dataset with 100k entries
 
 ## Development Guidelines
 
+### Database - creation and enhancements
+The data loaded into the database is conceptually split in two categories:
+- `core` - data needed for running the app, this is the **ingest pipeline** which builds the main database from the AcousticBrainz dataset
+- `enrichments` - are supplemental data that get applied on top of the main DB but are not essential for running the app.
+
+#### MusicBrainz metadata enrichment
+Queries the MusicBrainz API for track metadata which gets stored as JSON and then ingested into the DB. Useful for getting ISRC codes for the most popular tracks but it's not mean to run for the whole database.
+
+```bash
+# Get metadata for the top 100 tracks and save as JSON
+python manage.py gather_mb --batch 100
+
+# Insert metadata from JSON to DB
+python manage.py load_mb
+```
+
 ### Frontend
 
 Use a simple BEM-style convention for CSS classes in the React frontend:

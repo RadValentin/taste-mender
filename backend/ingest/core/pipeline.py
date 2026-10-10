@@ -21,9 +21,9 @@ from recommend_api.models import (
 )
 from pympler import asizeof
 from typing import List, Set, Tuple
-from ingest import track_processing_helpers as tph
-from ingest.lmdb_index import LMDBTrackIndex
-from ingest.cli_helpers import print_banner, confirm, spinner, show_progress_bar
+from ingest.core import track_processing_helpers as tph
+from ingest.core.lmdb_index import LMDBTrackIndex
+from ingest.core.cli_helpers import print_banner, confirm, spinner, show_progress_bar
 
 log = logging.getLogger(__name__)
 
@@ -65,12 +65,12 @@ def build_database(
 
     # Size of on-disk track index, set an arbitrary default 2GB
     MAP_SIZE = 1024 * 1024 * 1024 * 2
-    BASE_DIR = Path(__file__).resolve().parent.parent
+    BASE_DIR = Path(__file__).resolve().parent.parent.parent
     config = dotenv_values(BASE_DIR / ".env")
     # Globals used to track how many records are skipped while processing
     counters = {"missing_artist": 0, "processing": 0}
     # Don't show logs in console, they'll be logged to a file, clear the file at the start
-    logfile_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "ingest.log")
+    logfile_path = os.path.join(BASE_DIR / "ingest", "ingest.log")
     logging.basicConfig(
         filename=logfile_path,
         level=logging.INFO,

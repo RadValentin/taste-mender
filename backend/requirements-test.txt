@@ -2,14 +2,16 @@ asgiref==3.10.0
 attrs==25.4.0
 certifi==2025.10.5
 charset-normalizer==3.4.3
+colorama==0.4.6
 colorlog==6.10.1
 coverage==7.15.0
 dj-database-url==3.0.1
 Django==5.2.16
-django-stubs==5.2.9
 django-cors-headers==4.9.0
 django-extensions==4.1
 django-filter==26.1
+django-stubs==5.2.9
+django-stubs-ext==6.1.2
 djangorestframework==3.17.1
 drf-spectacular==0.30.0
 factory_boy==3.3.3
@@ -29,6 +31,7 @@ python-dateutil==2.9.0.post0
 python-dotenv==1.2.2
 pytz==2025.2
 PyYAML==6.0.3
+RapidFuzz==3.14.6
 referencing==0.36.2
 requests==2.34.2
 rpds-py==0.27.1
@@ -37,6 +40,8 @@ scipy==1.16.2
 six==1.17.0
 sqlparse==0.6.0
 threadpoolctl==3.6.0
+types-PyYAML==6.0.12.20260906
+typing_extensions==4.16.0
 tzdata==2025.2
 uritemplate==4.2.0
 urllib3==2.7.0
