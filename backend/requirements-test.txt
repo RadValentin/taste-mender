@@ -26,7 +26,7 @@ pandas==2.3.3
 psycopg2-binary==2.9.12
 Pympler==1.1
 python-dateutil==2.9.0.post0
-python-dotenv==1.1.1
+python-dotenv==1.2.2
 pytz==2025.2
 PyYAML==6.0.3
 referencing==0.36.2
