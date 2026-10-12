@@ -1,17 +1,12 @@
 import logging, requests
 from datetime import timedelta
 from requests import Response
+from django.conf import settings
 from django.core.cache import cache
 from django.db.models import F
 from django.utils import timezone
 from dotenv import dotenv_values
-from music_recommendation.settings import (
-    APP_AUTHOR_EMAIL,
-    APP_NAME,
-    APP_VERSION,
-    BASE_DIR,
-    YOUTUBE_SOURCE_CACHE_DAYS,
-)
+from music_recommendation.settings import BASE_DIR, YOUTUBE_SOURCE_CACHE_DAYS
 from recommend_api.models import Track, TrackSource
 from typing import Dict
 
@@ -25,7 +20,6 @@ SOURCE_LOOKUP_FAILURE_TTL = timedelta(hours=24)
 # Short timeout for YT API outages
 YOUTUBE_API_ERROR_CACHE_KEY = "youtube:api_error"
 YOUTUBE_API_ERROR_TTL = 60
-OUTBOUND_USER_AGENT = f"{APP_NAME}/{APP_VERSION} ({APP_AUTHOR_EMAIL})"
 
 
 def get_youtube_source(track: Track) -> TrackSource | None:
@@ -87,7 +81,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
                 "part": "snippet,status,id",
                 "id": cached_source.source_id,
                 "key": YOUTUBE_API_KEY
-            }, headers={"User-Agent": OUTBOUND_USER_AGENT}, timeout=8)
+            }, headers={"User-Agent": settings.OUTBOUND_USER_AGENT}, timeout=8)
             response.raise_for_status()
         except requests.RequestException:
             # We couldn't verify it, but we also don't know that it's invalid.
@@ -153,7 +147,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
             "type": "video",
             "maxResults": 10,
             "key": YOUTUBE_API_KEY
-        }, headers={"User-Agent": OUTBOUND_USER_AGENT}, timeout=8)
+        }, headers={"User-Agent": settings.OUTBOUND_USER_AGENT}, timeout=8)
         response.raise_for_status()
     except requests.RequestException:
         if cached_source:

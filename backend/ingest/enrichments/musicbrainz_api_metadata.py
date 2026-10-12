@@ -9,9 +9,7 @@ from typing import Any
 
 log = logging.getLogger(__name__)
 
-OUTBOUND_USER_AGENT = (
-    f"{settings.APP_NAME}/{settings.APP_VERSION} ({settings.APP_AUTHOR_EMAIL})"
-)
+
 OUTPUT_FILENAME = os.path.join(
     settings.BASE_DIR, "ingest", "enrichments", "musicbrainz_track_metadata.json"
 )
@@ -95,7 +93,7 @@ def gather_musicbrainz_metadata(batch_size=10, override_file=False):
             response = requests.get(
                 f"{MB_RECORDING_URL}{mbid}",
                 params={"inc": "isrcs", "fmt": "json"},
-                headers={"User-Agent": OUTBOUND_USER_AGENT},
+                headers={"User-Agent": settings.OUTBOUND_USER_AGENT},
                 timeout=8,
             )
             response.raise_for_status()

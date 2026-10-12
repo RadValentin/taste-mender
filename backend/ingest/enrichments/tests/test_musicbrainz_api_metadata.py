@@ -1,11 +1,11 @@
 import os, orjson, tempfile, requests
+from django.conf import settings
 from django.test import TestCase
 from unittest.mock import patch, MagicMock
 from ingest.enrichments.musicbrainz_api_metadata import (
     gather_musicbrainz_metadata,
     load_musicbrainz_metadata,
-    MB_RECORDING_URL,
-    OUTBOUND_USER_AGENT,
+    MB_RECORDING_URL
 )
 from recommend_api.models import Track
 from recommend_api.tests.factories import TrackFactory
@@ -73,7 +73,7 @@ class MusicbrainzAPIMetadataTests_Gather(TestCase):
             self.mock_get.assert_any_call(
                 f"{MB_RECORDING_URL}{self.tracks[i].musicbrainz_recordingid}",
                 params={"inc": "isrcs", "fmt": "json"},
-                headers={"User-Agent": OUTBOUND_USER_AGENT},
+                headers={"User-Agent": settings.OUTBOUND_USER_AGENT},
                 timeout=8,
             )
 

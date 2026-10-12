@@ -1,6 +1,7 @@
 import requests
 from datetime import timedelta
 from unittest.mock import patch, MagicMock
+from django.conf import settings
 from django.test import TestCase
 from django.utils import timezone
 from recommend_api.models import Track, Artist, TrackSource
@@ -12,7 +13,6 @@ from recommend_api.services.youtube_sources import (
     SOURCE_LOOKUP_FAILURE_TTL,
     YOUTUBE_API_ERROR_CACHE_KEY,
     YOUTUBE_API_ERROR_TTL,
-    OUTBOUND_USER_AGENT,
 )
 
 
@@ -93,7 +93,7 @@ class YoutubeSourcesTests(TestCase):
         self.mock_get.assert_called_once()
         self.assertEqual(
             self.mock_get.call_args.kwargs["headers"]["User-Agent"],
-            OUTBOUND_USER_AGENT,
+            settings.OUTBOUND_USER_AGENT,
         )
 
     def test_increments_count_for_cached_source(self):
@@ -138,7 +138,7 @@ class YoutubeSourcesTests(TestCase):
             "part": "snippet,status,id",
             "id": cached_source.source_id,
             "key": self.mock_yt_api_key
-        }, headers={"User-Agent": OUTBOUND_USER_AGENT}, timeout=8)
+        }, headers={"User-Agent": settings.OUTBOUND_USER_AGENT}, timeout=8)
 
         # Updates the cached video metadata
         old_refreshed_at = cached_source.refreshed_at
@@ -165,7 +165,7 @@ class YoutubeSourcesTests(TestCase):
             "part": "snippet,status,id",
             "id": cached_source.source_id,
             "key": self.mock_yt_api_key,
-        }, headers={"User-Agent": OUTBOUND_USER_AGENT}, timeout=8)
+        }, headers={"User-Agent": settings.OUTBOUND_USER_AGENT}, timeout=8)
         self.assertEqual(cached_source.source_request_count, 2)
 
     def test_fallback_to_search_when_stale_source_not_on_yt(self):
@@ -270,7 +270,7 @@ class YoutubeSourcesTests(TestCase):
             "type": "video",
             "maxResults": 10,
             "key": self.mock_yt_api_key
-        }, headers={"User-Agent": OUTBOUND_USER_AGENT}, timeout=8)
+        }, headers={"User-Agent": settings.OUTBOUND_USER_AGENT}, timeout=8)
         self.assertIsInstance(self.artist.name, str)
 
     def test_returns_no_items_for_empty_yt_response(self):
@@ -325,7 +325,7 @@ class YoutubeSourcesTests(TestCase):
             "type": "video",
             "maxResults": 10,
             "key": self.mock_yt_api_key
-        }, headers={"User-Agent": OUTBOUND_USER_AGENT}, timeout=8)
+        }, headers={"User-Agent": settings.OUTBOUND_USER_AGENT}, timeout=8)
         cached_source = TrackSource.objects.get(track=self.track)
         self.assertIsNone(cached_source.last_lookup_failed_at)
 

@@ -41,6 +41,7 @@ APP_VERSION = env_get("APP_VERSION", "1.0.0")
 APP_AUTHOR_NAME = env_get("APP_AUTHOR_NAME", "Valentin Radulescu")
 APP_AUTHOR_EMAIL = env_get("APP_AUTHOR_EMAIL", "hi@valentin.io")
 APP_AUTHOR_URL = env_get("APP_AUTHOR_URL", "https://valentin.io/")
+OUTBOUND_USER_AGENT = f"{APP_NAME}/{APP_VERSION} ({APP_AUTHOR_EMAIL})"
 
 if "test" not in sys.argv:
     REQUIRED_ENV_VARS = ["DJANGO_SECRET_KEY", "DATABASE_URL", "YOUTUBE_API_KEY"]
