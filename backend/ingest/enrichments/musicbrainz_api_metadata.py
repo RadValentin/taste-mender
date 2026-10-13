@@ -19,7 +19,7 @@ TEMP_FILENAME = os.path.join(
 MB_RECORDING_URL = "https://musicbrainz.org/ws/2/recording/"
 
 
-def gather_musicbrainz_metadata(batch_size=10, override_file=False):
+def gather_musicbrainz_metadata(batch_size, override_file=False):
     """
     Builds a JSON file with metadata from MusicBrainz API for the Tracks with most submissions.
     The file is used as an index to check which Tracks were already processed in previous runs.
