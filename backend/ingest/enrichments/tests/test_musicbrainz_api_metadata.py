@@ -51,7 +51,7 @@ class MusicbrainzAPIMetadataTests_Gather(TestCase):
 
     def test_creates_empty_json(self):
         Track.objects.all().delete()
-        result = gather_musicbrainz_metadata()
+        result = gather_musicbrainz_metadata(batch_size=1)
 
         self.assertTrue(result)
         self.assertTrue(os.path.exists(self.output_filename))
@@ -66,7 +66,7 @@ class MusicbrainzAPIMetadataTests_Gather(TestCase):
         self.assertIsNone(data["last_run_finished_at"])
 
     def test_fetches_data_from_api(self):
-        gather_musicbrainz_metadata()
+        gather_musicbrainz_metadata(batch_size=len(self.tracks))
 
         self.assertEqual(self.mock_get.call_count, len(self.tracks))
         for i in range(len(self.tracks)):

@@ -1,6 +1,23 @@
-from django.test import SimpleTestCase
-from ingest.enrichments.youtube_source_metadata import titles_are_for_same_track, normalize_text
-
+import os, orjson, tempfile, requests
+from asgiref.sync import sync_to_async
+from datetime import datetime
+from django.conf import settings
+from django.test import SimpleTestCase, TestCase, TransactionTestCase
+from py_yt import VideosSearch
+from py_yt.exceptions import PyYTSearchError
+from unittest import IsolatedAsyncioTestCase
+from unittest.mock import patch, AsyncMock, MagicMock
+from ingest.enrichments.youtube_source_metadata import (
+    titles_are_for_same_track,
+    normalize_text,
+    gather_youtube_metadata,
+    agather_youtube_metadata,
+    search_youtube,
+    MAX_CONSECUTIVE_ERRORS,
+    SearchStatus
+)
+from recommend_api.models import Track, Artist
+from recommend_api.tests.factories import TrackFactory, ArtistFactory
 
 class YouTubeSourceMetadataTests_Titles(SimpleTestCase):
     # Text normalization
@@ -103,3 +120,120 @@ class YouTubeSourceMetadataTests_Titles(SimpleTestCase):
                 artists=artists,
             )
             self.assertTrue(is_match)
+
+
+class YouTubeSourceMetadataTests_Gather(TransactionTestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.temp_dir = tempfile.TemporaryDirectory()
+        cls.output_filename = os.path.join(cls.temp_dir.name, "yt-metadata.json")
+        cls.temp_filename = os.path.join(cls.temp_dir.name, "yt-metadata.tmp.json")
+        cls.output_filename_patcher = patch(
+            "ingest.enrichments.youtube_source_metadata.OUTPUT_FILENAME",
+            cls.output_filename,
+        )
+        cls.temp_filename_patcher = patch(
+            "ingest.enrichments.youtube_source_metadata.TEMP_FILENAME",
+            cls.temp_filename,
+        )
+        cls.output_filename_patcher.start()
+        cls.temp_filename_patcher.start()
+
+        cls.sleep_patcher = patch("ingest.enrichments.youtube_source_metadata.time.sleep",
+                                  return_value=None)
+        cls.sleep_patcher.start()
+
+    def setUp(self) -> None:
+        super().setUp()
+        self.artists: list[Artist] = []
+        self.tracks: list[Track] = []
+        for i in range(10):
+            new_artist = ArtistFactory()
+            self.artists.append(new_artist)
+
+            new_track: Track = TrackFactory.create(title=f"Track {i}", submissions=10-i)
+            new_track.artists.add(new_artist)
+            self.tracks.append(new_track)
+
+        self.patched_yt_search = patch(
+            "ingest.enrichments.youtube_source_metadata.search_youtube",
+            new=AsyncMock(return_value={}),
+        )
+        self.mock_yt_search = self.patched_yt_search.start()
+
+    def test_creates_empty_json(self):
+        Track.objects.all().delete()
+        result = gather_youtube_metadata(batch_size=1)
+
+        self.assertTrue(result)
+        self.assertTrue(os.path.exists(self.output_filename))
+        self.assertFalse(os.path.exists(self.temp_filename))
+
+        with open(self.output_filename, "rb") as output_file:
+            data = orjson.loads(output_file.read())
+
+        self.assertEqual(data["schema_version"], 1)
+        self.assertEqual(data["sources"], {})
+        self.assertEqual(data["isrcs"], {})
+        self.assertIsNotNone(data["first_ran_at"])
+        self.assertIsNone(data["last_run_finished_at"])
+
+    async def test_fetches_data_from_yt(self):
+        await agather_youtube_metadata(data={}, target_tracks=self.tracks)
+
+        self.assertEqual(self.mock_yt_search.call_count, len(self.tracks))
+        for i in range(len(self.tracks)):
+            track = self.tracks[i]
+            artists = await sync_to_async(
+               lambda: [normalize_text(artist.name) for artist in track.artists.all()]
+            )()
+            all_artists_str = " ".join(artists)
+            query = f"{track.title} {all_artists_str}".strip()
+            self.mock_yt_search.assert_any_call(query, is_isrc=False)
+
+    async def test_stores_titlartist_search_metadata_in_artifact(self):
+        track: Track | None = await sync_to_async(Track.objects.order_by("-submissions").first)()
+        assert track is not None
+        mbid = track.musicbrainz_recordingid
+        self.mock_yt_search.return_value = {
+            "query": "YOLO",
+            "search_type": "title_artist",
+            "search_status": SearchStatus.FOUND,
+            "meta": {"foo": "bar"},
+            "checked_at": datetime.now(),
+            "error": None
+        }
+
+        await agather_youtube_metadata(data={}, target_tracks=[self.tracks[0]])
+
+        with open(self.output_filename, "rb") as f:
+            data = orjson.loads(f.read())
+
+        self.assertEqual(data["sources"][mbid]["query"], "YOLO")
+        self.assertEqual(data["sources"][mbid]["search_type"], "title_artist")
+        self.assertEqual(data["sources"][mbid]["search_status"], SearchStatus.FOUND)
+        self.assertEqual(data["sources"][mbid]["meta"], {"foo": "bar"})
+        self.assertIn("checked_at", data["sources"][mbid])
+        self.assertIsNotNone(data["last_run_finished_at"])
+        self.assertEqual(data["isrcs"], {})
+
+    def test_limits_tracks_to_batch_size(self):
+        gather_youtube_metadata(batch_size=3)
+
+        self.assertEqual(self.mock_yt_search.call_count, 3)
+
+    async def test_stores_isrc_search_metadata_in_artifact(self):
+        pass
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        TrackFactory.reset_sequence(0)
+        if os.path.exists(self.output_filename):
+            os.remove(self.output_filename)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.output_filename_patcher.stop()
+        cls.temp_dir.cleanup()
+        super().tearDownClass()

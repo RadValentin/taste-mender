@@ -22,7 +22,6 @@ OUTPUT_FILENAME = os.path.join(
 TEMP_FILENAME = os.path.join(
     settings.BASE_DIR, "ingest", "enrichments", "youtube_track_metadata.temp.json"
 )
-YOUTUBE_SEARCH_URL = "https://www.googleapis.com/youtube/v3/search"
 MAX_CONSECUTIVE_ERRORS = 5
 
 
@@ -112,7 +111,7 @@ async def search_youtube(query: str, is_isrc: bool = False) -> dict[str, Any]:
             "search_type": "isrc" if is_isrc else "title_artist",
             "search_status": SearchStatus.ERROR,
             "meta": None,
-            "timestamp": datetime.now(),
+            "checked_at": datetime.now(),
             "error": {
                 "type": type(ex).__name__,
                 "message": str(ex),
@@ -125,7 +124,7 @@ async def search_youtube(query: str, is_isrc: bool = False) -> dict[str, Any]:
             "search_type": "isrc" if is_isrc else "title_artist",
             "search_status": SearchStatus.EMPTY,
             "meta": None,
-            "timestamp": datetime.now(),
+            "checked_at": datetime.now(),
             "error": None
         }
 
@@ -134,7 +133,7 @@ async def search_youtube(query: str, is_isrc: bool = False) -> dict[str, Any]:
         "search_type": "isrc" if is_isrc else "title_artist",
         "search_status": SearchStatus.FOUND,
         "meta": items[0],
-        "timestamp": datetime.now(),
+        "checked_at": datetime.now(),
         "error": None
     }
 
