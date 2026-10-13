@@ -145,6 +145,10 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
         """Utility class"""
         # Count errors so we can abort after a certain number of them.
         repeaded_errors: int = 0
+        # How many times was a source retrieved from isrc dict instead of search.
+        cache_hits: int = 0
+        isrc_searches: int = 0
+        title_artist_searches: int = 0
         current_run_checked: int = 0
         all_runs_checked: int = 0
 
@@ -183,6 +187,7 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
         if len(overlap_isrcs) > 0:
             isrc = overlap_isrcs.pop()
             enriched_mbids[track.musicbrainz_recordingid] = enriched_isrcs.get(isrc, {})
+            Counters.cache_hits += 1
             continue
 
         # Attempt to search for the track by its ISRC codes
@@ -196,6 +201,7 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
                 continue
 
             result = await search_youtube(query=isrc, is_isrc=True)
+            Counters.isrc_searches += 1
 
             if result.get("search_status") is SearchStatus.ERROR:
                 Counters.repeaded_errors += 1
@@ -231,6 +237,7 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
         if not stop_requested:
             title_artist_query = f"{track.title} {all_artists_str}".strip()
             result = await search_youtube(title_artist_query, is_isrc=False)
+            Counters.title_artist_searches += 1
 
             if result.get("search_status") is SearchStatus.ERROR:
                 Counters.repeaded_errors += 1
@@ -287,6 +294,9 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
 
     # Display stats before exiting
     log.info("The current run checked %s tracks", Counters.current_run_checked)
+    log.info("- %s sources were already in the JSON file", Counters.cache_hits)
+    log.info("- ran %s YT searches for ISRC codes ", Counters.isrc_searches)
+    log.info("- ran %s YT searches for title + artist queries ", Counters.title_artist_searches)
     log.info("Previous runs had checked %s tracks", Counters.all_runs_checked)
 
     return True

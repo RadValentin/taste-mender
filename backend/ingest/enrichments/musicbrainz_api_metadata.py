@@ -150,14 +150,14 @@ def gather_musicbrainz_metadata(batch_size, override_file=False):
 
     # Display stats before exiting
     log.info(
-        "The current run checked %s tracks, %s had ISRC codes.",
-        Counters.current_run_checked,
-        Counters.current_run_isrcs,
-    )
-    log.info(
         "Previous runs had checked %s tracks, %s had ISRC codes.",
         Counters.all_runs_checked,
         Counters.all_runs_isrcs,
+    )
+    log.info(
+        "The current run checked %s tracks, %s had ISRC codes.",
+        Counters.current_run_checked,
+        Counters.current_run_isrcs,
     )
 
     return True
@@ -204,4 +204,4 @@ def load_musicbrainz_metadata():
 
 
 if __name__ == "__main__":
-    gather_musicbrainz_metadata()
+    gather_musicbrainz_metadata(batch_size=10)
