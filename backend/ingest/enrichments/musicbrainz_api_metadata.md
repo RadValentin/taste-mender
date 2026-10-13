@@ -38,22 +38,28 @@ Define a JSON schema for enriching the `TrackSource` model, should include:
   - Date when enrichment was first ran
   - Date when enrichment was last ran
   - A dictionary of source data
-    - keys are in 2 forms `isrc:<code>` when source was searched by ISRC, `track:<mbid>` when source was searched by MBID.
-    - Objects can be null if MB returned no data (but not on error), so we know which tracks were already checked
+    - Contains `isrcs` dict which stores sources retrieved with ISRC-based search
+    - Contains `sources` dict which stores the final sources, retrieved either through ISRC or title+artist search.
+    - Optional: Objects can be null if YT returned no data (but not on error), so we know which tracks were already checked
     - Store YT metadata (incl. video ID), query, timestamp, error state
 
+A JSON file matching the schema will be produced by the following implementation:
 - Sort tracks by number of submissions, we'll check only the most popular ones, limit to 100 tracks according to YT API daily quota
-- For each track
-  - if it's ISRC is already matched to a video, skip. Otherwise, search YT by ISRC
-  - if ISRC isn't present, search by title + artist
+- For each track:
+  - If its ISRC is already matched to a video (check `isrcs` in JSON), associate it with the track.
+  - If ISRC isn't matched, search YT by ISRC, associate video with track.
+  - As a final fallback, search by title + artist and associate video with track.
+- Check if the video's title is similar to the song title (80% threshold, similar words in similar order, fuzzy match)
 - Update JSON with the new source
 - Ensure that if script is ran again, it will continue checking only tracks that weren't checked previously
 - Define a method for loading the JSON into the database
 
 > [!NOTE]
-> Assume some `Tracks` have ISRC codes now but not all
+> - Assume some `Tracks` have ISRC codes now but not all
+> - If a video cannot be retrieved by ISRC, fallback to search
 
 ## Links
 
 - https://musicbrainz.org/doc/MusicBrainz_API
 - https://musicbrainz.org/doc/MusicBrainz_API/Rate_Limiting
+
