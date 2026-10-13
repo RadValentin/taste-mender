@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from django.conf import settings
 from django.db.models import Q
 from django.utils import timezone
+from enum import StrEnum
 from py_yt import VideosSearch
 from py_yt.exceptions import PyYTSearchError
 from random import random
@@ -90,14 +91,14 @@ def titles_are_for_same_track(
         return match_score > 80, match_score
 
 
-class Counters:
-    """Utility class"""
-    # Count errors so we can abort after a certain number of them.
-    repeaded_errors: int = 0
-    current_run_checked: int = 0
-    all_runs_checked: int = 0
+class SearchStatus(StrEnum):
+    FOUND = "found"
+    EMPTY = "empty"
+    MISMATCH = "mismatch"
+    ERROR = "error"
 
-async def search_youtube(query: str) -> dict[str, Any] | None:
+
+async def search_youtube(query: str, is_isrc: bool = False) -> dict[str, Any]:
     """Return the first YouTube search result title for ``query``."""
     log.info(f"- Searching for {query}")
     try:
@@ -105,34 +106,48 @@ async def search_youtube(query: str) -> dict[str, Any] | None:
         response: dict[str, Any] = await search.next()
         items = response.get("result", [])
     except (PyYTSearchError, OSError, ValueError, TypeError) as ex:
-        Counters.repeaded_errors += 1
         log.exception(f"YouTube search failed for {query!r}: {ex}")
-        return None
+        return {
+            "query": query,
+            "search_type": "isrc" if is_isrc else "title_artist",
+            "search_status": SearchStatus.ERROR,
+            "meta": None,
+            "timestamp": datetime.now(),
+            "error": {
+                "type": type(ex).__name__,
+                "message": str(ex),
+            }
+        }
 
-    Counters.repeaded_errors = 0
     if not items or not isinstance(items, list):
-        return None
-
-    source = items[0]
-    description_snippet = source.get("descriptionSnippet", [])
-    description = (
-        description_snippet[0].get("text")
-        if (
-            isinstance(description_snippet, list)
-            and description_snippet
-            and isinstance(description_snippet[0], dict)
-        )
-        else None
-    )
+        return {
+            "query": query,
+            "search_type": "isrc" if is_isrc else "title_artist",
+            "search_status": SearchStatus.EMPTY,
+            "meta": None,
+            "timestamp": datetime.now(),
+            "error": None
+        }
 
     return {
-        **source,
-        "description": description,
+        "query": query,
+        "search_type": "isrc" if is_isrc else "title_artist",
+        "search_status": SearchStatus.FOUND,
+        "meta": items[0],
+        "timestamp": datetime.now(),
+        "error": None
     }
 
 
 async def agather_youtube_metadata(data, target_tracks: list[Track]):
     """Async wrapper required in order to use `py-yt-search`"""
+
+    class Counters:
+        """Utility class"""
+        # Count errors so we can abort after a certain number of them.
+        repeaded_errors: int = 0
+        current_run_checked: int = 0
+        all_runs_checked: int = 0
 
     # MBIDs of tracks which were enriched through title + artist search
     enriched_mbids: dict = data.get("sources", {})
@@ -142,75 +157,108 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
     # Select the most popular tracks that either don't have a source or have a stale one
 
     for track in target_tracks:
-        # Give up after encountering a certain number of errors
-        # TODO: ensure there are "REPEATED" errors not transient ones
+        # Give up after encountering a certain number of repeated errors
         if (Counters.repeaded_errors > MAX_CONSECUTIVE_ERRORS):
             return False
 
         Counters.current_run_checked += 1
         stop_requested = False
-        artists = await sync_to_async(track.artists.all)()
-        artists = [artist.name for artist in artists]
-        artist_name = artists[0].name if artists[0] else ""
+        artists = await sync_to_async(
+            lambda: [normalize_text(artist.name) for artist in track.artists.all()]
+        )()
+        all_artists_str = " ".join(artists).strip() if artists else ""
         log.info(
             "Checking track: %s by %s (%s)",
             track.title,
-            artist_name if artist_name else "Unknown Artist",
+            all_artists_str if all_artists_str else "Unknown Artist",
             track.musicbrainz_recordingid,
         )
 
         # If one of the track's ISRC codes was previously searched, save the source.
-        overlap_isrcs: set[dict] = set(track.isrc) & set(enriched_isrcs.keys())
+        valid_enriched_isrcs = {
+            k
+            for k, v in enriched_isrcs.items()
+            if isinstance(v, dict) and v.get("search_status") == SearchStatus.FOUND.value
+        }
+        overlap_isrcs: set[str] = set(track.isrc) & valid_enriched_isrcs
         if len(overlap_isrcs) > 0:
             isrc = overlap_isrcs.pop()
-            enriched_mbids[track.musicbrainz_recordingid] = {
-                "search_type": "isrc",
-                **enriched_isrcs.get(isrc, {})
-            }
+            enriched_mbids[track.musicbrainz_recordingid] = enriched_isrcs.get(isrc, {})
             continue
 
         # Attempt to search for the track by its ISRC codes
-        # TODO: Ensure that not-found ISRCs are also indexed to prevent duplicate requests
         for isrc in track.isrc:
-            result = await search_youtube(query=isrc)
-            if result is None:
-                continue
-            if titles_are_for_same_track(
-                track.title, result.get("title", ""), is_isrc=True
+            # If previous ISRC search returned invalid or no results, don't check again
+            cached_result = enriched_isrcs.get(isrc)
+            if cached_result and cached_result.get("search_status") in (
+                SearchStatus.EMPTY,
+                SearchStatus.MISMATCH,
             ):
-                enriched_mbids[track.musicbrainz_recordingid] = {
-                    "search_type": "isrc",
-                    **result
-                }
-                enriched_isrcs[isrc] = result
-                stop_requested = True
-                break
+                continue
+
+            result = await search_youtube(query=isrc, is_isrc=True)
+
+            if result.get("search_status") is SearchStatus.ERROR:
+                Counters.repeaded_errors += 1
+                continue
             else:
-                log.warning(
-                    'Title mismatch when searching by ISRC. Was searching for "%s" but found "%s".',
-                    track.title,
-                    result.get("title", "")
-                )
+                Counters.repeaded_errors = 0
+
+            if result.get("search_status") is SearchStatus.FOUND:
+                result_title = result.get("meta", {}).get("title", "")
+                if titles_are_for_same_track(
+                    track.title, result_title, is_isrc=True
+                ):
+                    enriched_mbids[track.musicbrainz_recordingid] = result
+                    enriched_isrcs[isrc] = result
+                    stop_requested = True
+                    break
+                else:
+                    # Ensure that invalid responses are indexed to prevent duplicate requests
+                    enriched_isrcs[isrc] = {
+                        **result,
+                        "search_status": SearchStatus.MISMATCH
+                    }
+                    log.warning(
+                        'Title mismatch when searching by ISRC. Was searching for "%s" but found "%s".',
+                        track.title,
+                        result_title
+                    )
+            else:
+                # Ensure that empty responses are indexed to prevent duplicate requests
+                enriched_isrcs[isrc] = result
 
         # If we still haven't found the source, try searching by title + artist
         if not stop_requested:
-            title_artist_query = f"{track.title} {artist_name}".strip()
-            result = await search_youtube(title_artist_query)
-            if result is None:
+            title_artist_query = f"{track.title} {all_artists_str}".strip()
+            result = await search_youtube(title_artist_query, is_isrc=False)
+
+            if result.get("search_status") is SearchStatus.ERROR:
+                Counters.repeaded_errors += 1
                 continue
-            if titles_are_for_same_track(
-                track.title, result.get("title", ""), is_isrc=False, artists=artists
-            ):
-                enriched_mbids[track.musicbrainz_recordingid] = {
-                    "search_type": "title_artist",
-                    **result
-                }
             else:
-                log.warning(
-                    'Title mismatch when searching by title+artist. Was searching for "%s" but found "%s".',
-                    track.title,
-                    result.get("title", "")
-                )
+                Counters.repeaded_errors = 0
+
+            if result.get("search_status") is SearchStatus.FOUND:
+                result_title = result.get("meta", {}).get("title", "")
+                if titles_are_for_same_track(
+                    track.title, result_title, is_isrc=False, artists=artists
+                ):
+                    enriched_mbids[track.musicbrainz_recordingid] = result
+                else:
+                    enriched_mbids[track.musicbrainz_recordingid] = {
+                        **result,
+                        "search_status": SearchStatus.MISMATCH
+                    }
+                    log.warning(
+                        'Title mismatch when searching by title+artist. Was searching for "%s" but found "%s".',
+                        track.title,
+                        result_title
+                    )
+            else:
+                # Ensure that empty responses are indexed to prevent duplicate requests
+                enriched_mbids[track.musicbrainz_recordingid] = result
+
 
         # Write to file
         data["sources"] = enriched_mbids
@@ -228,7 +276,7 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
         # Wait a bit before making the next request
         time.sleep(1 + (random() * 4))
 
-    # Update the enrichment file
+    # Replace the old output file with the temp file generated by this run.
     try:
         if os.path.exists(TEMP_FILENAME):
             with open(TEMP_FILENAME, "wb") as f:
@@ -245,7 +293,7 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
     return True
 
 
-def gather_youtube_metadata(batch_size=1, override_file=False):
+def gather_youtube_metadata(batch_size, override_file=False):
     """
     Builds a JSON file with video data from YouTube for the Tracks with most submissions.
     It can be used to prefill the TrackSource model. The file contains two main dictionaries:
@@ -300,7 +348,7 @@ def gather_youtube_metadata(batch_size=1, override_file=False):
     stale_timedelta = timezone.now() - timedelta(days=settings.YOUTUBE_SOURCE_CACHE_DAYS)
     target_tracks: list[Track] = list(
         Track.objects.exclude(
-            Q(sources__refreshed_at__lt=stale_timedelta) |
+            Q(sources__refreshed_at__gte=stale_timedelta) |
             Q(musicbrainz_recordingid__in=enriched_mbids.keys())
         ).prefetch_related("artists").order_by("-submissions")[:batch_size]
     )
@@ -308,3 +356,17 @@ def gather_youtube_metadata(batch_size=1, override_file=False):
     return asyncio.run(
         agather_youtube_metadata(data=data, target_tracks=target_tracks)
     )
+
+
+def load_youtube_metadata():
+    # description_snippet = source.get("descriptionSnippet", [])
+    # description = (
+    #     description_snippet[0].get("text")
+    #     if (
+    #         isinstance(description_snippet, list)
+    #         and description_snippet
+    #         and isinstance(description_snippet[0], dict)
+    #     )
+    #     else None
+    # )
+    pass
