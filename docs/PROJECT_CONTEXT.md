@@ -142,7 +142,7 @@ taste-mender/
 │   │   ├── api/                  # Per-resource API view modules
 │   │   ├── services/
 │   │   │   ├── recommender.py    # Core recommendation logic (FeatureStore + cosine similarity)
-│   │   │   └── youtube_sources.py # YouTube Data API integration
+│   │   │   └── youtube_source_resolver.py # YouTube Data API integration
 │   │   └── tests/                # Unit tests
 │   ├── ingest/
 │   │   └── management/commands/

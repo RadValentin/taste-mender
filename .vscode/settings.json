@@ -1,6 +1,24 @@
 {
   "python.analysis.diagnosticSeverityOverrides": {
     "reportAttributeAccessIssue": "warning",
-    "reportPrivateImportUsage":"none"
-  }
+    "reportPrivateImportUsage": "none"
+  },
+  "cSpell.words": [
+    "MBID",
+    "MBIDs",
+    "ISRC",
+    "ISRCs",
+    "MusicBrainz",
+    "AcousticBrainz",
+    "dortmund",
+    "rosamerica",
+    "FAISS",
+    "MIREX",
+    "danceability",
+    "partyness",
+    "acousticness",
+    "electronicness",
+    "HATEOAS",
+    "Deezer"
+  ]
 }

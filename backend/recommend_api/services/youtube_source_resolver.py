@@ -1,13 +1,12 @@
 import logging, requests
 from datetime import timedelta
 from requests import Response
+from django.conf import settings
 from django.core.cache import cache
 from django.db.models import F
 from django.utils import timezone
-from dotenv import dotenv_values
 from music_recommendation.settings import BASE_DIR, YOUTUBE_SOURCE_CACHE_DAYS
 from recommend_api.models import Track, TrackSource
-from typing import Dict
 
 log = logging.getLogger(__name__)
 
@@ -58,10 +57,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
         return cached_source
 
     # Check that YT API key is present in config
-    config: Dict[str, str | None] = dotenv_values(BASE_DIR / ".env")
-    YOUTUBE_API_KEY = config.get("YOUTUBE_API_KEY")
-
-    if not YOUTUBE_API_KEY:
+    if not settings.YOUTUBE_API_KEY:
         raise RuntimeError("Missing YOUTUBE_API_KEY")
 
     # In case a recent call to YT API failed, pause all requests to it for a while.
@@ -79,8 +75,8 @@ def get_youtube_source(track: Track) -> TrackSource | None:
             response: Response = requests.get(YOUTUBE_VIDEOS_URL, params={
                 "part": "snippet,status,id",
                 "id": cached_source.source_id,
-                "key": YOUTUBE_API_KEY
-            }, timeout=8)
+                "key": settings.YOUTUBE_API_KEY
+            }, headers={"User-Agent": settings.OUTBOUND_USER_AGENT}, timeout=8)
             response.raise_for_status()
         except requests.RequestException:
             # We couldn't verify it, but we also don't know that it's invalid.
@@ -145,8 +141,8 @@ def get_youtube_source(track: Track) -> TrackSource | None:
             "videoEmbeddable": "true",
             "type": "video",
             "maxResults": 10,
-            "key": YOUTUBE_API_KEY
-        }, timeout=8)
+            "key": settings.YOUTUBE_API_KEY
+        }, headers={"User-Agent": settings.OUTBOUND_USER_AGENT}, timeout=8)
         response.raise_for_status()
     except requests.RequestException:
         if cached_source:

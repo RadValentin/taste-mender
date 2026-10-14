@@ -1,6 +1,6 @@
 from datetime import date
 from django.test import SimpleTestCase
-from ingest.track_processing_helpers import parse_flexible_date, MIN_YEAR
+from ingest.core.track_processing_helpers import parse_flexible_date, MIN_YEAR
 
 
 class ParseFlexibleDateTests(SimpleTestCase):
@@ -19,19 +19,19 @@ class ParseFlexibleDateTests(SimpleTestCase):
 
         for input, expected in valid_dates:
             self.assertEqual(parse_flexible_date(input), expected)
-    
+
     def test_parse_year_only(self):
         self.assertEqual(parse_flexible_date("1994"), "1994-01-01")
 
     def test_parse_incomplete_date(self):
         self.assertEqual(parse_flexible_date("1984-1"), "1984-01-01")
-    
+
     def test_dont_parse_empty(self):
         self.assertEqual(parse_flexible_date(), None)
-    
+
     def test_dont_parse_none(self):
         self.assertEqual(parse_flexible_date(None), None)
-    
+
     def test_dont_parse_empty_string(self):
         self.assertEqual(parse_flexible_date(""), None)
 
@@ -45,4 +45,3 @@ class ParseFlexibleDateTests(SimpleTestCase):
     def test_dont_parse_ancient_date(self):
         self.assertEqual(parse_flexible_date(f"{MIN_YEAR-1}"), None)
         self.assertEqual(parse_flexible_date(f"{MIN_YEAR}"), f"{MIN_YEAR}-01-01")
-        

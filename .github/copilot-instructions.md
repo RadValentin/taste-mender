@@ -28,6 +28,14 @@ The database is generally stable as it's derived from the [AcousticBrainz datase
 - Deliver a great experience for the user
   - Any polish that's to be done should benefit the user experience. Some measure of leanness can be sacrificed if it greatly benefits the end user.
 
+## Agent assisted development
+For **local backend development** and **local backend coding tasks**, use the Python virtual environment managed by `virtualenvwrapper` when running project Python. An environment called `fp` should be available globally:
+
+```bash
+workon fp
+```
+
+Activate `fp` before running Python tests, Django management commands, scripts, dependency checks, type checks, notebooks, debugging, or profiling. It is not needed for frontend-only work, documentation, Git operations, or GitHub pull request code reviews unless explicitly requested.
 
 ## Review Guidelines
 

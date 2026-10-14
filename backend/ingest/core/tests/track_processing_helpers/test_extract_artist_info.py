@@ -1,5 +1,5 @@
 from django.test import SimpleTestCase
-from ingest.track_processing_helpers import extract_artist_info
+from ingest.core.track_processing_helpers import extract_artist_info
 
 
 class ExtractArtistInfoTests(SimpleTestCase):
@@ -14,7 +14,7 @@ class ExtractArtistInfoTests(SimpleTestCase):
             "artist": [name for _, name in self.artists],
             "artists": [name for _, name in self.artists]
         }
-    
+
     def test_return_empty_for_missing_artist_ids(self):
         del self.mock_tags["musicbrainz_artistid"]
         self.assertEqual(extract_artist_info(self.mock_tags), [])

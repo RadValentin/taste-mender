@@ -1,5 +1,5 @@
 from django.test import SimpleTestCase
-from ingest.track_processing_helpers import extract_album_info
+from ingest.core.track_processing_helpers import extract_album_info
 
 
 class ExtractAlbumInfoTests(SimpleTestCase):
@@ -14,7 +14,7 @@ class ExtractAlbumInfoTests(SimpleTestCase):
         }
         result = extract_album_info(tags)
         self.assertEqual(result, (self.MBID, "bar-name", "2019-01-01"))
-    
+
     def test_extracts_other_date(self):
         tags = {
             "musicbrainz_albumid": [self.MBID],

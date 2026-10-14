@@ -1,5 +1,5 @@
 from django.core.management.base import BaseCommand, CommandError
-from ingest.pipeline import build_database
+from ingest.core.pipeline import build_database
 
 
 class Command(BaseCommand):
