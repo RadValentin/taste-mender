@@ -35,7 +35,6 @@ def env_get(key: str, default: str | None = None) -> str | None:
     value = ENV_CONFIG.get(key)
     return default if value is None else value
 
-YOUTUBE_SOURCE_CACHE_DAYS = int(env_get("YOUTUBE_SOURCE_CACHE_DAYS", "30"))
 APP_NAME = env_get("APP_NAME", "TasteMender")
 APP_VERSION = env_get("APP_VERSION", "1.0.0")
 APP_AUTHOR_NAME = env_get("APP_AUTHOR_NAME", "Valentin Radulescu")
@@ -48,6 +47,9 @@ if "test" not in sys.argv:
     missing_vars = [var for var in REQUIRED_ENV_VARS if not env_get(var)]
     if missing_vars:
         raise ValueError(f"Missing required environment variables: {', '.join(missing_vars)}")
+
+YOUTUBE_SOURCE_CACHE_DAYS = int(env_get("YOUTUBE_SOURCE_CACHE_DAYS", "30"))
+YOUTUBE_API_KEY = env_get("YOUTUBE_API_KEY")
 
 
 # Quick-start development settings - unsuitable for production

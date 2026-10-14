@@ -118,6 +118,9 @@ python manage.py gather_yt --batch 100
 
 # Rebuild the enrichment JSON from scratch before searching
 python manage.py gather_yt --batch 100 --override
+
+# Insert gathered sources into the TrackSource cache
+python manage.py load_yt
 ```
 
 ### Frontend

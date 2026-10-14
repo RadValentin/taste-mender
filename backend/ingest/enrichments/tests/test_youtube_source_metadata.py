@@ -125,8 +125,18 @@ class YouTubeSourceMetadataTests_Titles(SimpleTestCase):
 
 class YouTubeSourceMetadataTests_Search(IsolatedAsyncioTestCase):
     async def asyncSetUp(self) -> None:
+        self.get_response = MagicMock()
+        self.get_response.raise_for_status.return_value = None
+        self.get_response.json.return_value = {"items": [{"status": {"embeddable": True}}]}
+        self.patched_requests = patch(
+            "ingest.enrichments.youtube_source_metadata.requests.get",
+            return_value=self.get_response
+        )
+        self.mock_get = self.patched_requests.start()
+
         self.mock_response = {
             "result": [{
+                "id": "cool-beans",
                 "foo": "bar",
                 "motto": "yolo"
             }]

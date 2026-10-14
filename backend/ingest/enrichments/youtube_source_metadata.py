@@ -1,4 +1,4 @@
-import os, orjson, time, logging, re, asyncio
+import os, orjson, time, logging, re, asyncio, requests
 import unicodedata
 from asgiref.sync import sync_to_async
 from datetime import timedelta
@@ -24,6 +24,7 @@ TEMP_FILENAME = os.path.join(
     settings.BASE_DIR, "ingest", "enrichments", "youtube_track_metadata.temp.json"
 )
 MAX_CONSECUTIVE_ERRORS = 5
+YOUTUBE_VIDEOS_URL = "https://www.googleapis.com/youtube/v3/videos"
 
 
 def normalize_text(title: str) -> str:
@@ -99,14 +100,14 @@ class SearchStatus(StrEnum):
 
 
 async def search_youtube(query: str, is_isrc: bool = False) -> dict[str, Any]:
-    """Return the first YouTube search result title for ``query``."""
+    """Return a playable YouTube source for a `query`."""
     log.info(f"- Searching for {query}")
     try:
         search = VideosSearch(query, limit=1)
-        response: dict[str, Any] = await search.next()
-        items = response.get("result", [])
+        search_response: dict[str, Any] = await search.next()
+        items = search_response.get("result", [])
     except (PyYTSearchError, OSError, ValueError, TypeError) as ex:
-        log.exception(f"YouTube search failed for {query!r}: {ex}")
+        log.exception("YouTube search failed for %s", query)
         return {
             "query": query,
             "search_type": "isrc" if is_isrc else "title_artist",
@@ -119,7 +120,13 @@ async def search_youtube(query: str, is_isrc: bool = False) -> dict[str, Any]:
             }
         }
 
-    if not items or not isinstance(items, list):
+    # Check for empty response
+    if (
+        not items
+        or not isinstance(items, list)
+        or not items[0]
+        or not items[0].get("id")
+    ):
         return {
             "query": query,
             "search_type": "isrc" if is_isrc else "title_artist",
@@ -127,6 +134,50 @@ async def search_youtube(query: str, is_isrc: bool = False) -> dict[str, Any]:
             "meta": None,
             "checked_at": timezone.now(),
             "error": None
+        }
+
+    # Check if video is embeddable
+    video_id = items[0].get("id")
+    try:
+        video_response = requests.get(YOUTUBE_VIDEOS_URL, params={
+            "part": "status",
+            "id": video_id,
+            "key": settings.YOUTUBE_API_KEY,
+        }, headers={"User-Agent": settings.OUTBOUND_USER_AGENT}, timeout=8)
+        video_response.raise_for_status()
+        video_items = video_response.json().get("items", [])
+        print(video_response.json())
+    except (requests.RequestException, ValueError, TypeError, AttributeError) as ex:
+        log.exception("Could not check YouTube video %s for %s", video_id, query)
+        return {
+            "query": query,
+            "search_type": "isrc" if is_isrc else "title_artist",
+            "search_status": SearchStatus.ERROR,
+            "meta": items[0],
+            "checked_at": timezone.now(),
+            "error": {
+                "type": type(ex).__name__,
+                "message": str(ex),
+            }
+        }
+
+    if (
+        not isinstance(video_items, list)
+        or not video_items
+        or not isinstance(video_items[0], dict)
+        or video_items[0].get("status", {}).get("embeddable") is not True
+    ):
+        log.info("YouTube video %s is not embeddable", video_id)
+        return {
+            "query": query,
+            "search_type": "isrc" if is_isrc else "title_artist",
+            "search_status": SearchStatus.ERROR,
+            "meta": items[0],
+            "checked_at": timezone.now(),
+            "error": {
+                "type": "VideoNotEmbeddable",
+                "message": f"YouTube video {video_id} is not embeddable",
+            }
         }
 
     return {
@@ -145,7 +196,7 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
     class Counters:
         """Utility class"""
         # Count errors so we can abort after a certain number of them.
-        repeaded_errors: int = 0
+        repeated_errors: int = 0
         # How many times was a source retrieved from isrc dict instead of search.
         cache_hits: int = 0
         isrc_searches: int = 0
@@ -162,7 +213,7 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
 
     for track in target_tracks:
         # Give up after encountering a certain number of repeated errors
-        if (Counters.repeaded_errors >= MAX_CONSECUTIVE_ERRORS):
+        if (Counters.repeated_errors >= MAX_CONSECUTIVE_ERRORS):
             return False
 
         Counters.current_run_checked += 1
@@ -205,10 +256,10 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
             Counters.isrc_searches += 1
 
             if result.get("search_status") is SearchStatus.ERROR:
-                Counters.repeaded_errors += 1
+                Counters.repeated_errors += 1
                 continue
             else:
-                Counters.repeaded_errors = 0
+                Counters.repeated_errors = 0
 
             if result.get("search_status") is SearchStatus.FOUND:
                 result_title = result.get("meta", {}).get("title", "")
@@ -241,10 +292,10 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
             Counters.title_artist_searches += 1
 
             if result.get("search_status") is SearchStatus.ERROR:
-                Counters.repeaded_errors += 1
+                Counters.repeated_errors += 1
                 continue
             else:
-                Counters.repeaded_errors = 0
+                Counters.repeated_errors = 0
 
             if result.get("search_status") is SearchStatus.FOUND:
                 result_title = result.get("meta", {}).get("title", "")
@@ -320,6 +371,10 @@ def gather_youtube_metadata(batch_size, override_file=False):
         batch_size: how many tracks to check
         override_file: If true, build the output file from scratch on every run
     """
+
+    # Check that YT API key is present in config
+    if not settings.YOUTUBE_API_KEY:
+        raise RuntimeError("Missing YOUTUBE_API_KEY")
 
     # Create the output file if it doesn't exist
     if not os.path.exists(OUTPUT_FILENAME) or override_file:

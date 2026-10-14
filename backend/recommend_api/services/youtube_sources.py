@@ -59,10 +59,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
         return cached_source
 
     # Check that YT API key is present in config
-    config: Dict[str, str | None] = dotenv_values(BASE_DIR / ".env")
-    YOUTUBE_API_KEY = config.get("YOUTUBE_API_KEY")
-
-    if not YOUTUBE_API_KEY:
+    if not settings.YOUTUBE_API_KEY:
         raise RuntimeError("Missing YOUTUBE_API_KEY")
 
     # In case a recent call to YT API failed, pause all requests to it for a while.
@@ -80,7 +77,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
             response: Response = requests.get(YOUTUBE_VIDEOS_URL, params={
                 "part": "snippet,status,id",
                 "id": cached_source.source_id,
-                "key": YOUTUBE_API_KEY
+                "key": settings.YOUTUBE_API_KEY
             }, headers={"User-Agent": settings.OUTBOUND_USER_AGENT}, timeout=8)
             response.raise_for_status()
         except requests.RequestException:
@@ -146,7 +143,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
             "videoEmbeddable": "true",
             "type": "video",
             "maxResults": 10,
-            "key": YOUTUBE_API_KEY
+            "key": settings.YOUTUBE_API_KEY
         }, headers={"User-Agent": settings.OUTBOUND_USER_AGENT}, timeout=8)
         response.raise_for_status()
     except requests.RequestException:
