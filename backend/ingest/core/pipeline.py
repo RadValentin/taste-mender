@@ -489,7 +489,7 @@ def build_database(
         dtype="V16",
     )
 
-    filename = os.path.join(os.path.dirname(__file__), "..", django_settings.FEATURE_MATRIX_FILENAME)
+    filename = os.path.join(django_settings.BASE_DIR, django_settings.FEATURE_MATRIX_FILENAME)
     np.savez_compressed(
         filename,
         # save vectors with values for audio features of tracks
