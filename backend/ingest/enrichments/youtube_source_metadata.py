@@ -351,7 +351,7 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
     log.info("- ran %s YT searches for title + artist queries ", Counters.title_artist_searches)
     log.info("Previous runs had checked %s tracks", Counters.all_runs_checked)
 
-    return True
+    return False if Counters.repeated_errors >= MAX_CONSECUTIVE_ERRORS else True
 
 
 def gather_youtube_metadata(batch_size, override_file=False):
