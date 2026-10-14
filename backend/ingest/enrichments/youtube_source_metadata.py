@@ -6,6 +6,7 @@ from django.conf import settings
 from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
+from django.utils.dateparse import parse_datetime
 from enum import StrEnum
 from py_yt import VideosSearch
 from py_yt.exceptions import PyYTSearchError
@@ -211,7 +212,7 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
     for track in target_tracks:
         # Give up after encountering a certain number of repeated errors
         if (Counters.repeated_errors >= MAX_CONSECUTIVE_ERRORS):
-            return False
+            break
 
         Counters.current_run_checked += 1
         stop_requested = False
@@ -237,51 +238,52 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
             isrc = overlap_isrcs.pop()
             enriched_mbids[track.musicbrainz_recordingid] = enriched_isrcs.get(isrc, {})
             Counters.cache_hits += 1
-            continue
+            stop_requested = True
 
         # Attempt to search for the track by its ISRC codes
-        for isrc in track.isrc:
-            # If previous ISRC search returned invalid or no results, don't check again
-            cached_result = enriched_isrcs.get(isrc)
-            if cached_result and cached_result.get("search_status") in (
-                SearchStatus.EMPTY,
-                SearchStatus.MISMATCH,
-                SearchStatus.UNPLAYABLE
-            ):
-                continue
-
-            result = await search_youtube(query=isrc, is_isrc=True)
-            Counters.isrc_searches += 1
-
-            if result.get("search_status") == SearchStatus.ERROR:
-                Counters.repeated_errors += 1
-                continue
-            else:
-                Counters.repeated_errors = 0
-
-            if result.get("search_status") == SearchStatus.FOUND:
-                result_title = result.get("meta", {}).get("title", "")
-                if titles_are_for_same_track(
-                    track.title, result_title, is_isrc=True
+        if not stop_requested:
+            for isrc in track.isrc:
+                # If previous ISRC search returned invalid or no results, don't check again
+                cached_result = enriched_isrcs.get(isrc)
+                if cached_result and cached_result.get("search_status") in (
+                    SearchStatus.EMPTY,
+                    SearchStatus.MISMATCH,
+                    SearchStatus.UNPLAYABLE
                 ):
-                    enriched_mbids[track.musicbrainz_recordingid] = result
-                    enriched_isrcs[isrc] = result
-                    stop_requested = True
-                    break
+                    continue
+
+                result = await search_youtube(query=isrc, is_isrc=True)
+                Counters.isrc_searches += 1
+
+                if result.get("search_status") == SearchStatus.ERROR:
+                    Counters.repeated_errors += 1
+                    continue
                 else:
-                    # Ensure that invalid responses are indexed to prevent duplicate requests
-                    enriched_isrcs[isrc] = {
-                        **result,
-                        "search_status": SearchStatus.MISMATCH
-                    }
-                    log.warning(
-                        'Title mismatch when searching by ISRC. Was searching for "%s" but found "%s".',
-                        track.title,
-                        result_title
-                    )
-            else:
-                # Ensure that empty responses are indexed to prevent duplicate requests
-                enriched_isrcs[isrc] = result
+                    Counters.repeated_errors = 0
+
+                if result.get("search_status") == SearchStatus.FOUND:
+                    result_title = result.get("meta", {}).get("title", "")
+                    if titles_are_for_same_track(
+                        track.title, result_title, is_isrc=True
+                    ):
+                        enriched_mbids[track.musicbrainz_recordingid] = result
+                        enriched_isrcs[isrc] = result
+                        stop_requested = True
+                        break
+                    else:
+                        # Ensure that invalid responses are indexed to prevent duplicate requests
+                        enriched_isrcs[isrc] = {
+                            **result,
+                            "search_status": SearchStatus.MISMATCH
+                        }
+                        log.warning(
+                            'Title mismatch when searching by ISRC. Was searching for "%s" but found "%s".',
+                            track.title,
+                            result_title
+                        )
+                else:
+                    # Ensure that empty responses are indexed to prevent duplicate requests
+                    enriched_isrcs[isrc] = result
 
         # If we still haven't found the source, try searching by title + artist
         if not stop_requested:
@@ -466,6 +468,7 @@ def load_youtube_metadata():
             if not isinstance(meta, dict):
                 log.warning("Missing metadata for track %s", mbid)
                 continue
+            checked_at = parse_datetime(source.get("checked_at", "")) or timezone.now()
             source_id = meta.get("id", None)
             title = meta.get("title", None)
             channel_data = meta.get("channel")
@@ -493,7 +496,7 @@ def load_youtube_metadata():
                     "channel": channel,
                     "thumbnail": thumbnail,
                     "url": url or f"https://www.youtube.com/watch?v={source_id}",
-                    "refreshed_at": timezone.now(),
+                    "refreshed_at": checked_at,
                     "last_lookup_failed_at": None
                 }
             )
