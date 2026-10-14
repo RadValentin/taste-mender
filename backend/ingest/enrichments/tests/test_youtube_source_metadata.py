@@ -3,7 +3,6 @@ from asgiref.sync import sync_to_async
 from datetime import datetime
 from django.conf import settings
 from django.test import SimpleTestCase, TestCase, TransactionTestCase
-from py_yt import VideosSearch
 from py_yt.exceptions import PyYTSearchError
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import patch, AsyncMock, MagicMock
@@ -122,6 +121,72 @@ class YouTubeSourceMetadataTests_Titles(SimpleTestCase):
             self.assertTrue(is_match)
 
 
+class YouTubeSourceMetadataTests_Search(IsolatedAsyncioTestCase):
+    async def asyncSetUp(self) -> None:
+        self.mock_response = {
+            "result": [{
+                "foo": "bar",
+                "motto": "yolo"
+            }]
+        }
+        self.patched_search_next = patch(
+            "ingest.enrichments.youtube_source_metadata.VideosSearch.next",
+            new=AsyncMock(return_value=self.mock_response)
+        )
+        self.mock_next = self.patched_search_next.start()
+
+        return await super().asyncSetUp()
+
+    async def test_returns_found_item(self):
+        result = await search_youtube("foo-query", is_isrc=True)
+
+        self.mock_next.assert_awaited_once()
+        self.assertEqual(result["query"], "foo-query")
+        self.assertEqual(result["search_type"], "isrc")
+        self.assertEqual(result["search_status"], SearchStatus.FOUND)
+        self.assertEqual(result["meta"], self.mock_response["result"][0])
+        self.assertIsNotNone(result["checked_at"])
+        self.assertIsNone(result["error"])
+
+    async def test_returns_found_item_title_artist_query(self):
+        result = await search_youtube("foo-query")
+
+        self.mock_next.assert_awaited_once()
+        self.assertEqual(result["query"], "foo-query")
+        self.assertEqual(result["search_type"], "title_artist")
+        self.assertEqual(result["search_status"], SearchStatus.FOUND)
+        self.assertEqual(result["meta"], self.mock_response["result"][0])
+        self.assertIsNotNone(result["checked_at"])
+        self.assertIsNone(result["error"])
+
+    async def test_returns_empty(self):
+        self.mock_next.return_value = {"result": []}
+        result = await search_youtube("foo-query", is_isrc=True)
+
+        self.mock_next.assert_awaited_once()
+        self.assertEqual(result["query"], "foo-query")
+        self.assertEqual(result["search_type"], "isrc")
+        self.assertEqual(result["search_status"], SearchStatus.EMPTY)
+        self.assertIsNone(result["meta"])
+        self.assertIsNotNone(result["checked_at"])
+        self.assertIsNone(result["error"])
+
+    async def test_returns_error(self):
+        self.mock_next.side_effect = PyYTSearchError("YouTube unavailable")
+        result = await search_youtube("foo-query")
+
+        self.mock_next.assert_awaited_once()
+        self.assertEqual(result["query"], "foo-query")
+        self.assertEqual(result["search_type"], "title_artist")
+        self.assertEqual(result["search_status"], SearchStatus.ERROR)
+        self.assertIsNone(result["meta"])
+        self.assertIsNotNone(result["checked_at"])
+        self.assertIsNotNone(result["error"])
+
+    async def asyncTearDown(self) -> None:
+        return await super().asyncTearDown()
+
+
 class YouTubeSourceMetadataTests_Gather(TransactionTestCase):
     @classmethod
     def setUpClass(cls) -> None:
@@ -218,13 +283,39 @@ class YouTubeSourceMetadataTests_Gather(TransactionTestCase):
         self.assertIsNotNone(data["last_run_finished_at"])
         self.assertEqual(data["isrcs"], {})
 
+    async def test_stores_isrc_search_metadata_in_artifact(self):
+        track = self.tracks[0]
+        track.isrc = ["USRC17607839"]
+        await sync_to_async(track.save)()
+
+        result = {
+            "query": "USRC17607839",
+            "search_type": "isrc",
+            "search_status": SearchStatus.FOUND,
+            "meta": {"title": track.title},
+            "checked_at": datetime.now(),
+            "error": None,
+        }
+
+        self.mock_yt_search.return_value = result
+        data = {"sources": {}, "isrcs": {}}
+        await agather_youtube_metadata(data=data, target_tracks=[track])
+
+        self.assertEqual(data["sources"][track.musicbrainz_recordingid], result)
+        self.assertEqual(data["isrcs"]["USRC17607839"], result)
+        self.mock_yt_search.assert_awaited_once_with(query="USRC17607839", is_isrc=True)
+
     def test_limits_tracks_to_batch_size(self):
         gather_youtube_metadata(batch_size=3)
 
         self.assertEqual(self.mock_yt_search.call_count, 3)
 
-    async def test_stores_isrc_search_metadata_in_artifact(self):
-        pass
+    def test_gives_up_after_repeated_errors(self):
+        self.mock_yt_search.return_value = {"search_status": SearchStatus.ERROR}
+        result = gather_youtube_metadata(batch_size=10)
+
+        self.assertEqual(self.mock_yt_search.call_count, MAX_CONSECUTIVE_ERRORS)
+        self.assertFalse(result)
 
     def tearDown(self) -> None:
         super().tearDown()

@@ -161,7 +161,7 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
 
     for track in target_tracks:
         # Give up after encountering a certain number of repeated errors
-        if (Counters.repeaded_errors > MAX_CONSECUTIVE_ERRORS):
+        if (Counters.repeaded_errors >= MAX_CONSECUTIVE_ERRORS):
             return False
 
         Counters.current_run_checked += 1
