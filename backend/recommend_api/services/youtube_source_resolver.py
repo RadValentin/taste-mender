@@ -5,10 +5,8 @@ from django.conf import settings
 from django.core.cache import cache
 from django.db.models import F
 from django.utils import timezone
-from dotenv import dotenv_values
 from music_recommendation.settings import BASE_DIR, YOUTUBE_SOURCE_CACHE_DAYS
 from recommend_api.models import Track, TrackSource
-from typing import Dict
 
 log = logging.getLogger(__name__)
 

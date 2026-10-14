@@ -15,7 +15,7 @@ from rest_framework.filters import OrderingFilter
 from rest_framework.response import Response
 from recommend_api.models import *
 from recommend_api.serializers import *
-from recommend_api.services.youtube_sources import get_youtube_source
+from recommend_api.services.youtube_source_resolver import get_youtube_source
 import recommend_api.services.recommender as rec
 
 log = logging.getLogger(__name__)

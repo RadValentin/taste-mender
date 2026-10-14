@@ -6,7 +6,7 @@ from django.test import TestCase, override_settings
 from django.utils import timezone
 from recommend_api.models import Track, Artist, TrackSource
 from recommend_api.tests.factories import TrackFactory, ArtistFactory, TrackSourceFactory
-from recommend_api.services.youtube_sources import (
+from recommend_api.services.youtube_source_resolver import (
     get_youtube_source,
     YOUTUBE_SEARCH_URL,
     YOUTUBE_VIDEOS_URL,
@@ -69,7 +69,7 @@ class YoutubeSourcesTests(TestCase):
         }
 
         self.patched_requests = patch(
-            "recommend_api.services.youtube_sources.requests.get",
+            "recommend_api.services.youtube_source_resolver.requests.get",
             side_effect=lambda url, *args, **kwargs: url_mapping.get(url, MagicMock())
         )
         self.mock_get = self.patched_requests.start()
@@ -111,7 +111,7 @@ class YoutubeSourcesTests(TestCase):
             refreshed_at=timezone.now() - timedelta(days=31)
         )
 
-        with patch("recommend_api.services.youtube_sources.YOUTUBE_SOURCE_CACHE_DAYS", 30):
+        with patch("recommend_api.services.youtube_source_resolver.YOUTUBE_SOURCE_CACHE_DAYS", 30):
             self.assertRaises(RuntimeError, get_youtube_source, self.track)
 
     def test_refreshes_stale_source(self):
@@ -121,7 +121,7 @@ class YoutubeSourcesTests(TestCase):
             refreshed_at=timezone.now() - timedelta(days=31)
         )
 
-        with patch("recommend_api.services.youtube_sources.YOUTUBE_SOURCE_CACHE_DAYS", 30):
+        with patch("recommend_api.services.youtube_source_resolver.YOUTUBE_SOURCE_CACHE_DAYS", 30):
             result = get_youtube_source(self.track)
 
         # Queries YouTube for the video's metadata
@@ -149,7 +149,7 @@ class YoutubeSourcesTests(TestCase):
         )
         self.mock_get.side_effect = requests.RequestException("YouTube unavailable")
 
-        with patch("recommend_api.services.youtube_sources.YOUTUBE_SOURCE_CACHE_DAYS", 30):
+        with patch("recommend_api.services.youtube_source_resolver.YOUTUBE_SOURCE_CACHE_DAYS", 30):
             result = get_youtube_source(self.track)
 
         cached_source.refresh_from_db()
@@ -164,7 +164,7 @@ class YoutubeSourcesTests(TestCase):
     def test_fallback_to_search_when_stale_source_not_on_yt(self):
         TrackSourceFactory(track=self.track, refreshed_at=timezone.now() - timedelta(days=31))
 
-        with patch("recommend_api.services.youtube_sources.YOUTUBE_SOURCE_CACHE_DAYS", 30):
+        with patch("recommend_api.services.youtube_source_resolver.YOUTUBE_SOURCE_CACHE_DAYS", 30):
             self.list_response.json.return_value = {"items": []}
             result = get_youtube_source(self.track)
 
@@ -187,7 +187,7 @@ class YoutubeSourcesTests(TestCase):
         self.list_response.json.return_value = {"items": []}
         self.search_response.json.return_value = {"items": []}
 
-        with patch("recommend_api.services.youtube_sources.YOUTUBE_SOURCE_CACHE_DAYS", 30):
+        with patch("recommend_api.services.youtube_source_resolver.YOUTUBE_SOURCE_CACHE_DAYS", 30):
             result = get_youtube_source(self.track)
 
         cached_source.refresh_from_db()
@@ -203,7 +203,7 @@ class YoutubeSourcesTests(TestCase):
     def test_fallback_to_search_when_stale_source_not_embeddable(self):
         TrackSourceFactory(track=self.track, refreshed_at=timezone.now() - timedelta(days=31))
 
-        with patch("recommend_api.services.youtube_sources.YOUTUBE_SOURCE_CACHE_DAYS", 30):
+        with patch("recommend_api.services.youtube_source_resolver.YOUTUBE_SOURCE_CACHE_DAYS", 30):
             self.list_response.json.return_value = {
                 "items": [{"id": "test", "status": {"embeddable": False}}]
             }
@@ -224,7 +224,7 @@ class YoutubeSourcesTests(TestCase):
 
     def test_skips_youtube_request_when_api_error_is_cached(self):
         with patch(
-            "recommend_api.services.youtube_sources.cache.get",
+            "recommend_api.services.youtube_source_resolver.cache.get",
             return_value=True,
         ) as mock_cache_get:
             result = get_youtube_source(self.track)
@@ -240,9 +240,9 @@ class YoutubeSourcesTests(TestCase):
             refreshed_at=timezone.now() - timedelta(days=31),
         )
 
-        with patch("recommend_api.services.youtube_sources.YOUTUBE_SOURCE_CACHE_DAYS", 30):
+        with patch("recommend_api.services.youtube_source_resolver.YOUTUBE_SOURCE_CACHE_DAYS", 30):
             with patch(
-                "recommend_api.services.youtube_sources.cache.get",
+                "recommend_api.services.youtube_source_resolver.cache.get",
                 return_value=True,
             ):
                 result = get_youtube_source(self.track)
@@ -273,7 +273,7 @@ class YoutubeSourcesTests(TestCase):
         self.mock_get.side_effect = requests.RequestException("YouTube unavailable")
 
         with patch(
-            "recommend_api.services.youtube_sources.cache.set",
+            "recommend_api.services.youtube_source_resolver.cache.set",
             return_value=True,
         ) as mock_cache_set:
             get_youtube_source(self.track)

@@ -116,7 +116,7 @@ There is no direct mapping between MBIDs and YouTube videos. Playback therefore 
     - `api/` - endpoint implementations
     - `services/`
       - `recommender.py` - recommendation logic
-      - `youtube_sources.py` - gets playable sources for tracks
+      - `youtube_source_resolver.py` - gets playable sources for tracks
     - `tests/` - API and service tests
     - `models.py` - database models
     - `serializers.py` - API response and validation serializers
