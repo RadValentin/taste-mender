@@ -146,7 +146,6 @@ async def search_youtube(query: str, is_isrc: bool = False) -> dict[str, Any]:
         }, headers={"User-Agent": settings.OUTBOUND_USER_AGENT}, timeout=8)
         video_response.raise_for_status()
         video_items = video_response.json().get("items", [])
-        print(video_response.json())
     except (requests.RequestException, ValueError, TypeError, AttributeError) as ex:
         log.exception("Could not check YouTube video %s for %s", video_id, query)
         return {

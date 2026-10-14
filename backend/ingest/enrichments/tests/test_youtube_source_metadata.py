@@ -1,8 +1,7 @@
-import os, orjson, tempfile, requests
+import os, orjson, tempfile
 from asgiref.sync import sync_to_async
 from datetime import datetime
-from django.conf import settings
-from django.test import SimpleTestCase, TestCase, TransactionTestCase
+from django.test import SimpleTestCase, TestCase, TransactionTestCase, override_settings
 from django.utils import timezone
 from py_yt.exceptions import PyYTSearchError
 from unittest import IsolatedAsyncioTestCase
@@ -198,7 +197,7 @@ class YouTubeSourceMetadataTests_Search(IsolatedAsyncioTestCase):
     async def asyncTearDown(self) -> None:
         return await super().asyncTearDown()
 
-
+@override_settings(YOUTUBE_API_KEY="yt-foo-key")
 class YouTubeSourceMetadataTests_Gather(TransactionTestCase):
     @classmethod
     def setUpClass(cls) -> None:
