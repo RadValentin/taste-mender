@@ -291,7 +291,7 @@ class YouTubeSourceMetadataTests_Gather(TransactionTestCase):
             "query": "YOLO",
             "search_type": "title_artist",
             "search_status": SearchStatus.FOUND,
-            "meta": {"foo": "bar"},
+            "meta": {"title": track.title},
             "checked_at": datetime.now(),
             "error": None
         }
@@ -304,7 +304,7 @@ class YouTubeSourceMetadataTests_Gather(TransactionTestCase):
         self.assertEqual(data["sources"][mbid]["query"], "YOLO")
         self.assertEqual(data["sources"][mbid]["search_type"], "title_artist")
         self.assertEqual(data["sources"][mbid]["search_status"], SearchStatus.FOUND)
-        self.assertEqual(data["sources"][mbid]["meta"], {"foo": "bar"})
+        self.assertEqual(data["sources"][mbid]["meta"], {"title": track.title})
         self.assertIn("checked_at", data["sources"][mbid])
         self.assertIsNotNone(data["last_run_finished_at"])
         self.assertEqual(data["isrcs"], {})
