@@ -107,6 +107,19 @@ python manage.py gather_mb --batch 100
 python manage.py load_mb
 ```
 
+#### YouTube source enrichment
+Searches YouTube for playable sources for the most popular tracks and stores the
+search metadata in a JSON file. Tracks are searched by ISRC when available, with a title+artist
+search as a fallback. Useful for gathering metadata locally to prefill the sources cache (`TrackSource`).
+
+```bash
+# Search YouTube for the top 100 eligible tracks and append the results to JSON
+python manage.py gather_yt --batch 100
+
+# Rebuild the enrichment JSON from scratch before searching
+python manage.py gather_yt --batch 100 --override
+```
+
 ### Frontend
 
 Use a simple BEM-style convention for CSS classes in the React frontend:
