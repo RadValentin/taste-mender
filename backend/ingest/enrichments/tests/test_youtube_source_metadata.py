@@ -194,7 +194,22 @@ class YouTubeSourceMetadataTests_Search(IsolatedAsyncioTestCase):
         self.assertIsNotNone(result["checked_at"])
         self.assertIsNotNone(result["error"])
 
+    async def test_returns_unplayable_for_non_embeddable_video(self):
+        self.get_response.json.return_value = {
+            "items": [{
+                "status": {"embeddable": False}
+            }]
+        }
+
+        result = await search_youtube("foo-query")
+
+        self.assertEqual(result["search_status"], SearchStatus.UNPLAYABLE)
+        self.assertEqual(result["meta"], self.mock_response["result"][0])
+        self.assertIsNone(result["error"])
+
     async def asyncTearDown(self) -> None:
+        self.patched_search_next.stop()
+        self.patched_requests.stop()
         return await super().asyncTearDown()
 
 @override_settings(YOUTUBE_API_KEY="yt-foo-key")

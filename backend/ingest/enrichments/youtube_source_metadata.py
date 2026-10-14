@@ -96,6 +96,7 @@ class SearchStatus(StrEnum):
     FOUND = "found"
     EMPTY = "empty"
     MISMATCH = "mismatch"
+    UNPLAYABLE = "unplayable"
     ERROR = "error"
 
 
@@ -170,13 +171,10 @@ async def search_youtube(query: str, is_isrc: bool = False) -> dict[str, Any]:
         return {
             "query": query,
             "search_type": "isrc" if is_isrc else "title_artist",
-            "search_status": SearchStatus.ERROR,
+            "search_status": SearchStatus.UNPLAYABLE,
             "meta": items[0],
             "checked_at": timezone.now(),
-            "error": {
-                "type": "VideoNotEmbeddable",
-                "message": f"YouTube video {video_id} is not embeddable",
-            }
+            "error": None
         }
 
     return {
@@ -232,7 +230,7 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
         valid_enriched_isrcs = {
             k
             for k, v in enriched_isrcs.items()
-            if isinstance(v, dict) and v.get("search_status") == SearchStatus.FOUND.value
+            if isinstance(v, dict) and v.get("search_status") == SearchStatus.FOUND
         }
         overlap_isrcs: set[str] = set(track.isrc) & valid_enriched_isrcs
         if len(overlap_isrcs) > 0:
@@ -248,19 +246,20 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
             if cached_result and cached_result.get("search_status") in (
                 SearchStatus.EMPTY,
                 SearchStatus.MISMATCH,
+                SearchStatus.UNPLAYABLE
             ):
                 continue
 
             result = await search_youtube(query=isrc, is_isrc=True)
             Counters.isrc_searches += 1
 
-            if result.get("search_status") is SearchStatus.ERROR:
+            if result.get("search_status") == SearchStatus.ERROR:
                 Counters.repeated_errors += 1
                 continue
             else:
                 Counters.repeated_errors = 0
 
-            if result.get("search_status") is SearchStatus.FOUND:
+            if result.get("search_status") == SearchStatus.FOUND:
                 result_title = result.get("meta", {}).get("title", "")
                 if titles_are_for_same_track(
                     track.title, result_title, is_isrc=True
@@ -290,13 +289,13 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
             result = await search_youtube(title_artist_query, is_isrc=False)
             Counters.title_artist_searches += 1
 
-            if result.get("search_status") is SearchStatus.ERROR:
+            if result.get("search_status") == SearchStatus.ERROR:
                 Counters.repeated_errors += 1
                 continue
             else:
                 Counters.repeated_errors = 0
 
-            if result.get("search_status") is SearchStatus.FOUND:
+            if result.get("search_status") == SearchStatus.FOUND:
                 result_title = result.get("meta", {}).get("title", "")
                 if titles_are_for_same_track(
                     track.title, result_title, is_isrc=False, artists=artists
@@ -440,7 +439,7 @@ def load_youtube_metadata():
     found_sources = {
         k: v
         for k, v in json_sources.items()
-        if isinstance(v, dict) and v.get("search_status") == SearchStatus.FOUND.value
+        if isinstance(v, dict) and v.get("search_status") == SearchStatus.FOUND
     }
 
     with transaction.atomic():
