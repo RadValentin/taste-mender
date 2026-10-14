@@ -263,9 +263,8 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
 
                 if result.get("search_status") == SearchStatus.FOUND:
                     result_title = result.get("meta", {}).get("title", "")
-                    if titles_are_for_same_track(
-                        track.title, result_title, is_isrc=True
-                    ):
+                    titles_match, _ = titles_are_for_same_track(track.title, result_title, True)
+                    if titles_match:
                         enriched_mbids[track.musicbrainz_recordingid] = result
                         enriched_isrcs[isrc] = result
                         stop_requested = True
@@ -299,9 +298,8 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
 
             if result.get("search_status") == SearchStatus.FOUND:
                 result_title = result.get("meta", {}).get("title", "")
-                if titles_are_for_same_track(
-                    track.title, result_title, is_isrc=False, artists=artists
-                ):
+                titles_match, _ = titles_are_for_same_track(track.title, result_title, False, artists)
+                if titles_match:
                     enriched_mbids[track.musicbrainz_recordingid] = result
                 else:
                     enriched_mbids[track.musicbrainz_recordingid] = {
@@ -316,7 +314,6 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
             else:
                 # Ensure that empty responses are indexed to prevent duplicate requests
                 enriched_mbids[track.musicbrainz_recordingid] = result
-
 
         # Write to file
         data["sources"] = enriched_mbids
