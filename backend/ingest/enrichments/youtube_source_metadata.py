@@ -3,13 +3,14 @@ import unicodedata
 from asgiref.sync import sync_to_async
 from datetime import datetime, timedelta
 from django.conf import settings
+from django.db import transaction
 from django.db.models import Q
 from django.utils import timezone
 from enum import StrEnum
 from py_yt import VideosSearch
 from py_yt.exceptions import PyYTSearchError
 from random import random
-from recommend_api.models import Track
+from recommend_api.models import Track, TrackSource
 from rapidfuzz import fuzz
 from typing import Any
 
@@ -111,7 +112,7 @@ async def search_youtube(query: str, is_isrc: bool = False) -> dict[str, Any]:
             "search_type": "isrc" if is_isrc else "title_artist",
             "search_status": SearchStatus.ERROR,
             "meta": None,
-            "checked_at": datetime.now(),
+            "checked_at": timezone.now(),
             "error": {
                 "type": type(ex).__name__,
                 "message": str(ex),
@@ -124,7 +125,7 @@ async def search_youtube(query: str, is_isrc: bool = False) -> dict[str, Any]:
             "search_type": "isrc" if is_isrc else "title_artist",
             "search_status": SearchStatus.EMPTY,
             "meta": None,
-            "checked_at": datetime.now(),
+            "checked_at": timezone.now(),
             "error": None
         }
 
@@ -133,7 +134,7 @@ async def search_youtube(query: str, is_isrc: bool = False) -> dict[str, Any]:
         "search_type": "isrc" if is_isrc else "title_artist",
         "search_status": SearchStatus.FOUND,
         "meta": items[0],
-        "checked_at": datetime.now(),
+        "checked_at": timezone.now(),
         "error": None
     }
 
@@ -286,7 +287,7 @@ async def agather_youtube_metadata(data, target_tracks: list[Track]):
     try:
         if os.path.exists(TEMP_FILENAME):
             with open(TEMP_FILENAME, "wb") as f:
-                data["last_run_finished_at"] = datetime.now()
+                data["last_run_finished_at"] = timezone.now()
                 f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2))
             os.replace(TEMP_FILENAME, OUTPUT_FILENAME)
     except Exception as ex:
@@ -327,7 +328,7 @@ def gather_youtube_metadata(batch_size, override_file=False):
             with open(OUTPUT_FILENAME, "wb+") as f:
                 output_json = {
                     "schema_version": 1,
-                    "first_ran_at": datetime.now(),
+                    "first_ran_at": timezone.now(),
                     "last_run_finished_at": None,
                     "sources": {},
                     "isrcs": {}
@@ -368,14 +369,80 @@ def gather_youtube_metadata(batch_size, override_file=False):
 
 
 def load_youtube_metadata():
-    # description_snippet = source.get("descriptionSnippet", [])
-    # description = (
-    #     description_snippet[0].get("text")
-    #     if (
-    #         isinstance(description_snippet, list)
-    #         and description_snippet
-    #         and isinstance(description_snippet[0], dict)
-    #     )
-    #     else None
-    # )
-    pass
+    if not os.path.exists(OUTPUT_FILENAME):
+        log.error("%s not found, cannot continue.", OUTPUT_FILENAME)
+        return False
+
+    with open(OUTPUT_FILENAME, "rb") as f:
+        bytes = f.read()
+        try:
+            data: dict[str, Any] = orjson.loads(bytes)
+        except orjson.JSONDecodeError as ex:
+            log.exception("Error parsing JSON, cannot continue.")
+            return False
+
+    json_sources: dict[str, dict] = data.get("sources", {})
+    # filter to only the sources for which we have a valid result
+    found_sources = {
+        k: v
+        for k, v in json_sources.items()
+        if isinstance(v, dict) and v.get("search_status") == SearchStatus.FOUND.value
+    }
+
+    with transaction.atomic():
+        for mbid, source in found_sources.items():
+            if not isinstance(source, dict):
+                log.warning("Invalid source data for track %s", mbid)
+                continue
+
+            track = Track.objects.filter(musicbrainz_recordingid=mbid).prefetch_related("artists").first()
+
+            if track is None:
+                log.warning("Track with MBID %s not found in database.", mbid)
+                continue
+
+            artist = track.artists.first()
+            log.info(
+                "Updating source for track: %s by %s (%s)",
+                track.title,
+                artist.name if artist else "Unknown Artist",
+                track.musicbrainz_recordingid,
+            )
+
+            meta = source.get("meta")
+            if not isinstance(meta, dict):
+                log.warning("Missing metadata for track %s", mbid)
+                continue
+            source_id = meta.get("id", None)
+            title = meta.get("title", None)
+            channel_data = meta.get("channel")
+            channel = (
+                channel_data.get("name")
+                if isinstance(channel_data, dict)
+                else None
+            )
+            thumbnails = meta.get("thumbnails")
+            thumbnail = (
+                thumbnails[0].get("url")
+                if isinstance(thumbnails, list)
+                and thumbnails
+                and isinstance(thumbnails[0], dict)
+                else None
+            )
+            url = meta.get("link", None)
+
+            TrackSource.objects.update_or_create(
+                track=track,
+                provider=TrackSource.Provider.YOUTUBE,
+                defaults={
+                    "source_id": source_id,
+                    "title": title,
+                    "channel": channel,
+                    "thumbnail": thumbnail,
+                    "url": url or f"https://www.youtube.com/watch?v={source_id}",
+                    "refreshed_at": timezone.now(),
+                    "last_lookup_failed_at": None
+                }
+            )
+
+    return True

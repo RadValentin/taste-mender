@@ -126,7 +126,7 @@ class TrackSource(models.Model):
         max_length=15,
     )
 
-    # Source metadata, optional in case lookup fails
+    # Source metadata, made optional for cases when lookup fails
     source_id = models.CharField(max_length=255, null=True, blank=True)
     title = models.CharField(max_length=255, null=True, blank=True)
     channel = models.CharField(max_length=255, null=True, blank=True)
