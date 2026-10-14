@@ -3,20 +3,22 @@ from asgiref.sync import sync_to_async
 from datetime import datetime
 from django.conf import settings
 from django.test import SimpleTestCase, TestCase, TransactionTestCase
+from django.utils import timezone
 from py_yt.exceptions import PyYTSearchError
 from unittest import IsolatedAsyncioTestCase
 from unittest.mock import patch, AsyncMock, MagicMock
 from ingest.enrichments.youtube_source_metadata import (
+    MAX_CONSECUTIVE_ERRORS,
+    SearchStatus,
     titles_are_for_same_track,
     normalize_text,
+    search_youtube,
     gather_youtube_metadata,
     agather_youtube_metadata,
-    search_youtube,
-    MAX_CONSECUTIVE_ERRORS,
-    SearchStatus
+    load_youtube_metadata
 )
-from recommend_api.models import Track, Artist
-from recommend_api.tests.factories import TrackFactory, ArtistFactory
+from recommend_api.models import Track, Artist, TrackSource
+from recommend_api.tests.factories import TrackFactory, ArtistFactory, TrackSourceFactory
 
 class YouTubeSourceMetadataTests_Titles(SimpleTestCase):
     # Text normalization
@@ -316,6 +318,108 @@ class YouTubeSourceMetadataTests_Gather(TransactionTestCase):
 
         self.assertEqual(self.mock_yt_search.call_count, MAX_CONSECUTIVE_ERRORS)
         self.assertFalse(result)
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        TrackFactory.reset_sequence(0)
+        if os.path.exists(self.output_filename):
+            os.remove(self.output_filename)
+
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls.output_filename_patcher.stop()
+        cls.temp_dir.cleanup()
+        super().tearDownClass()
+
+
+class YouTubeSourceMetadataTests_Load(TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        super().setUpClass()
+        cls.temp_dir = tempfile.TemporaryDirectory()
+        cls.output_filename = os.path.join(cls.temp_dir.name, "yt-metadata.json")
+        cls.output_filename_patcher = patch(
+            "ingest.enrichments.youtube_source_metadata.OUTPUT_FILENAME",
+            cls.output_filename,
+        )
+        cls.output_filename_patcher.start()
+
+    def setUp(self) -> None:
+        self.source = {
+            "query": "Track 0 Artist 0",
+            "search_type": "title_artist",
+            "search_status": SearchStatus.FOUND.value,
+            "meta": {
+                "type": "video",
+                "id": "video-123",
+                "title": "Track 0",
+                "channel": {"name": "Artist 0"},
+                "thumbnails": [{"url": "https://img.youtube.com/video-123.jpg"}],
+                "link": "https://www.youtube.com/watch?v=video-123",
+            },
+            "checked_at": timezone.now(),
+            "error": None,
+        }
+        self.tracks: list[Track] = []
+        for i in range(10):
+            self.tracks.append(TrackFactory.create(title=f"Track {i}", submissions=10-i))
+
+    def test_should_exit_when_artifact_not_found(self):
+        result = load_youtube_metadata()
+
+        self.assertFalse(result)
+        self.assertEqual(TrackSource.objects.count(), 0)
+
+    def test_should_exit_when_artifact_has_malformed_json(self):
+        with open(self.output_filename, "wt") as f:
+            f.write("poo poo")
+
+        result = load_youtube_metadata()
+
+        self.assertFalse(result)
+        self.assertEqual(TrackSource.objects.count(), 0)
+
+    def test_should_skip_invalid_sources(self):
+        mbid = self.tracks[0].musicbrainz_recordingid
+        with open(self.output_filename, "wb") as f:
+            f.write(orjson.dumps({
+                "sources": {mbid: "poo-poo"}
+            }))
+
+        result = load_youtube_metadata()
+        self.assertTrue(result)
+        self.assertEqual(TrackSource.objects.count(), 0)
+
+    def test_should_skip_invalid_mbids(self):
+        mbid = "yolo-bro"
+        with open(self.output_filename, "wb") as f:
+            f.write(orjson.dumps({
+                "sources": {mbid: self.source}
+            }))
+
+        result = load_youtube_metadata()
+        self.assertTrue(result)
+        self.assertEqual(TrackSource.objects.count(), 0)
+
+    def test_loads_found_source(self):
+        track = self.tracks[0]
+        mbid = track.musicbrainz_recordingid
+        with open(self.output_filename, "wb") as f:
+            f.write(orjson.dumps({
+                "sources": {mbid: self.source}
+            }))
+
+        result = load_youtube_metadata()
+
+        self.assertTrue(result)
+        source = TrackSource.objects.get(track=track)
+        self.assertEqual(source.provider, TrackSource.Provider.YOUTUBE)
+        self.assertEqual(source.source_id, "video-123")
+        self.assertEqual(source.title, "Track 0")
+        self.assertEqual(source.channel, "Artist 0")
+        self.assertEqual(source.thumbnail, "https://img.youtube.com/video-123.jpg")
+        self.assertEqual(source.url, "https://www.youtube.com/watch?v=video-123")
+        self.assertIsNone(source.last_lookup_failed_at)
 
     def tearDown(self) -> None:
         super().tearDown()
