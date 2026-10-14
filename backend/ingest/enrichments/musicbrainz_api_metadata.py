@@ -17,6 +17,7 @@ TEMP_FILENAME = os.path.join(
     settings.BASE_DIR, "ingest", "enrichments", "musicbrainz_track_metadata.temp.json"
 )
 MB_RECORDING_URL = "https://musicbrainz.org/ws/2/recording/"
+MAX_CONSECUTIVE_ERRORS = 5
 
 
 def gather_musicbrainz_metadata(batch_size, override_file=False):
@@ -31,7 +32,7 @@ def gather_musicbrainz_metadata(batch_size, override_file=False):
     """
     class Counters:
         # Count errors so we can abort after a certain number of them.
-        errors: int = 0
+        repeated_errors: int = 0
         current_run_checked: int = 0
         all_runs_checked: int = 0
         current_run_isrcs: int = 0
@@ -81,6 +82,9 @@ def gather_musicbrainz_metadata(batch_size, override_file=False):
     ).prefetch_related("artists").order_by("-submissions")[:batch_size]
 
     for track in target_tracks:
+        if Counters.repeated_errors >= MAX_CONSECUTIVE_ERRORS:
+            break
+
         artist = track.artists.first()
         log.info(
             "Checking track: %s by %s (%s)",
@@ -99,11 +103,10 @@ def gather_musicbrainz_metadata(batch_size, override_file=False):
             response.raise_for_status()
         except requests.RequestException as ex:
             log.warning("Could not fetch metadata for track %s.", mbid, exc_info=True)
-            if Counters.errors > 5:
-                break
-            else:
-                Counters.errors += 1
-                continue
+            Counters.repeated_errors += 1
+            continue
+
+        Counters.repeated_errors = 0
 
         # Add the retrieved metadata to current state
         try:
@@ -198,6 +201,7 @@ def load_musicbrainz_metadata():
         json_isrcs = set(raw_isrcs) if isinstance(raw_isrcs, list) else set()
         track_isrcs = set(track.isrc)
         track.isrc = list(json_isrcs | track_isrcs)
+        track.full_clean(validate_unique=False)
         track.save(update_fields=["isrc"])
 
     return True
