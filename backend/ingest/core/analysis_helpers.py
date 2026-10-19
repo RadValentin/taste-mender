@@ -3,6 +3,7 @@ from collections import defaultdict
 from dotenv import dotenv_values
 from django.conf import settings
 from pathlib import Path
+from statistics import mean, median, stdev
 
 log = logging.getLogger(__name__)
 
@@ -107,7 +108,7 @@ def get_tracks_submissions(
     return results
 
 def main():
-    target_mbids = ["62c2e20a-559e-422f-a44c-9afa7882f0c4"]
+    target_mbids = ["62c2e20a-559e-422f-a44c-9afa7882f0c4", "acc8f927-65e9-4662-8665-8127efe76e6a"]
     target_features = {
         "danceability": {
             "pos_pred_key": "danceable",
@@ -130,15 +131,9 @@ def main():
     for mbid in target_mbids:
         for feature_name, feature_keys in target_features.items():
             stats = {
-                # Stats for prediction values
-                "pos_count": 0,
-                "pos_sum": 0,
-                "neg_count": 0,
-                "neg_sum": 0,
                 # Stats for prediction probabilities
+                "predictions": [],
                 "pred_count": 0,
-                "pred_pos_sum": 0,
-                "pred_neg_sum": 0,
                 "essentia_version": defaultdict(int),
                 "gaia_version": defaultdict(int)
             }
@@ -149,8 +144,6 @@ def main():
                     predictions = feature.get("all", {})
                     predictions_pos = predictions.get(feature_keys["pos_pred_key"], None)
                     predictions_neg = predictions.get(feature_keys["neg_pred_key"], None)
-                    probability = feature.get("probability", None)
-                    value = feature.get("value", None)
                     version = feature.get("version", {})
                     essentia_version = version.get("essentia", None)
                     gaia_version = version.get("gaia", None)
@@ -162,17 +155,8 @@ def main():
                         if not (0 <= pos <= 1 and 0 <= neg <= 1):
                             raise ValueError("Prediction probabilities must be between 0 and 1")
 
-                        stats["pred_pos_sum"] += pos
-                        stats["pred_neg_sum"] += neg
+                        stats["predictions"].append((pos, neg))
                         stats["pred_count"] += 1
-
-                    if value is not None and probability is not None:
-                        if value == feature_keys["pos_pred_key"]:
-                            stats["pos_count"] += 1
-                            stats["pos_sum"] += probability
-                        if value == feature_keys["neg_pred_key"]:
-                            stats["neg_count"] += 1
-                            stats["neg_sum"] += probability
 
                     if essentia_version is not None:
                         stats["essentia_version"][essentia_version] += 1
@@ -197,24 +181,48 @@ def main():
             data = output[mbid][feature_name]
             pos_name = feature_keys["pos_pred_key"]
             neg_name = feature_keys["neg_pred_key"]
+            pos_won_predictions = [pos for pos, neg in data["predictions"] if pos > neg]
+            neg_won_predictions = [neg for pos, neg in data["predictions"] if neg > pos]
+            all_pos_predictions = [pos for pos, _ in data["predictions"]]
+            all_neg_predictions = [neg for _, neg in data["predictions"]]
 
             print(f"{style.BRIGHT}{fg.MAGENTA}{feature_name}", style.RESET_ALL)
             if data["pred_count"] > 0:
-                print(f"{style.BRIGHT}Averages across all predictions", style.RESET_ALL)
-                print(f"{pos_name} prediction average: {data["pred_pos_sum"] / data["pred_count"]}.")
-                print(f"{neg_name} prediction average: {data["pred_neg_sum"] / data["pred_count"]}.")
+                print(f"Total submissions: {style.BRIGHT}{data["pred_count"]}", style.RESET_ALL)
+                print(f"Predicted {pos_name} / {neg_name}: {len(pos_won_predictions)} / {len(neg_won_predictions)}")
+                print()
 
-            print()
-            print(f"{style.BRIGHT}Averages by prediction type", style.RESET_ALL)
-            print(f"{pos_name} vs {neg_name} count: {data["pos_count"]} / {data["neg_count"]}")
-            if data["pos_count"] > 0:
-                print(f"Average confidence for {pos_name} prediction: {data["pos_sum"] / data["pos_count"]}")
-            if data["neg_count"] > 0:
-                print(f"Average confidence for non {neg_name} prediction: {data["neg_sum"] / data["neg_count"]}")
-            print()
+                if len(pos_won_predictions) > 1:
+                    print(f"{style.BRIGHT}Stats for submissions tagged {pos_name}", style.RESET_ALL)
+                    print(f" Mean {mean(pos_won_predictions)}")
+                    print(f" Median {median(pos_won_predictions)}")
+                    print(f" Standard deviation {stdev(pos_won_predictions)}")
+                    print()
+
+                if len(neg_won_predictions) > 1:
+                    print(f"{style.BRIGHT}Stats for submissions tagged {neg_name}", style.RESET_ALL)
+                    print(f" Mean {mean(neg_won_predictions)}")
+                    print(f" Median {median(neg_won_predictions)}")
+                    print(f" Standard deviation {stdev(neg_won_predictions)}")
+                    print()
+
+                if len(all_pos_predictions) > 1:
+                    print(f"{style.BRIGHT}Stats for all submissions regardless of class", style.RESET_ALL)
+                    print(f" {pos_name} Mean {mean(all_pos_predictions)}")
+                    print(f" {pos_name} Median {median(all_pos_predictions)}")
+                    print(f" {pos_name} Standard deviation {stdev(all_pos_predictions)}")
+                    print()
+
+                if len(all_neg_predictions) > 1:
+                    print(f" {neg_name} Mean {mean(all_neg_predictions)}")
+                    print(f" {neg_name} Median {median(all_neg_predictions)}")
+                    print(f" {neg_name} Standard deviation {stdev(all_neg_predictions)}")
+                    print()
+
             print(f"{style.BRIGHT}Tool versions", style.RESET_ALL)
-            print([f"{k}: {v}" for k, v in data["essentia_version"].items()])
-            print([f"{k}: {v}" for k, v in data["gaia_version"].items()])
+            print("essentia: ", [f"{k}: {v}" for k, v in data["essentia_version"].items()])
+            print("gaia: ", [f"{k}: {v}" for k, v in data["gaia_version"].items()])
+            print()
 
 
 if __name__ == "__main__":
