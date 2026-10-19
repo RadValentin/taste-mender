@@ -54,7 +54,7 @@ def stream_tracks_json(path: str, mbids: list[str]):
 def get_tracks_submissions(
     mbids: list[str], use_sample: bool = False, num_parts: int | None = None
 ):
-    mbids = list(map(lambda mbid: mbid.lower(), mbids))
+    mbids = list(map(lambda mbid: mbid.strip().lower(), mbids))
     if not all(map(tph.is_mbid, mbids)):
         log.error("One or all of the mbids param is not a valid UUID")
         return None
@@ -92,7 +92,11 @@ def get_tracks_submissions(
         log.info(f"Checking archive {archive_path}")
         check_start = time.time()
         for _, mbid, raw_json in stream_tracks_json(archive_path, mbids):
-            results[mbid].append(orjson.loads(raw_json))
+            try:
+                data = orjson.loads(raw_json)
+                results[mbid].append(data)
+            except orjson.JSONDecodeError:
+                log.exception("Bad JSON string")
 
         check_end = time.time()
         log.info(f"Finished check in {check_end - check_start:.2f}s")
@@ -114,7 +118,9 @@ def main():
             "neg_pred_key": "not_aggressive"
         }
     }
-    submissions_by_mbid = get_tracks_submissions(target_mbids, use_sample=False, num_parts=1)
+    submissions_by_mbid = get_tracks_submissions(
+        target_mbids, use_sample=False, num_parts=None
+    )
 
     if submissions_by_mbid is None:
         return False
@@ -150,8 +156,14 @@ def main():
                     gaia_version = version.get("gaia", None)
 
                     if predictions_pos is not None and predictions_neg is not None:
-                        stats["pred_pos_sum"] += predictions_pos
-                        stats["pred_neg_sum"] += predictions_neg
+                        pos = float(predictions_pos)
+                        neg = float(predictions_neg)
+
+                        if not (0 <= pos <= 1 and 0 <= neg <= 1):
+                            raise ValueError("Prediction probabilities must be between 0 and 1")
+
+                        stats["pred_pos_sum"] += pos
+                        stats["pred_neg_sum"] += neg
                         stats["pred_count"] += 1
 
                     if value is not None and probability is not None:
@@ -167,7 +179,7 @@ def main():
                     if gaia_version is not None:
                         stats["gaia_version"][gaia_version] += 1
 
-                except (KeyError, IndexError, TypeError, ValueError):
+                except (KeyError, IndexError, TypeError, ValueError, AttributeError):
                     log.exception("Missing data")
 
             output[mbid][feature_name] = stats
@@ -176,10 +188,11 @@ def main():
     for mbid in target_mbids:
         track = Track.objects.filter(musicbrainz_recordingid=mbid).prefetch_related("artists").first()
         if not track:
-            continue
-        artists = ", ".join(artist.name for artist in track.artists.all())
+            print(f"{style.BRIGHT}{fg.GREEN}Stats for: Unknown track ({mbid})", style.RESET_ALL)
+        else:
+            artists = ", ".join(artist.name for artist in track.artists.all())
+            print(f"{style.BRIGHT}{fg.GREEN}Stats for: {track.title} by {artists} ({mbid})", style.RESET_ALL)
 
-        print(f"{style.BRIGHT}{fg.GREEN}Stats for: {track.title} by {artists} ({mbid})", style.RESET_ALL)
         for feature_name, feature_keys in target_features.items():
             data = output[mbid][feature_name]
             pos_name = feature_keys["pos_pred_key"]
