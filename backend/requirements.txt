@@ -42,6 +42,7 @@ jsonschema-specifications==2025.9.1
 jupyter_client==8.6.3
 jupyter_core==5.8.1
 kiwisolver==1.4.9
+libarchive-c==5.3
 lmdb==1.7.5
 matplotlib==3.11.0
 matplotlib-inline==0.1.7
@@ -75,6 +76,7 @@ requests==2.34.2
 rpds-py==0.27.1
 scikit-learn==1.7.2
 scipy==1.16.2
+seaborn==0.13.2
 six==1.17.0
 sqlparse==0.6.0
 stack-data==0.6.3
