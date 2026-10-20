@@ -44,6 +44,15 @@ python manage.py runserver     # dev server on :8000
 python manage.py build_db --sample   # ~85k tracks for dev
 ```
 
+#### Agent assisted development
+For **local backend development** and **local backend coding tasks**, use the Python virtual environment managed by `virtualenvwrapper` when running project Python. An environment called `fp` should be available globally:
+
+```bash
+workon fp
+```
+
+Activate `fp` before running Python tests, Django management commands, scripts, dependency checks, type checks, notebooks, debugging, or profiling. It is not needed for frontend-only work, documentation, Git operations, or GitHub pull request code reviews unless explicitly requested.
+
 ### Frontend – run from `frontend/`
 ```bash
 npm install
