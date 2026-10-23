@@ -30,7 +30,7 @@ export default function SearchPage() {
   });
   const [isLoading, setIsLoading] = useState(false);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
-  const loadMoreController = useRef<AbortController | null>(null);
+  const loadMoreControllerRef = useRef<AbortController | null>(null);
   const { onPlay } = useOutletContext<AppLayoutContext>();
   const { dispatch } = usePlaybackContext();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -42,7 +42,7 @@ export default function SearchPage() {
   useEffect(() => {
     // Close the player after user search
     dispatch({ type: "CLOSE_PLAYER" });
-    loadMoreController.current?.abort();
+    loadMoreControllerRef.current?.abort();
 
     if (!query) {
       setResults({ data: [], status: "EMPTY", hasMore: false });
@@ -81,7 +81,7 @@ export default function SearchPage() {
 
     return () => {
       controller.abort();
-      loadMoreController.current?.abort();
+      loadMoreControllerRef.current?.abort();
     };
   }, [query]);
 
@@ -94,7 +94,7 @@ export default function SearchPage() {
 
     const offset = results.data.length;
     const controller = new AbortController();
-    loadMoreController.current = controller;
+    loadMoreControllerRef.current = controller;
     setIsLoadingMore(true);
 
     searchTracks(query, SEARCH_LIMIT, offset, controller.signal)
