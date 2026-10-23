@@ -8,7 +8,10 @@ import NotFoundPage from './pages/NotFoundPage.tsx';
 import { PlaybackContextProvider } from './PlaybackProvider.tsx';
 import './root.css';
 
-createRoot(document.getElementById('root')!).render(
+const container = document.getElementById('root');
+const root = createRoot(container!);
+
+root.render(
   <StrictMode>
     <BrowserRouter>
       <PlaybackContextProvider>
@@ -22,4 +25,4 @@ createRoot(document.getElementById('root')!).render(
       </PlaybackContextProvider>
     </BrowserRouter>
   </StrictMode>,
-)
+);
