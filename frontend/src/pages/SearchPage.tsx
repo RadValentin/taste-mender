@@ -28,9 +28,9 @@ export default function SearchPage() {
   const [results, setResults] = useState<SearchResultsState>({
     data: [], status: "DONE", hasMore: false
   });
-  const [isLoading, setLoading] = useState(false);
-  const [isLoadingMore, setLoadingMore] = useState(false);
-  const loadMoreController = useRef<AbortController | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const loadMoreControllerRef = useRef<AbortController | null>(null);
   const { onPlay } = useOutletContext<AppLayoutContext>();
   const { dispatch } = usePlaybackContext();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -42,18 +42,22 @@ export default function SearchPage() {
   useEffect(() => {
     // Close the player after user search
     dispatch({ type: "CLOSE_PLAYER" });
-    loadMoreController.current?.abort();
+    loadMoreControllerRef.current?.abort();
 
     if (!query) {
       setResults({ data: [], status: "EMPTY", hasMore: false });
-      setLoading(false);
-      setLoadingMore(false);
+
+      setIsLoading(false);
+      setIsLoadingMore(false);
+
       return;
     }
 
     const controller = new AbortController();
-    setLoading(true);
-    setLoadingMore(false);
+
+    setIsLoading(true);
+    setIsLoadingMore(false);
+
     searchTracks(query, limit, 0, controller.signal)
       .then(resp => {
         setResults({
@@ -71,13 +75,13 @@ export default function SearchPage() {
         setResults({ data: [], status: "ERROR", hasMore: false });
       }).finally(() => {
         if (!controller.signal.aborted) {
-          setLoading(false);
+          setIsLoading(false);
         }
       });
 
     return () => {
       controller.abort();
-      loadMoreController.current?.abort();
+      loadMoreControllerRef.current?.abort();
     };
   }, [query]);
 
@@ -90,8 +94,8 @@ export default function SearchPage() {
 
     const offset = results.data.length;
     const controller = new AbortController();
-    loadMoreController.current = controller;
-    setLoadingMore(true);
+    loadMoreControllerRef.current = controller;
+    setIsLoadingMore(true);
 
     searchTracks(query, SEARCH_LIMIT, offset, controller.signal)
       .then(resp => {
@@ -117,7 +121,7 @@ export default function SearchPage() {
       })
       .finally(() => {
         if (!controller.signal.aborted) {
-          setLoadingMore(false);
+          setIsLoadingMore(false);
         }
       });
 

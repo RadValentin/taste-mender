@@ -6,13 +6,13 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist/', 'node_modules/']),
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['**/*.{js,jsx,ts,tsx}'],
     extends: [
       eslintJs.configs.recommended,
       tseslint.configs.recommended,
-      eslintReact.configs["recommended-typescript"],
+      eslintReact.configs['recommended-typescript'],
       reactRefresh.configs.vite,
     ],
     languageOptions: {
@@ -21,9 +21,7 @@ export default defineConfig([
     },
     rules: {
       '@eslint-react/exhaustive-deps': 'off',
-      '@eslint-react/naming-convention-ref-name': 'off',
       '@eslint-react/set-state-in-effect': 'off',
-      '@eslint-react/use-state': 'off',
     },
   },
 ])
