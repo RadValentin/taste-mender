@@ -82,7 +82,7 @@ export function getRecommendations(body: RecommendRequest, signal?: AbortSignal)
   return api.post<RecommendResponse>('recommend/', body, { signal }).then(resp => resp.data);
 }
 
-export function searchTracks(
+export async function searchTracks(
   query: string, limit: number = 25, offset: number = 0, signal?: AbortSignal
 ) {
   return api.get<SearchResponse<Track>>(
