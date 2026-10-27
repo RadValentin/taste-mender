@@ -37,6 +37,10 @@ export default function SearchPage() {
     enabled: queryStr.length > 0,
     staleTime: 5 * 60 * 1000, // 5 minutes
     retry: false,
+    // Disable refetching data, no need to overload the API
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
   });
   const tracks = data?.pages.flatMap(page => page.results) ?? [];
 
@@ -56,27 +60,18 @@ export default function SearchPage() {
       return null;
     }
 
-    let content;
-    if (isFetchingNextPage) {
-      content = (
-        <>
-          <LoadingSpinner variant="icon" />
-          Loading...
-        </>
-      );
-    } else if (isFetchNextPageError) {
-      content = "Try again";
-    } else {
-      content = "Load More";
-    }
-
     return (
       <button type="button"
         className="btn btn-neon"
         onClick={handleLoadMore}
         disabled={isFetching}
       >
-        {content}
+        {(isFetching || isFetchingNextPage) && <LoadingSpinner variant="icon" />}
+        {isFetchingNextPage
+          ? "Loading..."
+          : isFetchNextPageError
+            ? "Try again"
+            : "Load More"}
       </button>
     )
   }
