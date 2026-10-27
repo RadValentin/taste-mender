@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router";
 import { useOutletContext } from "react-router";
 import type { AppLayoutContext } from "./../types";
 import { searchTracks } from "./../api";
+import LoadingSpinner from "../components/LoadingSpinner.tsx";
 import PageMetadata from "./../components/PageMetadata.tsx";
 import TrackList from "./../components/TrackList";
 import TrackListSkeleton from "./../components/TrackListSkeleton.tsx";
@@ -50,6 +51,36 @@ export default function SearchPage() {
     }
   }
 
+  function renderLoadMoreButton() {
+    if (!hasNextPage) {
+      return null;
+    }
+
+    let content;
+    if (isFetchingNextPage) {
+      content = (
+        <>
+          <LoadingSpinner variant="icon" />
+          Loading...
+        </>
+      );
+    } else if (isFetchNextPageError) {
+      content = "Try again";
+    } else {
+      content = "Load More";
+    }
+
+    return (
+      <button type="button"
+        className="btn btn-neon"
+        onClick={handleLoadMore}
+        disabled={isFetching}
+      >
+        {content}
+      </button>
+    )
+  }
+
   function renderContent() {
     if (isLoading) {
       return (
@@ -93,21 +124,6 @@ export default function SearchPage() {
             variant="error"
           />
         )}
-
-        {hasNextPage && (
-          <button
-            type="button"
-            className="btn btn-neon"
-            onClick={handleLoadMore}
-            disabled={isFetching}
-          >
-            {isFetchingNextPage
-              ? "Loading..."
-              : isFetchNextPageError
-                ? "Try again"
-                : "Load More"}
-          </button>
-        )}
       </>
     );
   }
@@ -122,6 +138,9 @@ export default function SearchPage() {
       />
       <div className="search-page container">
         {renderContent()}
+        <div className="search-page__footer">
+          {renderLoadMoreButton()}
+        </div>
       </div>
     </>
   );

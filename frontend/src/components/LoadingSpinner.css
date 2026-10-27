@@ -43,11 +43,13 @@
 
 /* ICON VARIANT - inline icon */
 .loading-spinner--icon {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 
   .loading-spinner__spinner {
-    width: 2em;
-    height: 2em;
+    width: 1em;
+    height: 1em;
     border: .3em solid currentColor;
     border-bottom-color: transparent;
   }
