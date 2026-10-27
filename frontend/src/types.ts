@@ -121,3 +121,8 @@ export interface Paginated<T> {
   previous: string | null;
   results: T[];
 }
+
+/** Contexts */
+export type AppLayoutContext = {
+  onPlay: (track: Track) => void;
+};
