@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useState, useEffect } from "react";
+import { useState, useEffect, useEffectEvent, useRef } from "react";
+import isEqual from "react-fast-compare";
 import "./Filters.css";
 
 export type FiltersPayload = {
@@ -61,6 +62,44 @@ export default function Filters({ onChange }: FiltersProps) {
   const [filters, setFilters] = useState(defaultFiltersState);
   const [totalWeights, setTotalWeights] = useState(defaultTotalWeightsState);
   const [featureWeights, setFeatureWeights] = useState(defaultFeatureWeightsState);
+  const prevPlayloadRef = useRef<FiltersPayload>({
+    filters: defaultFiltersState,
+    total_weights: defaultTotalWeightsState,
+    feature_weights: defaultFeatureWeightsState,
+  });
+
+  /** When filters change, call the parent with updated payload. It's an EffectEvent in case the
+   * parent callback (onChange) changes before callback has a change to fire
+   * (getting recs for prev track).
+   */
+  const handleOnChange = useEffectEvent((payload: FiltersPayload) => {
+    onChange(payload);
+  });
+
+  // Set up a check for input changes on an interval
+  useEffect(() => {
+    const payload: FiltersPayload = {
+      filters,
+      total_weights: {
+        similarity: +totalWeights.similarity.toFixed(4),
+        popularity: +totalWeights.popularity.toFixed(4),
+      },
+      feature_weights: featureWeights,
+    };
+
+    if (isEqual(payload, prevPlayloadRef.current)) {
+      return;
+    }
+
+    // If there was a change fire off a debounced callback to parent. Useful for preventing
+    // redundant requests while sliders are dragged.
+    const timeout = window.setTimeout(() => {
+      prevPlayloadRef.current = payload;
+      handleOnChange(payload);
+    }, 300);
+
+    return () => window.clearTimeout(timeout);
+  }, [filters, totalWeights, featureWeights]);
 
   const updateSimilarity = (val: number) => {
     setTotalWeights({ similarity: val, popularity: +(1 - val).toFixed(4) });
@@ -84,44 +123,10 @@ export default function Filters({ onChange }: FiltersProps) {
   }
 
   const resetState = () => {
-    const isFiltersDefault = JSON.stringify(filters) === JSON.stringify(defaultFiltersState);
-    const isTotalWeightsDefault = JSON.stringify(totalWeights) === JSON.stringify(defaultTotalWeightsState);
-    const isFeatureWeightsDefault = JSON.stringify(featureWeights) === JSON.stringify(defaultFeatureWeightsState);
-
-    if (isFiltersDefault && isTotalWeightsDefault && isFeatureWeightsDefault) {
-      return;
-    }
-
     setFilters(defaultFiltersState);
     setTotalWeights(defaultTotalWeightsState);
     setFeatureWeights(defaultFeatureWeightsState);
-
-    // Trigger callback when weights reset, for filters it's automatically triggered
-    if (!isTotalWeightsDefault || !isFeatureWeightsDefault) {
-      setTimeout(handleChangeEnd, 0);
-    }
   };
-
-  // When filters change, call the parent with updated payload
-  const handleChangeEnd = () => {
-    onChange({
-      filters: {
-        same_genre: filters.same_genre,
-        same_decade: filters.same_decade,
-        genre_classification: filters.genre_classification
-      },
-      total_weights: {
-        similarity: +totalWeights.similarity.toFixed(4),
-        popularity: +totalWeights.popularity.toFixed(4),
-      },
-      feature_weights: featureWeights
-    });
-  };
-
-  // For checkboxes and select automatically call the parent on state updates
-  useEffect(() => {
-    handleChangeEnd();
-  }, [filters]);
 
   const getFeatureDisplayName = (key: string) => FEATURE_DISPLAY_NAMES[key] ?? key;
 
@@ -166,9 +171,6 @@ export default function Filters({ onChange }: FiltersProps) {
             className="filters__slider" type="range" min={0} max={1} step={0.1}
             value={totalWeights.similarity}
             onChange={e => updateSimilarity(parseFloat(e.target.value))}
-            onMouseUp={handleChangeEnd}
-            onKeyUp={handleChangeEnd}
-            onTouchEnd={handleChangeEnd}
           />
         </label>
         <label className="filters__label">
@@ -177,9 +179,6 @@ export default function Filters({ onChange }: FiltersProps) {
             className="filters__slider" type="range" min={0} max={1} step={0.1}
             value={totalWeights.popularity}
             onChange={e => updatePopularity(parseFloat(e.target.value))}
-            onMouseUp={handleChangeEnd}
-            onKeyUp={handleChangeEnd}
-            onTouchEnd={handleChangeEnd}
           />
         </label>
       </div>
@@ -193,9 +192,6 @@ export default function Filters({ onChange }: FiltersProps) {
               className="filters__slider" type="range" min={0} max={1} step={0.1}
               value={featureWeights[feature_name]}
               onChange={e => updateFeatureWeight(feature_name, parseFloat(e.target.value))}
-              onMouseUp={handleChangeEnd}
-              onKeyUp={handleChangeEnd}
-              onTouchEnd={handleChangeEnd}
             />
           </label>
         ))}
@@ -210,15 +206,14 @@ export default function Filters({ onChange }: FiltersProps) {
               className="filters__slider" type="range" min={0} max={1} step={0.1}
               value={featureWeights[feature_name]}
               onChange={e => updateFeatureWeight(feature_name, parseFloat(e.target.value))}
-              onMouseUp={handleChangeEnd}
-              onKeyUp={handleChangeEnd}
-              onTouchEnd={handleChangeEnd}
             />
           </label>
         ))}
       </div>
 
-      <button className="btn btn-amber" onClick={resetState}>RESET</button>
+      <button className="btn btn-amber" onClick={resetState}>
+        RESET
+      </button>
     </div>
   )
 }
