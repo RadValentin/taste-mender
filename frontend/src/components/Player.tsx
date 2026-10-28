@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import type { Track, RecommendRequest } from "../types";
+import type { Track, RecommendRequest, FiltersPayload } from "../types";
 import { getTrackSources, getRecommendations } from "../api.ts"
 import TrackList from "./TrackList.tsx";
 import TrackListSkeleton from "./TrackListSkeleton.tsx";
-import Filters, {type FiltersPayload} from "./Filters.tsx";
+import Filters from "./Filters.tsx";
 import ImageLoader from "./ImageLoader.tsx";
 import { usePlaybackContext } from "../PlaybackContext.tsx";
 import useBeforeUnload from "../hooks/useBeforeUnload.ts";
