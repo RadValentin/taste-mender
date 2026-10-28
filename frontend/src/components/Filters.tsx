@@ -1,15 +1,15 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useEffectEvent, useRef } from "react";
 import isEqual from "react-fast-compare";
 import { AUDIO_FEATURES, MOOD_FEATURES, FEATURE_DISPLAY_NAMES } from "../constants";
+import type {
+  FeatureName,
+  FiltersPayload,
+  FiltersMeta,
+  FiltersFeatureWeights,
+  FiltersTotalWeights
+} from "../types";
 import { initialPlaybackState, usePlaybackContext } from "../PlaybackContext";
 import "./Filters.css";
-
-export type FiltersPayload = {
-    filters?: any;
-    feature_weights?: any;
-    total_weights?: any;
-}
 
 type FiltersProps = {
     onChange: (payload:FiltersPayload) => void;
@@ -26,9 +26,9 @@ const defaultFeatureWeightsState = initialPlaybackState.filters.feature_weights;
  */
 export default function Filters({ onChange }: FiltersProps) {
   const {state} = usePlaybackContext();
-  const [filters, setFilters] = useState(state.filters.filters);
-  const [totalWeights, setTotalWeights] = useState(state.filters.total_weights);
-  const [featureWeights, setFeatureWeights] = useState(state.filters.feature_weights);
+  const [filters, setFilters] = useState<FiltersMeta>(state.filters.filters);
+  const [totalWeights, setTotalWeights] = useState<FiltersTotalWeights>(state.filters.total_weights);
+  const [featureWeights, setFeatureWeights] = useState<FiltersFeatureWeights>(state.filters.feature_weights);
 
   const prevPayloadRef = useRef<FiltersPayload>({
     filters: defaultFiltersState,
@@ -86,7 +86,7 @@ export default function Filters({ onChange }: FiltersProps) {
     setFilters(prev => ({ ...prev, genre_classification: val }));
   };
 
-  const updateFeatureWeight = (key: string, value: number) => {
+  const updateFeatureWeight = (key: FeatureName, value: number) => {
     setFeatureWeights(prev => ({...prev, [key]: value}));
   }
 

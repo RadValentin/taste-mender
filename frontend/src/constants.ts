@@ -2,11 +2,11 @@
 export const AUDIO_FEATURES = [
   "danceability", "aggressiveness", "happiness", "sadness", "relaxedness", "partyness",
   "acousticness", "electronicness", "instrumentalness", "tonality", "brightness"
-];
+] as const;
 
 export const MOOD_FEATURES = [
   "moods_mirex_1", "moods_mirex_2", "moods_mirex_3", "moods_mirex_4", "moods_mirex_5"
-];
+] as const;
 
 export const FEATURE_DISPLAY_NAMES: Record<string, string> = {
   danceability: "Danceability",
