@@ -1,5 +1,6 @@
 import { createContext, useContext } from "react";
 import type { Dispatch } from "react";
+import { AUDIO_FEATURES, MOOD_FEATURES } from "./constants";
 import type { RecommendStats, SimilarTrack, Track } from "./types";
 import type { FiltersPayload } from "./components/Filters";
 
@@ -56,7 +57,13 @@ export const initialPlaybackState: PlaybackState = {
   recommendations: [],
   recommendationsLoading: false,
   recommendationStats: null,
-  filters: {},
+  filters: {
+    filters: {same_genre: true, same_decade: true, genre_classification: "rosamerica"},
+    feature_weights: Object.fromEntries(
+      AUDIO_FEATURES.concat(MOOD_FEATURES).map(f => [f, 0.5])
+    ),
+    total_weights: {similarity: 0.7, popularity: 0.3},
+  },
   isPlaying: false,
   isMaximized: false,
   isDocked: false,

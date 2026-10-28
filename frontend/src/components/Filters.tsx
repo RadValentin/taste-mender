@@ -1,6 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useState, useEffect, useEffectEvent, useRef } from "react";
 import isEqual from "react-fast-compare";
+import { AUDIO_FEATURES, MOOD_FEATURES, FEATURE_DISPLAY_NAMES } from "../constants";
+import { initialPlaybackState, usePlaybackContext } from "../PlaybackContext";
 import "./Filters.css";
 
 export type FiltersPayload = {
@@ -13,45 +15,9 @@ type FiltersProps = {
     onChange: (payload:FiltersPayload) => void;
 }
 
-const defaultFiltersState = {
-   same_genre: true, same_decade: true, genre_classification: "rosamerica"
-}
-
-const AUDIO_FEATURES = [
-  "danceability", "aggressiveness", "happiness", "sadness", "relaxedness", "partyness",
-  "acousticness", "electronicness", "instrumentalness", "tonality", "brightness"
-];
-
-const MOOD_FEATURES = [
-  "moods_mirex_1", "moods_mirex_2", "moods_mirex_3", "moods_mirex_4", "moods_mirex_5"
-];
-
-const FEATURE_DISPLAY_NAMES: Record<string, string> = {
-  danceability: "Danceability",
-  aggressiveness: "Aggressiveness",
-  happiness: "Happiness",
-  sadness: "Sadness",
-  relaxedness: "Relaxedness",
-  partyness: "Partyness",
-  acousticness: "Acousticness",
-  electronicness: "Electronicness",
-  instrumentalness: "Instrumentalness",
-  tonality: "Tonality",
-  brightness: "Brightness",
-  moods_mirex_1: "Passionate / Cheerful / Rowdy",
-  moods_mirex_2: "Poignant / Sad / Bittersweet",
-  moods_mirex_3: "Humorous / Silly / Witty",
-  moods_mirex_4: "Aggressive / Fiery / Intense",
-  moods_mirex_5: "Peaceful / Relaxed / Calming"
-};
-
-const defaultFeatureWeightsState = Object.fromEntries(
-  AUDIO_FEATURES.concat(MOOD_FEATURES).map(f => [f, 0.5])
-);
-
-const defaultTotalWeightsState = {
-  similarity: 0.7, popularity: 0.3
-}
+const defaultFiltersState = initialPlaybackState.filters.filters;
+const defaultTotalWeightsState = initialPlaybackState.filters.total_weights;
+const defaultFeatureWeightsState = initialPlaybackState.filters.feature_weights;
 
 /**
  * Recommendation settings panel. Exposes controls for genre and decade guardrails,
@@ -59,10 +25,12 @@ const defaultTotalWeightsState = {
  * Calls `onChange` whenever any setting changes so the parent can re-fetch recommendations.
  */
 export default function Filters({ onChange }: FiltersProps) {
-  const [filters, setFilters] = useState(defaultFiltersState);
-  const [totalWeights, setTotalWeights] = useState(defaultTotalWeightsState);
-  const [featureWeights, setFeatureWeights] = useState(defaultFeatureWeightsState);
-  const prevPlayloadRef = useRef<FiltersPayload>({
+  const {state} = usePlaybackContext();
+  const [filters, setFilters] = useState(state.filters.filters);
+  const [totalWeights, setTotalWeights] = useState(state.filters.total_weights);
+  const [featureWeights, setFeatureWeights] = useState(state.filters.feature_weights);
+
+  const prevPayloadRef = useRef<FiltersPayload>({
     filters: defaultFiltersState,
     total_weights: defaultTotalWeightsState,
     feature_weights: defaultFeatureWeightsState,
@@ -87,14 +55,14 @@ export default function Filters({ onChange }: FiltersProps) {
       feature_weights: featureWeights,
     };
 
-    if (isEqual(payload, prevPlayloadRef.current)) {
+    if (isEqual(payload, prevPayloadRef.current)) {
       return;
     }
 
     // If there was a change fire off a debounced callback to parent. Useful for preventing
     // redundant requests while sliders are dragged.
     const timeout = window.setTimeout(() => {
-      prevPlayloadRef.current = payload;
+      prevPayloadRef.current = payload;
       handleOnChange(payload);
     }, 300);
 
