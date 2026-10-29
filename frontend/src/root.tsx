@@ -25,7 +25,7 @@ createRoot(document.getElementById('root')!).render(
             </Route>
           </Routes>
         </PlaybackContextProvider>
-        <ReactQueryDevtools initialIsOpen={false} />
+        <ReactQueryDevtools initialIsOpen={false} buttonPosition="bottom-left" />
       </QueryClientProvider>
     </BrowserRouter>
   </StrictMode>,
