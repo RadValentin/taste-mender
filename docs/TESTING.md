@@ -32,4 +32,5 @@ Use `SimpleTestCase` for endpoint tests that do not need database records, such 
 
 The project uses (Vitest)[https://vitest.dev/guide/] as the testing harness. (React Testing Library)[https://testing-library.com/docs/react-testing-library/intro/] provides helpers for writing React tests and [happy-dom](https://github.com/capricorn86/happy-dom/wiki/) is synthetic browser environment for running tests.
 
-Snapshot testing is mostly discouraged as the brittleness of this kind of testing goes against the speed at which the front-end evolves. A slight exception can be made for static components that only produce markup but don't add snapshots if you don't need them.
+Snapshot testing is mostly discouraged as the brittleness of this kind of testing goes against the speed at which the front-end evolves.
+A slight exception can be made for simple, display-focused components with minimal logic. That being said, don't add snapshots if you don't need them.

@@ -36,5 +36,14 @@ jobs:
       - name: Build frontend
         run: npm run build
 
-      - name: Run tests
-        run: npm run test -- --run
+      - name: Run tests with coverage
+        run: npm run coverage -- --run
+
+      - name: Upload frontend coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: frontend/coverage/lcov.info
+          flags: frontend
+          disable_search: true
+          fail_ci_if_error: true
