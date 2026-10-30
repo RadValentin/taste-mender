@@ -1,5 +1,5 @@
 import type { Mock } from 'vitest';
-import { cleanup, fireEvent, render } from "@testing-library/react"
+import { cleanup, render } from "@testing-library/react"
 import useBeforeUnload from "../useBeforeUnload"
 
 function DummyComponent({enabled = false}) {

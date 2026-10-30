@@ -1,0 +1,56 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`PlayButton > should render children when provided - snapshot 1`] = `
+<DocumentFragment>
+  <button
+    aria-label="Play"
+    class="play-button"
+    type="button"
+  >
+    WOW
+  </button>
+</DocumentFragment>
+`;
+
+exports[`PlayButton > should render disabled state - snapshot 1`] = `
+<DocumentFragment>
+  <button
+    aria-label="Play"
+    class="play-button"
+    disabled=""
+    type="button"
+  >
+    <i
+      class="fa-solid fa-play"
+    />
+  </button>
+</DocumentFragment>
+`;
+
+exports[`PlayButton > should render play icon - snapshot 1`] = `
+<DocumentFragment>
+  <button
+    aria-label="Play"
+    class="play-button"
+    type="button"
+  >
+    <i
+      class="fa-solid fa-play"
+    />
+  </button>
+</DocumentFragment>
+`;
+
+exports[`PlayButton > should set callback when provided - snapshot 1`] = `
+<DocumentFragment>
+  <button
+    aria-label="Play"
+    class="play-button"
+    type="button"
+  >
+    <i
+      class="fa-solid fa-play"
+    />
+  </button>
+</DocumentFragment>
+`;
