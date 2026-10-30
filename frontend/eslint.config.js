@@ -7,9 +7,9 @@ import tseslint from 'typescript-eslint'
 import { defineConfig, globalIgnores } from 'eslint/config'
 
 export default defineConfig([
-  globalIgnores(['dist']),
+  globalIgnores(['dist/', 'node_modules/', 'coverage/']),
   {
-    files: ['**/*.{ts,tsx}'],
+    files: ['**/*.{js,jsx,ts,tsx}'],
     extends: [
       eslintJs.configs.recommended,
       tseslint.configs.recommended,
@@ -22,10 +22,8 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      '@eslint-react/exhaustive-deps': 'off',
-      '@eslint-react/naming-convention-ref-name': 'off',
       '@eslint-react/set-state-in-effect': 'off',
-      '@eslint-react/use-state': 'off',
+      '@eslint-react/no-use-context': 'off',
     },
   },
 ])
