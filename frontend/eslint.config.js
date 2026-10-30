@@ -22,7 +22,6 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      '@eslint-react/exhaustive-deps': 'off',
       '@eslint-react/set-state-in-effect': 'off',
     },
   },

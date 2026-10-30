@@ -134,6 +134,7 @@ export default function Player() {
       }
     });
 
+  // eslint-disable-next-line @eslint-react/exhaustive-deps
   }, [playbackState.pendingTrack, playerState.isReady, dispatch]);
 
   const onYouTubeStateChange = useEffectEvent((e: any) => {
