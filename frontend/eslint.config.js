@@ -23,6 +23,7 @@ export default defineConfig([
     },
     rules: {
       '@eslint-react/set-state-in-effect': 'off',
+      '@eslint-react/no-use-context': 'off',
     },
   },
 ])

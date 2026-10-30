@@ -18,3 +18,7 @@ Linting rules can be disabled if they go against standard patterns or if they re
 This rule is overly strict. Changing the state inside an effect is a common pattern and it's also something that the official React docs teach. There is no value in keeping this rule enabled.
 
 Issue on React repo, mentioning this: https://github.com/react/react/issues/34743
+
+### Disable `@eslint-react/no-use-context`
+
+This issues a warning against `useContext` even though it hasn't been deprecated yet. There's no strong evidence against continuing to use this API.
