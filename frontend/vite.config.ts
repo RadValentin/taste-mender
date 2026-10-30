@@ -20,4 +20,13 @@ export default defineConfig(({ command }) => ({
       },
     },
   },
+  test: {
+    globals: true,
+    environment: 'happy-dom',
+    coverage: {
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.d.ts', 'src/**/__tests__/**'],
+      reporter: ['text', 'html', 'lcov'],
+    },
+  },
 }))

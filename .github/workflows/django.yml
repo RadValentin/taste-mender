@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ "main", "dev" ]
 
+permissions:
+  contents: read
+
 env:
   DATABASE_URL: "postgres://postgres:postgres@127.0.0.1:5432/taste_mender_db"
   DJANGO_SECRET_KEY: "unit-tests"
@@ -73,5 +76,7 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: backend/coverage.xml
+          flags: backend
+          disable_search: true
           fail_ci_if_error: true
           verbose: true

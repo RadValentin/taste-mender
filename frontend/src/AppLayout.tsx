@@ -1,6 +1,6 @@
 import { useEffect, useLayoutEffect } from "react";
 import { Outlet, useLocation } from "react-router";
-import { getScrollbarWidth } from "./layout";
+import { getScrollbarWidth } from "./helpers/layout";
 import Header from "./components/Header";
 import Player from "./components/Player";
 import { usePlaybackContext } from "./PlaybackContext";
