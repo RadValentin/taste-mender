@@ -16,4 +16,13 @@ export default defineConfig(({ command }) => ({
       '/api': 'http://127.0.0.1:8000',
     },
   },
+  test: {
+    globals: true,
+    environment: 'happy-dom',
+    coverage: {
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.d.ts', 'src/**/__tests__/**'],
+      reporter: ['text', 'html', 'lcov'],
+    },
+  },
 }))

@@ -13,3 +13,11 @@ comment:
   layout: "reach, diff, flags, files"
   behavior: default
   require_changes: true       # only comment when coverage actually changes
+
+flags:
+  backend:
+    paths:
+      - backend/
+  frontend:
+    paths:
+      - frontend/
