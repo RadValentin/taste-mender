@@ -86,7 +86,7 @@ types-PyYAML==6.0.12.20260906
 typing_extensions==4.16.0
 tzdata==2025.2
 uritemplate==4.2.0
-urllib3==2.7.0
+urllib3==2.8.0
 wcwidth==0.2.13
 whitenoise==6.11.0
 yarl==1.25.1
