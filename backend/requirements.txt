@@ -21,7 +21,7 @@ django-extensions==4.1
 django-filter==26.1
 django-stubs==5.2.9
 django-stubs-ext==6.1.2
-djangorestframework==3.17.1
+djangorestframework==3.18.2
 drf-spectacular==0.30.0
 executing==2.2.0
 factory_boy==3.3.3
