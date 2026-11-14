@@ -1,4 +1,13 @@
-.loading-spinner {
+/* THE ACTUAL SPINNER */
+.loading-spinner__spinner {
+  border-radius: 50%;
+  display: inline-block;
+  box-sizing: border-box;
+  animation: loading-spinner-rotation  1s linear infinite;
+}
+
+/* FILL VARIANT - fills container */
+.loading-spinner--fill {
   display: flex;
   align-items: center;
   justify-content: center;
@@ -8,21 +17,17 @@
   bottom: 0;
   left: 0;
 
-  .loading-spinner__spinner {
-    width: 48px;
-    height: 48px;
-    border-radius: 50%;
-    display: inline-block;
-    box-sizing: border-box;
-    animation: rotation 1s linear infinite;
-  }
-
   &.loading-spinner--dark {
     background-color: rgba(0, 0, 0, .3);
   }
 
   &.loading-spinner--light {
     background-color: rgba(255, 255, 255, .3);
+  }
+
+  .loading-spinner__spinner {
+    width: 48px;
+    height: 48px;
   }
 
   &.loading-spinner--dark .loading-spinner__spinner {
@@ -36,7 +41,21 @@
   }
 }
 
-@keyframes rotation {
+/* ICON VARIANT - inline icon */
+.loading-spinner--icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  .loading-spinner__spinner {
+    width: 1em;
+    height: 1em;
+    border: .3em solid currentColor;
+    border-bottom-color: transparent;
+  }
+}
+
+@keyframes loading-spinner-rotation {
   0% {
     transform: rotate(0deg);
   }

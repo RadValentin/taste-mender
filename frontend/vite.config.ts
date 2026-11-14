@@ -12,8 +12,21 @@ export default defineConfig(({ command }) => ({
   server: {
     port: 5173,
     proxy: {
-      // TasteMender API link
-      '/api': 'http://127.0.0.1:8000',
+      // Forward API requests to Django backend
+      // CORS prevents making requests between different ports
+      '/api': {
+        target: 'http://127.0.0.1:8000',
+        changeOrigin: true
+      },
+    },
+  },
+  test: {
+    globals: true,
+    environment: 'happy-dom',
+    coverage: {
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/**/*.d.ts', 'src/**/__tests__/**'],
+      reporter: ['text', 'html', 'lcov'],
     },
   },
 }))

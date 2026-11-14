@@ -9,7 +9,7 @@ export default function useBeforeUnload(enabled: boolean) {
 
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       event.preventDefault();
-      event.returnValue = "";
+      event.returnValue = "true"; // Nonempty string for legacy support
     };
 
 

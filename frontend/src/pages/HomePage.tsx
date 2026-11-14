@@ -3,12 +3,8 @@ import { useOutletContext } from "react-router";
 import { getTracksDailyPicks, getTracksOnThisDay, getTracksTop } from "../api";
 import PageMetadata from "../components/PageMetadata.tsx";
 import TrackCarousel from "../components/TrackCarousel";
-import type { Track } from "../types";
+import type { AppLayoutContext } from "../types";
 import "./HomePage.css";
-
-type AppLayoutContext = {
-  onPlay: (track: Track) => void;
-};
 
 export default function HomePage() {
   const { onPlay } = useOutletContext<AppLayoutContext>();

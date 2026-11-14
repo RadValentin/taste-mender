@@ -184,6 +184,7 @@ features_and_index_sample.npz
 output.txt
 db.sqbpro
 .ssh/
+frontend/coverage/
 
 youtube_track_metadata.json
 youtube_track_metadata.temp.json

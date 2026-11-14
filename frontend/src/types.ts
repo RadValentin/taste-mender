@@ -1,3 +1,5 @@
+import { AUDIO_FEATURES, MOOD_FEATURES } from "./constants";
+
 /** Shared */
 export type UUID = string;
 export type IsoDate = string;
@@ -68,6 +70,31 @@ export interface TrackFeaturesResponse {
 }
 
 /** Recommendation API */
+export type FeatureName =
+  | (typeof AUDIO_FEATURES)[number]
+  | (typeof MOOD_FEATURES)[number];
+
+export type GenreClassification = "rosamerica" | "dortmund";
+
+export type FiltersMeta = {
+  same_genre: boolean;
+  same_decade: boolean;
+  genre_classification: GenreClassification;
+}
+
+export type FiltersFeatureWeights = Record<FeatureName, number>;
+
+export type FiltersTotalWeights = {
+  similarity: number;
+  popularity: number;
+}
+
+export type FiltersPayload = {
+  filters: FiltersMeta;
+  feature_weights: FiltersFeatureWeights;
+  total_weights: FiltersTotalWeights;
+}
+
 export interface RecommendStats {
   candidate_count: number;
   search_time: number;
@@ -82,8 +109,6 @@ export interface RecommendResponse {
   similar_list: SimilarTrack[];
   stats: RecommendStats;
 }
-
-export type GenreClassification = "rosamerica" | "dortmund";
 
 export interface RecommendFilters {
   // list of artist MBIDs (strings)
@@ -121,3 +146,8 @@ export interface Paginated<T> {
   previous: string | null;
   results: T[];
 }
+
+/** Contexts */
+export type AppLayoutContext = {
+  onPlay: (track: Track) => void;
+};

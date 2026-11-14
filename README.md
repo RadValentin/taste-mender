@@ -7,7 +7,8 @@
 <p align="center">
   <a href="https://taste-mender.com/"><img src="https://img.shields.io/badge/demo-taste--mender.com-blue" alt="Live demo"></a>
   <a href="https://github.com/RadValentin/taste-mender/actions/workflows/django.yml"><img src="https://github.com/RadValentin/taste-mender/actions/workflows/django.yml/badge.svg?branch=main&amp;event=push" alt="Django CI"></a>
-  <a href="https://codecov.io/gh/RadValentin/taste-mender"><img src="https://codecov.io/gh/RadValentin/taste-mender/graph/badge.svg?token=JfbmGuIWGl" alt="codecov"></a>
+  <a href="https://codecov.io/gh/RadValentin/taste-mender"><img src="https://codecov.io/gh/RadValentin/taste-mender/branch/main/graph/badge.svg?token=JfbmGuIWGl&flag=backend" alt="Backend coverage"></a>
+  <a href="https://codecov.io/gh/RadValentin/taste-mender"><img src="https://codecov.io/gh/RadValentin/taste-mender/branch/main/graph/badge.svg?token=JfbmGuIWGl&flag=frontend" alt="Frontend coverage"></a>
   <a href="LICENSE"><img src="https://img.shields.io/github/license/RadValentin/taste-mender" alt="License"></a>
 </p>
 

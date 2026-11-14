@@ -1,126 +1,79 @@
-import { useState, useEffect, useRef } from "react";
+import { useEffect } from "react";
 import { useSearchParams } from "react-router";
 import { useOutletContext } from "react-router";
-import type { Track } from "./../types";
+import type { AppLayoutContext } from "./../types";
 import { searchTracks } from "./../api";
+import LoadingSpinner from "../components/LoadingSpinner.tsx";
 import PageMetadata from "./../components/PageMetadata.tsx";
 import TrackList from "./../components/TrackList";
 import TrackListSkeleton from "./../components/TrackListSkeleton.tsx";
 import StatusMessage from "./../components/StatusMessage";
 import "./../components/StatusMessage.css";
 import { usePlaybackContext } from "./../PlaybackContext";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import "./SearchPage.css";
 
-type AppLayoutContext = {
-  onPlay: (track: Track) => void;
-};
-
-type SearchResultsStatus = "DONE" | "ERROR" | "EMPTY";
-type SearchResultsState = {
-  data: Track[];
-  status: SearchResultsStatus;
-  hasMore: boolean;
-}
-
+// How many results to load at a time.
 const SEARCH_LIMIT = 25;
 
 export default function SearchPage() {
-  const [results, setResults] = useState<SearchResultsState>({
-    data: [], status: "DONE", hasMore: false
-  });
-  const [isLoading, setLoading] = useState(false);
-  const [isLoadingMore, setLoadingMore] = useState(false);
-  const loadMoreController = useRef<AbortController | null>(null);
   const { onPlay } = useOutletContext<AppLayoutContext>();
   const { dispatch } = usePlaybackContext();
-  const [searchParams, setSearchParams] = useSearchParams();
-  // QS params
-  const query = searchParams.get("q");
-  const limit = Number(searchParams.get("loaded") ?? SEARCH_LIMIT);
+  const [searchParams] = useSearchParams();
+  const queryStr = searchParams.get("q") || "";
+  const {
+    data, isLoading, isError, isFetching, isFetchingNextPage, isFetchNextPageError, hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
+    queryKey: ["search", "tracks", queryStr],
+    queryFn: ({ pageParam, signal }) =>
+      searchTracks(queryStr, SEARCH_LIMIT, pageParam, signal),
+    initialPageParam: 0,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+      return lastPage.has_more
+        ? lastPageParam + SEARCH_LIMIT
+        : undefined;
+    },
+    enabled: queryStr.length > 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    retry: false,
+    // Disable refetching data, no need to overload the API
+    refetchOnWindowFocus: false,
+    refetchOnReconnect: false,
+    refetchOnMount: false,
+  });
+  const tracks = data?.pages.flatMap(page => page.results) ?? [];
 
-  // Initial search (though input or navigation)
+  // Close the player after user search
   useEffect(() => {
-    // Close the player after user search
     dispatch({ type: "CLOSE_PLAYER" });
-    loadMoreController.current?.abort();
+  }, [queryStr, dispatch]);
 
-    if (!query) {
-      setResults({ data: [], status: "EMPTY", hasMore: false });
-      setLoading(false);
-      setLoadingMore(false);
-      return;
-    }
-
-    const controller = new AbortController();
-    setLoading(true);
-    setLoadingMore(false);
-    searchTracks(query, limit, 0, controller.signal)
-      .then(resp => {
-        setResults({
-          data: resp.results,
-          status: resp.results.length !== 0 ? "DONE" : "EMPTY",
-          hasMore: resp.has_more
-        });
-      })
-      .catch(err => {
-        if (controller.signal.aborted) {
-          return;
-        }
-
-        console.error("Error while searching for tracks: ", err);
-        setResults({ data: [], status: "ERROR", hasMore: false });
-      }).finally(() => {
-        if (!controller.signal.aborted) {
-          setLoading(false);
-        }
-      });
-
-    return () => {
-      controller.abort();
-      loadMoreController.current?.abort();
-    };
-  }, [query]);
-
-  // Loading more search results
   function handleLoadMore() {
-    const query = searchParams.get("q");
-    if (!query || isLoadingMore) {
-      return;
+    if (hasNextPage && !isFetching) {
+      void fetchNextPage();
+    }
+  }
+
+  function renderLoadMoreButton() {
+    if (!hasNextPage) {
+      return null;
     }
 
-    const offset = results.data.length;
-    const controller = new AbortController();
-    loadMoreController.current = controller;
-    setLoadingMore(true);
-
-    searchTracks(query, SEARCH_LIMIT, offset, controller.signal)
-      .then(resp => {
-        setResults(previous => ({
-          data: [...previous.data, ...resp.results],
-          status: "DONE",
-          hasMore: resp.has_more,
-        }));
-
-        // Persist number of results loaded through URL
-        const nextLoaded = results.data.length + SEARCH_LIMIT;
-        setSearchParams(params => {
-          params.set("loaded", String(nextLoaded));
-          return params;
-        }, {
-          replace: true
-        });
-      })
-      .catch(err => {
-        if (!controller.signal.aborted) {
-          console.error("Error while loading more search results: ", err);
-        }
-      })
-      .finally(() => {
-        if (!controller.signal.aborted) {
-          setLoadingMore(false);
-        }
-      });
-
+    return (
+      <button type="button"
+        className="btn btn-neon"
+        onClick={handleLoadMore}
+        disabled={isFetching}
+      >
+        {(isFetching || isFetchingNextPage) && <LoadingSpinner variant="icon" />}
+        {isFetchingNextPage
+          ? "Loading..."
+          : isFetchNextPageError
+            ? "Try again"
+            : "Load More"}
+      </button>
+    )
   }
 
   function renderContent() {
@@ -133,44 +86,45 @@ export default function SearchPage() {
       );
     }
 
-    switch (results.status) {
-      case "DONE":
-        return (
-          <>
-            <h2>Search results</h2>
-            <TrackList tracks={results.data} onPlay={onPlay}></TrackList>
-            {results.hasMore && (
-              <button
-                type="button"
-                className="btn btn-neon"
-                onClick={handleLoadMore}
-                disabled={isLoadingMore}
-              >
-                {isLoadingMore ? "Loading..." : "Load More"}
-              </button>
-            )}
-          </>
-        );
-      case "ERROR":
-        return (
+    // Only replace the whole page if there are no previously loaded results.
+    if (isError && !data) {
+      return (
+        <StatusMessage
+          title="Search unavailable"
+          description="There was an error while loading tracks. Please try again."
+          variant="error"
+        />
+      );
+    }
+
+    if (tracks.length === 0) {
+      return (
+        <StatusMessage
+          title="No matches found"
+          description="Try a different track title or artist name."
+          variant="info"
+        />
+      );
+    }
+
+    return (
+      <>
+        <h2>Search results</h2>
+        <TrackList tracks={tracks} onPlay={onPlay} />
+
+        {isFetchNextPageError && (
           <StatusMessage
-            title="Search unavailable"
-            description="There was an error while loading tracks. Please try again."
+            title="Could not load more tracks"
+            description="Your previous results are still available. Please try again."
             variant="error"
           />
-        );
-      case "EMPTY":
-      default:
-        return (
-          <StatusMessage
-            title="No matches found"
-            description="Try a different track title or artist name."
-            variant="info"
-          />
-        );
-    }
+        )}
+      </>
+    );
   }
 
+
+  // Main Render
   return (
     <>
       <PageMetadata
@@ -179,6 +133,9 @@ export default function SearchPage() {
       />
       <div className="search-page container">
         {renderContent()}
+        <div className="search-page__footer">
+          {renderLoadMoreButton()}
+        </div>
       </div>
     </>
   );
