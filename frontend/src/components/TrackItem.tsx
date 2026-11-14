@@ -55,6 +55,7 @@ export default function TrackItem({ track, onPlay, disabled, variant = "list" }:
     <div
       className={`track-item track-item--${variant}`}
       aria-label={`${track.title} by ${artists}`}
+      data-mbid={track.mbid}
     >
       <div className="track-item__coverart" aria-hidden="true">
         <ImageLoader src={artUrl} alt="cover art" fallback={fallbackText} />

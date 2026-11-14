@@ -284,7 +284,7 @@ LOGGING = {
             },
         },
         "ingest": {
-            "format": "%(message)s",
+            "format": "[%(levelname)s] %(message)s",
         },
     },
     "handlers": {

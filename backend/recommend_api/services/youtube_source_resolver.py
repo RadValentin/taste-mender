@@ -71,6 +71,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
 
     # If source is out of date, ping YT to check that video is still up and update metadata.
     if is_cached and not is_invalid and is_stale:
+        log.info("Refreshing stale track by querying Youtube Videos API, track=%s", track.pk)
         try:
             response: Response = requests.get(YOUTUBE_VIDEOS_URL, params={
                 "part": "snippet,status,id",
@@ -135,6 +136,7 @@ def get_youtube_source(track: Track) -> TrackSource | None:
     query: str = f"{track.title} {artist_name}".strip()
 
     try:
+        log.info("Searching for playable source by querying Youtube Search API, track=%s", track.pk)
         response: Response = requests.get(YOUTUBE_SEARCH_URL, params={
             "part": "snippet",
             "q": query,
