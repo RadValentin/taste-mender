@@ -118,16 +118,26 @@ TARGET_FEATURES = {
     "mood_aggressive": {
         "pos_pred_key": "aggressive",
         "neg_pred_key": "not_aggressive"
+    },
+    "mood_happy": {
+        "pos_pred_key": "happy",
+        "neg_pred_key": "not_happy"
     }
 }
 
 
 def aggregate_stats(
-    target_mbids: list[str] | None = None, use_sample=False, num_parts=None
+    target_mbids: list[str] | None = None,
+    use_sample=False,
+    num_parts=None,
+    *,
+    target_features: dict[str, dict[str, str]] | None = None,
 ) -> dict[str, Any]:
+    """Aggregate predictions; make sure to pass `target_features` explicitly when caching."""
     if target_mbids is None or len(target_mbids) < 1:
         return {}
 
+    features = TARGET_FEATURES if target_features is None else target_features
     submissions_by_mbid = get_tracks_submissions(target_mbids, use_sample, num_parts)
     if submissions_by_mbid is None:
         return {}
@@ -135,7 +145,7 @@ def aggregate_stats(
     # Get relevant feature data from JSON dict
     output: dict[str, dict] = defaultdict(dict)
     for mbid in target_mbids:
-        for feature_name, feature_keys in TARGET_FEATURES.items():
+        for feature_name, feature_keys in features.items():
             stats = {
                 # Stats for prediction probabilities
                 "predictions": [],
