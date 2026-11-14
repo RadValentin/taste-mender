@@ -122,6 +122,10 @@ TARGET_FEATURES = {
     "mood_happy": {
         "pos_pred_key": "happy",
         "neg_pred_key": "not_happy"
+    },
+    "mood_sad": {
+        "pos_pred_key": "sad",
+        "neg_pred_key": "not_sad"
     }
 }
 
