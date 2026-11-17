@@ -3,14 +3,17 @@ import os, time, gc, uuid, shutil, logging
 import numpy as np
 import pandas as pd
 from collections import Counter, defaultdict
+from dataclasses import asdict
 from datetime import date
 from django.contrib.postgres.search import SearchVector
 from django.db import transaction, connection
 from django.conf import settings as django_settings
+from django.utils import timezone
 from dotenv import dotenv_values
 from pathlib import Path
 from sklearn.preprocessing import StandardScaler
 from recommend_api.models import (
+    Manifest,
     Track,
     Artist,
     TrackArtist,
@@ -19,6 +22,7 @@ from recommend_api.models import (
     GenreDortmund,
     GenreRosamerica,
 )
+from recommend_api.dataset_manifest import DatasetManifest, MANIFEST_VERSION
 from pympler import asizeof
 from typing import List, Set, Tuple
 from ingest.core import track_processing_helpers as tph
@@ -97,6 +101,8 @@ def build_database(
 
     # Clean old records
     print("Cleaning up old records", flush=True)
+    # An interrupted rebuild must not retain the previous run's completed manifest.
+    Manifest.objects.all().delete()
     AlbumArtist.objects.all().delete()
     Album.objects.all().delete()
     TrackArtist.objects.all().delete()
@@ -490,8 +496,16 @@ def build_database(
     )
 
     filename = os.path.join(django_settings.BASE_DIR, django_settings.FEATURE_MATRIX_FILENAME)
+    manifest = DatasetManifest(
+        manifest_version=MANIFEST_VERSION,
+        run_id=uuid.uuid4(),
+        generated_at=timezone.now(),
+        track_count=len(mbids_v16),
+        app_version=django_settings.APP_VERSION,
+    )
     np.savez_compressed(
         filename,
+        manifest=np.array(manifest.to_json()),
         # save vectors with values for audio features of tracks
         feature_matrix=feature_matrix_scaled,
         # keep the raw matrix for future re-weighting experiments
@@ -503,6 +517,9 @@ def build_database(
         genre_dortmund=df["genre_dortmund"].to_numpy(np.uint16),
         genre_rosamerica=df["genre_rosamerica"].to_numpy(np.uint16),
     )
+
+    # Publish completion only after the DB inserts and atomic archive replacement succeed.
+    Manifest.objects.create(**asdict(manifest))
 
     end = time.time()
     print(f"Exported feature matrix and indexes in {end - start:.2f} seconds")
