@@ -7,13 +7,13 @@ from typing import Iterator
 
 class LMDBTrackIndex:
     """
-    Disk-based index that stores track data grouped by their MusicBrainz ID (mbid), a 36 character 
+    Disk-based index that stores track data grouped by their MusicBrainz ID (mbid), a 36 character
     string in UUID format. Interface mimics standard Python dict.
 
     External API view: `uuid-key: [ {item1}, {item2}, ... ]`
-    
+
     Keys are internally they're serialized to bytes. Externally they're strings.
-    Values are stored compressed (optional) and serialized to JSON bytes. Externally they're 
+    Values are stored compressed (optional) and serialized to JSON bytes. Externally they're
     returned as lists of JSON dicts as tracks can have duplicates.
     """
 
@@ -48,7 +48,7 @@ class LMDBTrackIndex:
     def _deserialize_key(self, key: bytes) -> str:
         """Convert a key from bytes to string for external use"""
         return str(uuid.UUID(bytes=key))
-    
+
     def _serialize_values(self, data: list) -> bytes:
         """Compress (optional) and encode values to JSON bytes"""
         json_bytes = orjson.dumps(data)
@@ -61,7 +61,7 @@ class LMDBTrackIndex:
         """Decompress (optional) and decode values from JSON bytes to list of dicts"""
         if self.disable_compression:
             return orjson.loads(data)
-    
+
         decompressed = self.decompressor.decompress(data)
         return orjson.loads(decompressed)
 
@@ -79,7 +79,7 @@ class LMDBTrackIndex:
             self.stats["duplicates"] += 1
         else:
             lst = [value]
-        
+
         self._txn.put(key_bytes, self._serialize_values(lst))
         self._n += 1
         if self._n >= self._batch:
@@ -97,7 +97,7 @@ class LMDBTrackIndex:
             if not isinstance(values, list):
                 raise ValueError("Value must be a list")
             self._txn.put(key_bytes, self._serialize_values(values))
-        
+
         self._n += 1
         if self._n >= self._batch:
             self._txn.commit()
@@ -128,7 +128,7 @@ class LMDBTrackIndex:
                     self._deserialize_key(key)
                     for key in cur.iternext(keys=True, values=False)
                 )
-            
+
     def keys_np(self) -> NDArray[np.bytes_]:
         """Return all keys as a NumPy array of fixed-size 16-byte records (UUID bytes)."""
         with self.env.begin(db=self.db) as txn:
@@ -141,7 +141,7 @@ class LMDBTrackIndex:
                     arr[i] = np.frombuffer(key, dtype="V16")
                     i += 1
         return arr
-            
+
     def first_key(self) -> str | None:
         with self.env.begin(db=self.db) as txn:
             with txn.cursor() as cur:

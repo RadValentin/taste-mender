@@ -1,5 +1,5 @@
 # Data Processing for Music Recommendation System
-import os, time, gc, uuid, shutil, logging
+import os, time, gc, uuid, shutil, logging, tempfile
 import numpy as np
 import pandas as pd
 from collections import Counter, defaultdict
@@ -42,6 +42,22 @@ def ingest_parsed_track(result: dict | None, track_index: LMDBTrackIndex, counte
     counters["processing"] += 1
     if counters["processing"] % 1000 == 0:
         print(".", end="", flush=True)
+
+
+def try_load_track_index(path: str, map_size: int) -> LMDBTrackIndex | None:
+    """Provides a way to check if the LMDB track index can be loaded successfully from disk."""
+    track_index = None
+    try:
+        track_index = LMDBTrackIndex(path, map_size=map_size)
+        first_key = track_index.first_key()
+        if first_key is not None and track_index.get(first_key):
+            return track_index
+    except Exception:
+        pass
+
+    if track_index is not None:
+        track_index.close()
+    return None
 
 
 def build_database(
@@ -157,26 +173,46 @@ def build_database(
         MAP_SIZE = len(archive_paths) * 1 * 1024 * 1024 * 1024 # 1GB per archive
         print(f"Will load records from archives", flush=True)
 
-    # keep track of unique track data, indexed by MBID
-    lmdb_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lmdb_data")
-    if os.path.exists(lmdb_dir):
-        shutil.rmtree(lmdb_dir)
-    os.makedirs(lmdb_dir, exist_ok=True)
-    track_index = LMDBTrackIndex(lmdb_dir, map_size=MAP_SIZE)
+    # We'll store the extracted track data in a LMDB store and persist to disk. Each type of run
+    # will generate its own store.
+    lmdb_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lmdb_data")
+    os.makedirs(lmdb_root, exist_ok=True)
 
-    # Process file-by-file (individual JSONs)
-    if len(archive_paths) < 1:
-        for json_path in json_paths:
-            parsed = tph.process_file(json_path)
-            ingest_parsed_track(parsed, track_index, counters)
+    if (use_sample):
+        lmdb_dir = os.path.join(lmdb_root, "sample")
+    elif parts_list:
+        parts_str = '-'.join(str(x) for x in parts_list)
+        lmdb_dir = os.path.join(lmdb_root, f"parts-list-{parts_str}")
+    elif num_parts:
+        lmdb_dir = os.path.join(lmdb_root, f"parts-{num_parts}")
     else:
-        # Process archive-by-archive
-        for archive_path in archive_paths:
-            for parsed in tph.iter_archive(archive_path, limit=None):
-                ingest_parsed_track(parsed, track_index, counters)
+        lmdb_dir = os.path.join(lmdb_root, "full")
 
-    # Ensure pending transactions are committed to store
-    track_index.flush()
+    track_index = try_load_track_index(lmdb_dir, MAP_SIZE) if os.path.exists(lmdb_dir) else None
+    if track_index is not None:
+        print(f"Found data from a previous run on disk, will load from {lmdb_dir}", flush=True)
+    else:
+        if os.path.exists(lmdb_dir):
+            print("Found invalid data from a previous run; rebuilding from dataset archives.", flush=True)
+            shutil.rmtree(lmdb_dir)
+
+        os.makedirs(lmdb_dir, exist_ok=True)
+        track_index = LMDBTrackIndex(lmdb_dir, map_size=MAP_SIZE)
+
+        # Process file-by-file (individual JSONs)
+        if len(archive_paths) < 1:
+            for json_path in json_paths:
+                parsed = tph.process_file(json_path)
+                ingest_parsed_track(parsed, track_index, counters)
+        else:
+            # Process archive-by-archive
+            for archive_path in archive_paths:
+                for parsed in tph.iter_archive(archive_path, limit=None):
+                    ingest_parsed_track(parsed, track_index, counters)
+
+        # Ensure pending transactions are committed to store
+        track_index.flush()
+
 
     size_track_raw = asizeof.asizeof(track_index.first_value(raw=True))
     size_track = asizeof.asizeof(track_index.first_value(raw=False))
@@ -198,6 +234,15 @@ def build_database(
     VEC_FIELD_COLUMNS = [
         f"{field}_{i+1}" for field, order in VEC_FIELDS for i in range(len(order))
     ]
+
+    # Keep the unmerged track data on disk for future runs. Create a temporary copy of it for
+    # the current run.
+    track_index.close()
+    del track_index
+
+    temporary_lmdb_dir = tempfile.mkdtemp(prefix="merged-track-index-", dir=lmdb_root)
+    shutil.copytree(lmdb_dir, temporary_lmdb_dir, dirs_exist_ok=True)
+    track_index = LMDBTrackIndex(temporary_lmdb_dir, map_size=MAP_SIZE)
 
     merged_count = 0
     track_index_keys = track_index.keys_np()
@@ -370,8 +415,8 @@ def build_database(
 
     track_index.close()
     del track_index
+    shutil.rmtree(temporary_lmdb_dir)
     gc.collect()
-    shutil.rmtree(lmdb_dir)
 
     ## NOTE: Phase 4 - Insert data into DB
 
