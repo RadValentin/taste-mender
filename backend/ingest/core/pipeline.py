@@ -375,8 +375,13 @@ def build_database(
             # create Album object only if we have BOTH id and name
             if (album_id and album_name):
                 if (album_id not in album_index) or (album_index[album_id] is None):
+                    if len(album_name) > 255:
+                        log.warning(
+                            "Album name too long (%d chars), truncating. album=%s track=%s name=%r",
+                            len(album_name), album_id, track_id, album_name[:300],
+                        )
                     album_index[album_id] = Album(
-                        musicbrainz_albumid=album_id, name=album_name, date=album_date
+                        musicbrainz_albumid=album_id, name=album_name[:255], date=album_date
                     )
 
                 # Link track to album
@@ -443,8 +448,13 @@ def build_database(
         merged_artist_index = {}
         for artist_id, artist_names in artist_index.items():
             merged_name = Counter(artist_names).most_common(1)[0][0]
+            if len(merged_name) > 255:
+                log.warning(
+                    "Artist name too long (%d chars), truncating. artist=%s name=%r",
+                    len(merged_name), artist_id, merged_name[:300],
+                )
             merged_artist_index[artist_id] = Artist(
-                musicbrainz_artistid=artist_id, name=merged_name
+                musicbrainz_artistid=artist_id, name=merged_name[:255]
             )
         del artist_index
 
