@@ -293,21 +293,47 @@ LOGGING = {
             "level": "DEBUG",
             "formatter": "simple",
         },
-        "ingest_console": {
+        "ingest_pipeline_file": {
+            "class": "logging.FileHandler",
+            "filename": BASE_DIR / "ingest" / "ingest.log",
+            "level": "INFO",
+            "formatter": "ingest_pipeline",
+            "encoding": "utf-8",
+            "delay": True,
+        },
+        "enrichment_console": {
             "class": "logging.StreamHandler",
             "level": "INFO",
-            "formatter": "ingest",
+            "formatter": "enrichment",
+        },
+        "startup_console": {
+            "class": "logging.StreamHandler",
+            "level": "WARNING",
+            "formatter": "startup",
         },
     },
     "loggers": {
-        "ingest": {
-            "handlers": ["ingest_console"],
+        # logging for the ingest pipeline and enrichments
+        "ingest.core": {
+            "handlers": ["ingest_pipeline_file"],
             "level": "INFO",
             "propagate": False,
         },
+        "ingest.enrichments": {
+            "handlers": ["enrichment_console"],
+            "level": "INFO",
+            "propagate": False,
+        },
+        # standard logging to console
         "recommend_api": {
             "handlers": ["console"],
             "level": "DEBUG",
+            "propagate": False,
+        },
+        # logger for startup messages, matches Django standard formatting
+        "recommend_api.startup": {
+            "handlers": ["startup_console"],
+            "level": "WARNING",
             "propagate": False,
         },
     },

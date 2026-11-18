@@ -2,6 +2,7 @@ import os, shutil, uuid
 import numpy as np
 from django.test import SimpleTestCase
 from ingest.core.lmdb_index import LMDBTrackIndex
+from unittest.mock import patch
 
 
 class LMDBTrackIndexTests(SimpleTestCase):
@@ -111,6 +112,22 @@ class LMDBTrackIndexTests(SimpleTestCase):
         tmp_store = LMDBTrackIndex(self.store_path)
         self.assertEqual(tmp_store.get(self.key_a), [self.value_a])
         tmp_store.close()
+
+    def test_completion_flag_is_persisted_after_flushing(self):
+        self.store.append(self.key_a, self.value_a)
+        self.assertFalse(self.store.is_complete())
+        self.store.mark_complete()
+        self.store.close()
+        self.store = LMDBTrackIndex(self.store_path, map_size=20 * 1024**2)
+        self.assertTrue(self.store.is_complete())
+        self.assertEqual(self.store.get(self.key_a), [self.value_a])
+        self.assertEqual(self.store.keys(), {self.key_a})
+
+    def test_failed_flush_does_not_mark_complete(self):
+        with patch.object(self.store, "flush", side_effect=RuntimeError("flush failed")):
+            with self.assertRaisesRegex(RuntimeError, "flush failed"):
+                self.store.mark_complete()
+        self.assertFalse(self.store.is_complete())
 
     def tearDown(self):
         self.store.close()
