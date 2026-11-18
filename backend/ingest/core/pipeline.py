@@ -60,6 +60,19 @@ def try_load_track_index(path: str, map_size: int) -> LMDBTrackIndex | None:
     return None
 
 
+def prepare_single_submission(track: dict) -> dict | None:
+    """If a track has a single submission we don't need to merge any duplicates"""
+    if not track.get("artist_pairs"):
+        return None
+
+    result = track.copy()
+    result["artist_pairs"] = sorted(track["artist_pairs"], key=lambda pair: pair[0])
+    album_info = track.get("album_info")
+    result["album_info"] = album_info if album_info and album_info[0] else None
+    result["submissions"] = 1
+    return result
+
+
 def build_database(
     use_sample: bool,
     num_parts: int | None = None,
@@ -256,6 +269,15 @@ def build_database(
         tracks = track_index.get(mbid)
         if not tracks:
             track_index[mbid] = None
+            continue
+
+        if len(tracks) == 1:
+            track = prepare_single_submission(tracks[0])
+            if track is None:
+                track_index[mbid] = None
+                counters["missing_artist"] += 1
+            else:
+                track_index[mbid] = [track]
             continue
 
         # Use a track as a base for fields that won't be selected
