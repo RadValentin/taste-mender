@@ -240,11 +240,10 @@ def build_database(
 
     # Keep the unmerged track data on disk for future runs. Create a temporary copy of it for
     # the current run.
+    temporary_lmdb_dir = tempfile.mkdtemp(prefix="merged-track-index-", dir=lmdb_root)
+    track_index.env.copy(temporary_lmdb_dir, compact=True)
     track_index.close()
     del track_index
-
-    temporary_lmdb_dir = tempfile.mkdtemp(prefix="merged-track-index-", dir=lmdb_root)
-    shutil.copytree(lmdb_dir, temporary_lmdb_dir, dirs_exist_ok=True)
     track_index = LMDBTrackIndex(temporary_lmdb_dir, map_size=MAP_SIZE)
 
     merged_count = 0
