@@ -125,6 +125,9 @@ audio feature vectors. It is loaded once into memory at process startup via a si
 `FeatureStore` class. Cosine similarity comparisons happen entirely in RAM against this
 matrix, making recommendations very fast (typically under 10 ms for 80k+ tracks).
 
+At WSGI/ASGI startup, an advisory check compares the database and feature-matrix ingest
+manifests and track counts; mismatches are logged as warnings and do not prevent startup.
+
 ---
 
 ## Repository Structure
