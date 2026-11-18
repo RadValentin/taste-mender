@@ -286,6 +286,11 @@ LOGGING = {
         "ingest": {
             "format": "%(message)s",
         },
+        "startup": {
+            "()": "colorlog.ColoredFormatter",
+            "format": "%(log_color)s%(message)s%(reset)s",
+            "log_colors": {"WARNING": "yellow"},
+        },
     },
     "handlers": {
         "console": {
@@ -298,16 +303,29 @@ LOGGING = {
             "level": "INFO",
             "formatter": "ingest",
         },
+        "startup_console": {
+            "class": "logging.StreamHandler",
+            "level": "WARNING",
+            "formatter": "startup",
+        },
     },
     "loggers": {
+        # simplified logger for running the ingest pipeline
         "ingest": {
             "handlers": ["ingest_console"],
             "level": "INFO",
             "propagate": False,
         },
+        # standard logging to console
         "recommend_api": {
             "handlers": ["console"],
             "level": "DEBUG",
+            "propagate": False,
+        },
+        # logger for startup messages, matches Django standard formatting
+        "recommend_api.startup": {
+            "handlers": ["startup_console"],
+            "level": "WARNING",
             "propagate": False,
         },
     },
