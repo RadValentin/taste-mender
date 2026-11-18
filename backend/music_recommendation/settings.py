@@ -283,6 +283,9 @@ LOGGING = {
                 "CRITICAL": "bold_red",
             },
         },
+        "ingest": {
+            "format": "%(message)s",
+        },
         "ingest_pipeline": {
             "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
             "datefmt": "%Y-%m-%d %H:%M:%S",
@@ -301,6 +304,11 @@ LOGGING = {
             "class": "logging.StreamHandler",
             "level": "DEBUG",
             "formatter": "simple",
+        },
+        "ingest_console": {
+            "class": "logging.StreamHandler",
+            "level": "INFO",
+            "formatter": "ingest",
         },
         "ingest_pipeline_file": {
             "class": "logging.FileHandler",
@@ -323,6 +331,11 @@ LOGGING = {
     },
     "loggers": {
         # logging for the ingest pipeline and enrichments
+        "ingest": {
+            "handlers": ["ingest_console"],
+            "level": "INFO",
+            "propagate": False,
+        },
         "ingest.core": {
             "handlers": ["ingest_pipeline_file"],
             "level": "INFO",

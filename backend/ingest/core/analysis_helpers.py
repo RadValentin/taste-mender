@@ -7,7 +7,7 @@ from statistics import mean, median, stdev
 from typing import Any
 import pandas as pd
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("ingest")
 
 
 if __name__ == "__main__":

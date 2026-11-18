@@ -11,7 +11,7 @@ if os.name == "nt":
     os.environ["LIBARCHIVE"] = (Path(__file__).parent.resolve() / "libarchive-3.8.10.dll").as_posix()
 import libarchive
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("ingest.core")
 invalid_date_count = 0
 missing_data_count = 0
 missing_title_count = 0

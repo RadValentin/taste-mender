@@ -29,7 +29,7 @@ from ingest.core import track_processing_helpers as tph
 from ingest.core.lmdb_index import LMDBTrackIndex
 from ingest.core.cli_helpers import print_banner, confirm, spinner, show_progress_bar
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("ingest.core")
 
 
 def ingest_parsed_track(result: dict | None, track_index: LMDBTrackIndex, counters):
