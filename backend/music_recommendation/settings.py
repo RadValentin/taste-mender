@@ -283,8 +283,17 @@ LOGGING = {
                 "CRITICAL": "bold_red",
             },
         },
-        "ingest": {
+        "ingest_pipeline": {
+            "format": "%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+            "datefmt": "%Y-%m-%d %H:%M:%S",
+        },
+        "enrichment": {
             "format": "[%(levelname)s] %(message)s",
+        },
+        "startup": {
+            "()": "colorlog.ColoredFormatter",
+            "format": "%(log_color)s%(message)s%(reset)s",
+            "log_colors": {"WARNING": "yellow"},
         },
     },
     "handlers": {
