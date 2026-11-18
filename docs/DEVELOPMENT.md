@@ -91,6 +91,18 @@ python manage.py build_db --sample # Use the sample dataset with 100k entries
 
 ## Development Guidelines
 
+### Startup checks
+#### Dataset consistency check
+
+At app startup we check that the DB and the features file were built in the same run. This is
+useful for ensuring they're in sync and that the metadata in the DB matches features data in the file.
+
+You can run this check manually from `backend/`:
+
+```bash
+python manage.py check --deploy --tag dataset --database default
+```
+
 ### Database - creation and enhancements
 The data loaded into the database is conceptually split in two categories:
 - `core` - data needed for running the app, this is the **ingest pipeline** which builds the main database from the AcousticBrainz dataset

@@ -8,6 +8,7 @@ import numpy.typing as npt
 from django.conf import settings
 from sklearn.metrics.pairwise import cosine_similarity
 from typing import Any, NotRequired, TypedDict
+from recommend_api.dataset_manifest import DatasetManifest
 
 log = logging.getLogger(__name__)
 
@@ -71,6 +72,8 @@ class FeatureStore:
     def __init__(self, path):
         if getattr(self, "_loaded", False):
             return
+        self.manifest: DatasetManifest | None = None
+        self.manifest_error: str | None = None
         try:
             data = np.load(path, allow_pickle=True, mmap_mode="r")
             # Load the audio features matrix and track metadata into memory
@@ -81,6 +84,14 @@ class FeatureStore:
             self.years: npt.NDArray[np.int16] = data["years"]  # release year
             self.genre_dortmund: npt.NDArray[np.uint16] = data["genre_dortmund"]  # genre classification
             self.genre_rosamerica: npt.NDArray[np.uint16] = data["genre_rosamerica"]  # genre classification
+
+            # Legacy and malformed manifests are reported by startup checks, not fatal.
+            if "manifest" in data:
+                try:
+                    raw_manifest = data["manifest"]
+                    self.manifest = DatasetManifest.from_json(raw_manifest.item())
+                except (ValueError, TypeError) as exc:
+                    self.manifest_error = str(exc)
 
             # Ensure data is read-only
             for arr in (

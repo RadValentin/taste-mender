@@ -12,6 +12,25 @@ isrc_validator = RegexValidator(r"^[A-Z]{2}[A-Z0-9]{3}[0-9]{7}$", "The string is
 
 
 # Models
+class Manifest(models.Model):
+    """
+    Metadata for determining which ingest run the current DB was created in.
+    Useful for keeping DB and feature matrix in sync.
+    """
+
+    id = models.PositiveSmallIntegerField(primary_key=True, default=1, editable=False)
+    manifest_version = models.PositiveSmallIntegerField(default=1)
+    run_id = models.UUIDField()
+    generated_at = models.DateTimeField()
+    track_count = models.PositiveBigIntegerField()
+    app_version = models.CharField(max_length=64, blank=True, default="")
+
+    class Meta:
+        constraints = [
+            models.CheckConstraint(condition=models.Q(id=1), name="dataset_manifest_singleton"),
+        ]
+
+
 class Artist(models.Model):
     musicbrainz_artistid = models.CharField(primary_key=True, max_length=36)
     name = models.CharField(max_length=255)

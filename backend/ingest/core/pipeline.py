@@ -1,16 +1,19 @@
 # Data Processing for Music Recommendation System
-import os, time, gc, uuid, shutil, logging
+import os, time, gc, uuid, shutil, logging, tempfile
 import numpy as np
 import pandas as pd
 from collections import Counter, defaultdict
+from dataclasses import asdict
 from datetime import date
 from django.contrib.postgres.search import SearchVector
 from django.db import transaction, connection
 from django.conf import settings as django_settings
+from django.utils import timezone
 from dotenv import dotenv_values
 from pathlib import Path
 from sklearn.preprocessing import StandardScaler
 from recommend_api.models import (
+    Manifest,
     Track,
     Artist,
     TrackArtist,
@@ -19,6 +22,7 @@ from recommend_api.models import (
     GenreDortmund,
     GenreRosamerica,
 )
+from recommend_api.dataset_manifest import DatasetManifest, MANIFEST_VERSION
 from pympler import asizeof
 from typing import List, Set, Tuple
 from ingest.core import track_processing_helpers as tph
@@ -38,6 +42,35 @@ def ingest_parsed_track(result: dict | None, track_index: LMDBTrackIndex, counte
     counters["processing"] += 1
     if counters["processing"] % 1000 == 0:
         print(".", end="", flush=True)
+
+
+def try_load_track_index(path: str, map_size: int) -> LMDBTrackIndex | None:
+    """Provides a way to check if the LMDB track index can be loaded successfully from disk."""
+    track_index = None
+    try:
+        track_index = LMDBTrackIndex(path, map_size=map_size)
+        first_key = track_index.first_key()
+        if track_index.is_complete() and first_key is not None and track_index.get(first_key):
+            return track_index
+    except Exception:
+        pass
+
+    if track_index is not None:
+        track_index.close()
+    return None
+
+
+def prepare_single_submission(track: dict) -> dict | None:
+    """If a track has a single submission we don't need to merge any duplicates"""
+    if not track.get("artist_pairs"):
+        return None
+
+    result = track.copy()
+    result["artist_pairs"] = sorted(track["artist_pairs"], key=lambda pair: pair[0])
+    album_info = track.get("album_info")
+    result["album_info"] = album_info if album_info and album_info[0] else None
+    result["submissions"] = 1
+    return result
 
 
 def build_database(
@@ -69,16 +102,6 @@ def build_database(
     config = dotenv_values(BASE_DIR / ".env")
     # Globals used to track how many records are skipped while processing
     counters = {"missing_artist": 0, "processing": 0}
-    # Don't show logs in console, they'll be logged to a file, clear the file at the start
-    logfile_path = os.path.join(BASE_DIR / "ingest", "ingest.log")
-    logging.basicConfig(
-        filename=logfile_path,
-        level=logging.INFO,
-        filemode="w+",
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
     ## NOTE: Phase 1 - Load JSON data about tracks into memory
 
     print("\n=== Phase 1: Loading track data ===", flush=True)
@@ -97,6 +120,8 @@ def build_database(
 
     # Clean old records
     print("Cleaning up old records", flush=True)
+    # An interrupted rebuild must not retain the previous run's completed manifest.
+    Manifest.objects.all().delete()
     AlbumArtist.objects.all().delete()
     Album.objects.all().delete()
     TrackArtist.objects.all().delete()
@@ -151,26 +176,46 @@ def build_database(
         MAP_SIZE = len(archive_paths) * 1 * 1024 * 1024 * 1024 # 1GB per archive
         print(f"Will load records from archives", flush=True)
 
-    # keep track of unique track data, indexed by MBID
-    lmdb_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lmdb_data")
-    if os.path.exists(lmdb_dir):
-        shutil.rmtree(lmdb_dir)
-    os.makedirs(lmdb_dir, exist_ok=True)
-    track_index = LMDBTrackIndex(lmdb_dir, map_size=MAP_SIZE)
+    # We'll store the extracted track data in a LMDB store and persist to disk. Each type of run
+    # will generate its own store.
+    lmdb_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lmdb_data")
+    os.makedirs(lmdb_root, exist_ok=True)
 
-    # Process file-by-file (individual JSONs)
-    if len(archive_paths) < 1:
-        for json_path in json_paths:
-            parsed = tph.process_file(json_path)
-            ingest_parsed_track(parsed, track_index, counters)
+    if (use_sample):
+        lmdb_dir = os.path.join(lmdb_root, "sample")
+    elif parts_list:
+        parts_str = '-'.join(str(x) for x in parts_list)
+        lmdb_dir = os.path.join(lmdb_root, f"parts-list-{parts_str}")
+    elif num_parts:
+        lmdb_dir = os.path.join(lmdb_root, f"parts-{num_parts}")
     else:
-        # Process archive-by-archive
-        for archive_path in archive_paths:
-            for parsed in tph.iter_archive(archive_path, limit=None):
-                ingest_parsed_track(parsed, track_index, counters)
+        lmdb_dir = os.path.join(lmdb_root, "full")
 
-    # Ensure pending transactions are committed to store
-    track_index.flush()
+    track_index = try_load_track_index(lmdb_dir, MAP_SIZE) if os.path.exists(lmdb_dir) else None
+    if track_index is not None:
+        print(f"Found data from a previous run on disk, will load from {lmdb_dir}", flush=True)
+    else:
+        if os.path.exists(lmdb_dir):
+            print("Found incomplete or invalid data from a previous run; rebuilding from dataset archives.", flush=True)
+            shutil.rmtree(lmdb_dir)
+
+        os.makedirs(lmdb_dir, exist_ok=True)
+        track_index = LMDBTrackIndex(lmdb_dir, map_size=MAP_SIZE)
+
+        # Process file-by-file (individual JSONs)
+        if len(archive_paths) < 1:
+            for json_path in json_paths:
+                parsed = tph.process_file(json_path)
+                ingest_parsed_track(parsed, track_index, counters)
+        else:
+            # Process archive-by-archive
+            for archive_path in archive_paths:
+                for parsed in tph.iter_archive(archive_path, limit=None):
+                    ingest_parsed_track(parsed, track_index, counters)
+
+        # Mark the cache complete only after all inputs have been processed and flushed.
+        track_index.mark_complete()
+
 
     size_track_raw = asizeof.asizeof(track_index.first_value(raw=True))
     size_track = asizeof.asizeof(track_index.first_value(raw=False))
@@ -193,6 +238,14 @@ def build_database(
         f"{field}_{i+1}" for field, order in VEC_FIELDS for i in range(len(order))
     ]
 
+    # Keep the unmerged track data on disk for future runs. Create a temporary copy of it for
+    # the current run.
+    temporary_lmdb_dir = tempfile.mkdtemp(prefix="merged-track-index-", dir=lmdb_root)
+    track_index.env.copy(temporary_lmdb_dir, compact=True)
+    track_index.close()
+    del track_index
+    track_index = LMDBTrackIndex(temporary_lmdb_dir, map_size=MAP_SIZE)
+
     merged_count = 0
     track_index_keys = track_index.keys_np()
     track_index_keys_count = track_index_keys.size
@@ -205,6 +258,15 @@ def build_database(
         tracks = track_index.get(mbid)
         if not tracks:
             track_index[mbid] = None
+            continue
+
+        if len(tracks) == 1:
+            track = prepare_single_submission(tracks[0])
+            if track is None:
+                track_index[mbid] = None
+                counters["missing_artist"] += 1
+            else:
+                track_index[mbid] = [track]
             continue
 
         # Use a track as a base for fields that won't be selected
@@ -364,8 +426,8 @@ def build_database(
 
     track_index.close()
     del track_index
+    shutil.rmtree(temporary_lmdb_dir)
     gc.collect()
-    shutil.rmtree(lmdb_dir)
 
     ## NOTE: Phase 4 - Insert data into DB
 
@@ -490,8 +552,16 @@ def build_database(
     )
 
     filename = os.path.join(django_settings.BASE_DIR, django_settings.FEATURE_MATRIX_FILENAME)
+    manifest = DatasetManifest(
+        manifest_version=MANIFEST_VERSION,
+        run_id=uuid.uuid4(),
+        generated_at=timezone.now(),
+        track_count=len(mbids_v16),
+        app_version=django_settings.APP_VERSION,
+    )
     np.savez_compressed(
         filename,
+        manifest=np.array(manifest.to_json()),
         # save vectors with values for audio features of tracks
         feature_matrix=feature_matrix_scaled,
         # keep the raw matrix for future re-weighting experiments
@@ -503,6 +573,9 @@ def build_database(
         genre_dortmund=df["genre_dortmund"].to_numpy(np.uint16),
         genre_rosamerica=df["genre_rosamerica"].to_numpy(np.uint16),
     )
+
+    # Publish completion only after the DB inserts and atomic archive replacement succeed.
+    Manifest.objects.create(**asdict(manifest))
 
     end = time.time()
     print(f"Exported feature matrix and indexes in {end - start:.2f} seconds")
