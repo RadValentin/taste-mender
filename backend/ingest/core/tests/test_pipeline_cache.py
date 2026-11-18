@@ -19,6 +19,7 @@ class PipelineCacheTests(SimpleTestCase):
             store = LMDBTrackIndex(path, map_size=20 * 1024**2)
             track_id = "9a7f8913-7a6f-4708-9017-cf4d0c857756"
             store[track_id] = [{"value": "raw"}]
+            store.mark_complete()
             store.close()
 
             cached_store = try_load_track_index(path, map_size=20 * 1024**2)

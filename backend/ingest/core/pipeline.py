@@ -50,7 +50,7 @@ def try_load_track_index(path: str, map_size: int) -> LMDBTrackIndex | None:
     try:
         track_index = LMDBTrackIndex(path, map_size=map_size)
         first_key = track_index.first_key()
-        if first_key is not None and track_index.get(first_key):
+        if track_index.is_complete() and first_key is not None and track_index.get(first_key):
             return track_index
     except Exception:
         pass
@@ -196,7 +196,7 @@ def build_database(
         print(f"Found data from a previous run on disk, will load from {lmdb_dir}", flush=True)
     else:
         if os.path.exists(lmdb_dir):
-            print("Found invalid data from a previous run; rebuilding from dataset archives.", flush=True)
+            print("Found incomplete or invalid data from a previous run; rebuilding from dataset archives.", flush=True)
             shutil.rmtree(lmdb_dir)
 
         os.makedirs(lmdb_dir, exist_ok=True)
@@ -213,8 +213,8 @@ def build_database(
                 for parsed in tph.iter_archive(archive_path, limit=None):
                     ingest_parsed_track(parsed, track_index, counters)
 
-        # Ensure pending transactions are committed to store
-        track_index.flush()
+        # Mark the cache complete only after all inputs have been processed and flushed.
+        track_index.mark_complete()
 
 
     size_track_raw = asizeof.asizeof(track_index.first_value(raw=True))

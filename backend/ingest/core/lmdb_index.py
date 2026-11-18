@@ -174,6 +174,16 @@ class LMDBTrackIndex:
             self._n = 0
         self.env.sync()
 
+    def is_complete(self) -> bool:
+        with self.env.begin() as txn:
+            return txn.get(b"ingest_complete") == b"1"
+
+    def mark_complete(self):
+        self.flush()
+        with self.env.begin(write=True) as txn:
+            txn.put(b"ingest_complete", b"1")
+        self.env.sync(True)
+
     def close(self):
         self.flush()
         self.env.close()
