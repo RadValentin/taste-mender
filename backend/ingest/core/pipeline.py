@@ -102,16 +102,6 @@ def build_database(
     config = dotenv_values(BASE_DIR / ".env")
     # Globals used to track how many records are skipped while processing
     counters = {"missing_artist": 0, "processing": 0}
-    # Don't show logs in console, they'll be logged to a file, clear the file at the start
-    logfile_path = os.path.join(BASE_DIR / "ingest", "ingest.log")
-    logging.basicConfig(
-        filename=logfile_path,
-        level=logging.INFO,
-        filemode="w+",
-        format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
-        datefmt="%Y-%m-%d %H:%M:%S",
-    )
-
     ## NOTE: Phase 1 - Load JSON data about tracks into memory
 
     print("\n=== Phase 1: Loading track data ===", flush=True)
