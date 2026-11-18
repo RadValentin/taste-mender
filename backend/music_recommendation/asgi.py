@@ -15,6 +15,8 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "music_recommendation.settings")
 
 application = get_asgi_application()
 
+from concurrent.futures import ThreadPoolExecutor
 from recommend_api.checks import warn_dataset_mismatch
 
-warn_dataset_mismatch()
+with ThreadPoolExecutor(max_workers=1) as executor:
+    executor.submit(warn_dataset_mismatch).result()
