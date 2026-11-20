@@ -179,6 +179,7 @@ cython_debug/
 # Project-specific files
 staticfiles/
 lmdb_data/
+lmdb_data_analysis/
 features_and_index.npz
 features_and_index_sample.npz
 output.txt

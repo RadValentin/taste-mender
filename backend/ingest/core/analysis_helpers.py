@@ -1,11 +1,10 @@
-import os, logging, sys, django, time, orjson
+import os, logging, sys, django
+import pandas as pd
 from collections import defaultdict
-from dotenv import dotenv_values
 from django.conf import settings
 from pathlib import Path
 from statistics import mean, median, stdev
 from typing import Any
-import pandas as pd
 
 log = logging.getLogger("ingest")
 
@@ -16,42 +15,17 @@ if __name__ == "__main__":
     sys.path.append(BASE_DIR.as_posix())
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "music_recommendation.settings")
     django.setup()
-    # Set logger to output to console
-    log.addHandler(logging.StreamHandler(sys.stdout))
-    log.setLevel(logging.INFO)
 else:
     BASE_DIR = settings.BASE_DIR
 
 import ingest.core.track_processing_helpers as tph
 from ingest.core.cli_helpers import style, fg, bg
+from ingest.core.lmdb_index import LMDBTrackIndex
+from ingest.core.pipeline import try_load_track_index
 from recommend_api.models import Track, Artist
 
-# Ensure libarchive can be used. On Windows it requires a prebuilt DLL.
-# Link: https://github.com/li-ruijie/libarchive
-if os.name == "nt":
-    os.environ["LIBARCHIVE"] = (Path(__file__).parent.resolve() / "libarchive-3.8.10.dll").as_posix()
-import libarchive
-
-
-def stream_tracks_json(path: str, mbids: list[str]):
-    with libarchive.file_reader(path) as archive:
-        for entry in archive:
-            name: str = entry.pathname or ""
-            if not (entry.isfile and name.endswith(".json")):
-                continue
-
-            matched_mbids = list(filter(lambda mbid: mbid in name, mbids))
-            if len(matched_mbids) < 1:
-                continue
-            found_mbid = matched_mbids[0]
-
-            try:
-                data = b"".join(entry.get_blocks())
-            except Exception as e:
-                log.warning("Failed reading %s: %s", name, e)
-                continue
-
-            yield name, found_mbid, data
+# Size of on-disk track index, set an arbitrary default 2GB
+MAP_SIZE = 1024 * 1024 * 1024 * 2
 
 
 def get_tracks_submissions(
@@ -62,52 +36,30 @@ def get_tracks_submissions(
         log.error("One or all of the mbids param is not a valid UUID")
         return None
 
-    config = dotenv_values(settings.BASE_DIR / ".env")
+    lmdb_root = os.path.join(os.path.dirname(os.path.abspath(__file__)), "lmdb_data_analysis")
+    os.makedirs(lmdb_root, exist_ok=True)
 
-    # Different directories where AcousticBrainz data is stored
-    if use_sample:
-        # 100k records
-        dataset_path = config.get("AB_SAMPLE_ROOT")
-        if not dataset_path:
-            raise ValueError(
-                "Path to sample dataset is not defined in .env, please set a value for AB_SAMPLE_ROOT"
-            )
+    if (use_sample):
+        lmdb_dir = os.path.join(lmdb_root, "sample")
+    elif num_parts:
+        lmdb_dir = os.path.join(lmdb_root, f"parts-{num_parts}")
     else:
-        # 1M records
-        dataset_path = config.get("AB_HIGHLEVEL_ROOT")
-        if not dataset_path:
-            raise ValueError(
-                "Path to datasets is not defined in .env, please set a value for AB_HIGHLEVEL_ROOT"
-            )
+        lmdb_dir = os.path.join(lmdb_root, "full")
 
-    archive_paths = [
-        os.path.join(dataset_path, fname)
-        for fname in os.listdir(dataset_path)
-        if fname.lower().endswith(".tar.zst")
-    ]
+    track_index = try_load_track_index(lmdb_dir, MAP_SIZE) if os.path.exists(lmdb_dir) else None
 
-    if num_parts is not None:
-        archive_paths = archive_paths[:num_parts]
+    if track_index is not None:
+        log.info("Trying to get submissions from cache.")
+        results = defaultdict(list)
 
-    search_start = time.time()
-    results = defaultdict(list)
-    for archive_path in archive_paths:
-        log.info(f"Checking archive {archive_path}")
-        check_start = time.time()
-        for _, mbid, raw_json in stream_tracks_json(archive_path, mbids):
-            try:
-                data = orjson.loads(raw_json)
-                results[mbid].append(data)
-            except orjson.JSONDecodeError:
-                log.exception("Bad JSON string")
+        for mbid in mbids:
+            submissions = track_index.get(mbid)
+            results[mbid] = submissions if submissions is not None else []
+        return results
 
-        check_end = time.time()
-        log.info(f"Finished check in {check_end - check_start:.2f}s")
-
-    search_end = time.time()
-    log.info(f"\nSearch took {search_end - search_start:.2f}s")
-
-    return results
+    else:
+        log.info("Could not get submissions from cache, please rebuild cache.")
+        return None
 
 
 TARGET_FEATURES = {
