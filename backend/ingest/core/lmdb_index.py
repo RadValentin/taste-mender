@@ -1,9 +1,24 @@
-import lmdb, orjson, uuid
+import hashlib, lmdb, orjson, uuid
 import zstandard as zstd
 import numpy as np
 from collections import defaultdict
 from numpy.typing import NDArray
 from typing import Iterator
+
+
+class IndexCompressionError(ValueError):
+    """The index's compression metadata or dictionary is invalid."""
+
+
+def validate_compression_dictionary(data: bytes) -> zstd.ZstdCompressionDict:
+    try:
+        dictionary = zstd.ZstdCompressionDict(data, dict_type=zstd.DICT_TYPE_FULLDICT)
+        if not dictionary.dict_id():
+            raise IndexCompressionError("The compression dictionary must have a nonzero ID")
+        return dictionary
+    except zstd.ZstdError as exc:
+        raise IndexCompressionError("Invalid Zstandard compression dictionary") from exc
+
 
 class LMDBTrackIndex:
     """
@@ -17,7 +32,10 @@ class LMDBTrackIndex:
     returned as lists of JSON dicts as tracks can have duplicates.
     """
 
-    def __init__(self, path, map_size=2 * 1024**3, disable_compression=False, batch=10000):
+    def __init__(
+        self, path, map_size=2 * 1024**3, disable_compression=False, batch=10000,
+        compression_dictionary: bytes | None = None,
+    ):
         self.env = lmdb.open(
             path,
             map_size=map_size,
@@ -30,16 +48,54 @@ class LMDBTrackIndex:
             sync=False,
             readahead=True,
         )
-        self.db = self.env.open_db(b"main", create=True)
-        self.disable_compression = disable_compression
-        if not disable_compression:
-            self.compressor = zstd.ZstdCompressor(level=1)
-            self.decompressor = zstd.ZstdDecompressor()
+        try:
+            self.db = self.env.open_db(b"main", create=True)
+            self.disable_compression = disable_compression
+            dictionary = self._load_compression_dictionary(compression_dictionary)
+            if not disable_compression:
+                self.compressor = zstd.ZstdCompressor(level=1, dict_data=dictionary)
+                self.decompressor = zstd.ZstdDecompressor(dict_data=dictionary)
+        except (IndexCompressionError, zstd.ZstdError):
+            self.env.close()
+            raise
         self.stats = defaultdict(int)
         # batch writes
         self._txn = None
         self._n = 0
         self._batch = batch
+
+    def _load_compression_dictionary(
+        self, requested: bytes | None,
+    ) -> zstd.ZstdCompressionDict | None:
+        with self.env.begin(write=requested is not None) as txn:
+            mode = txn.get(b"compression_mode")
+            stored = txn.get(b"compression_dictionary")
+            digest = txn.get(b"compression_dictionary_sha256")
+
+            if mode is None:
+                if stored is not None or digest is not None:
+                    raise IndexCompressionError("Incomplete compression metadata in track index")
+                if requested is None:
+                    return None
+                if self.disable_compression:
+                    raise IndexCompressionError("A dictionary requires compression to be enabled")
+                if txn.stat(db=self.db)["entries"] or txn.get(b"ingest_complete"):
+                    raise IndexCompressionError("Cannot add a dictionary to an existing track index")
+                dictionary = validate_compression_dictionary(requested)
+                txn.put(b"compression_mode", b"zstd-dictionary-v1")
+                txn.put(b"compression_dictionary", requested)
+                txn.put(b"compression_dictionary_sha256", hashlib.sha256(requested).digest())
+                return dictionary
+
+            if mode != b"zstd-dictionary-v1":
+                raise IndexCompressionError("Unsupported track index compression mode")
+            if self.disable_compression:
+                raise IndexCompressionError("Track index requires dictionary compression")
+            if stored is None or digest is None or hashlib.sha256(stored).digest() != digest:
+                raise IndexCompressionError("Missing or corrupt track index compression dictionary")
+            if requested is not None and requested != stored:
+                raise IndexCompressionError("The requested dictionary does not match the track index")
+            return validate_compression_dictionary(stored)
 
     def _serialize_key(self, key: str) -> bytes:
         """Convert a key to bytes representation for internal use"""
@@ -62,7 +118,16 @@ class LMDBTrackIndex:
         if self.disable_compression:
             return orjson.loads(data)
 
-        decompressed = self.decompressor.decompress(data)
+        try:
+            decompressed = self.decompressor.decompress(data)
+        except zstd.ZstdError as exc:
+            try:
+                dictionary_id = zstd.get_frame_parameters(data).dict_id
+            except zstd.ZstdError:
+                raise exc
+            if dictionary_id:
+                raise IndexCompressionError("Cannot decompress track index with its stored dictionary") from exc
+            raise
         return orjson.loads(decompressed)
 
     def append(self, key: str, value):

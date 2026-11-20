@@ -26,7 +26,7 @@ from recommend_api.dataset_manifest import DatasetManifest, MANIFEST_VERSION
 from pympler import asizeof
 from typing import List, Set, Tuple
 from ingest.core import track_processing_helpers as tph
-from ingest.core.lmdb_index import LMDBTrackIndex
+from ingest.core.lmdb_index import IndexCompressionError, LMDBTrackIndex
 from ingest.core.cli_helpers import print_banner, confirm, spinner, show_progress_bar
 
 log = logging.getLogger("ingest.core")
@@ -52,6 +52,10 @@ def try_load_track_index(path: str, map_size: int) -> LMDBTrackIndex | None:
         first_key = track_index.first_key()
         if track_index.is_complete() and first_key is not None and track_index.get(first_key):
             return track_index
+    except IndexCompressionError:
+        if track_index is not None:
+            track_index.close()
+        raise
     except Exception:
         pass
 
