@@ -29,6 +29,9 @@ For planned work and goals first check [GitHub issues](https://github.com/RadVal
 
 Testing guidance is documented in **[`docs/TESTING.md`](docs/TESTING.md)**.
 
+Do not add tests for the `backend/ingest/` app unless the user explicitly asks for them.
+Running existing tests is still appropriate.
+
 ---
 
 ## Quick Commands
