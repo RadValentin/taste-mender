@@ -17,16 +17,13 @@ else:
     BASE_DIR = settings.BASE_DIR
 
 from ingest.core.cli_helpers import spinner
-from ingest.core.lmdb_index import LMDBTrackIndex
+from ingest.core.lmdb_index import LMDBTrackIndex, validate_compression_dictionary
 
 # Ensure libarchive can be used. On Windows it requires a prebuilt DLL.
 # Link: https://github.com/li-ruijie/libarchive
 if os.name == "nt":
     os.environ["LIBARCHIVE"] = (Path(__file__).parent.resolve() / "libarchive-3.8.10.dll").as_posix()
 import libarchive
-
-# Size of on-disk track index, set an arbitrary default 2GB
-MAP_SIZE = 1024 * 1024 * 1024 * 2
 
 
 def stream_tracks_json(path: str) -> Iterator[tuple[str, bytes]]:
@@ -67,14 +64,9 @@ def build_cache_for_analysis(
         log.info("Will build cache for the full dataset.")
         lmdb_dir = os.path.join(lmdb_root, "full")
 
-    if os.path.exists(lmdb_dir):
-        if override:
-            shutil.rmtree(lmdb_dir)
-        else:
-            log.warning(f"Cache already present at {lmdb_dir}, giving up.")
-            return
-
-    os.makedirs(lmdb_dir, exist_ok=True)
+    if os.path.exists(lmdb_dir) and not override:
+        log.warning(f"Cache already present at {lmdb_dir}, giving up.")
+        return
 
     config: dict[str, Any] = dotenv_values(settings.BASE_DIR / ".env")
 
@@ -103,9 +95,34 @@ def build_cache_for_analysis(
     if num_parts is not None:
         archive_paths = archive_paths[:num_parts]
 
-    # Adjust map size to 4GB per 1M files
-    MAP_SIZE = len(archive_paths) * 4 * 1024 * 1024 * 1024
-    track_index: LMDBTrackIndex = LMDBTrackIndex(lmdb_dir, map_size=MAP_SIZE)
+    if not archive_paths:
+        raise ValueError(f"No dataset archives found in {dataset_path}")
+
+    dictionary_path = Path(__file__).resolve().parent / "analysis-zstd.dict"
+    try:
+        dictionary = dictionary_path.read_bytes()
+    except FileNotFoundError:
+        from ingest.core.analysis_train_zstd_dict import read_samples, train_dictionary
+
+        log.info("Dictionary not found; training from %s.", archive_paths[0])
+        samples = read_samples(archive_paths[0], 8_000)
+        dictionary = train_dictionary(samples).as_bytes()
+        validate_compression_dictionary(dictionary)
+        dictionary_path.write_bytes(dictionary)
+        log.info("Saved dictionary to %s.", dictionary_path)
+    else:
+        validate_compression_dictionary(dictionary)
+
+    if os.path.exists(lmdb_dir):
+        shutil.rmtree(lmdb_dir)
+
+    os.makedirs(lmdb_dir, exist_ok=True)
+
+    # Adjust map size to 1.5GB per 1M files
+    MAP_SIZE = len(archive_paths) * 3 * 1024**3 // 2
+    track_index: LMDBTrackIndex = LMDBTrackIndex(
+        lmdb_dir, map_size=MAP_SIZE, compression_dictionary=dictionary,
+    )
 
     build_start = time.time()
     for archive_path in archive_paths:
@@ -118,10 +135,12 @@ def build_cache_for_analysis(
                     log.exception("Bad JSON string")
 
     track_index.mark_complete()
+    log.info("Live index pages: %.2f GiB", track_index.size_pages() / 1024**3)
+    log.info("LMDB map size: %.2f GiB", track_index.map_size() / 1024**3)
     track_index.close()
     log.info("Finished building cache.")
     log.info(f"Build took took {time.time() - build_start:.2f}s")
 
 
 if __name__ == "__main__":
-    build_cache_for_analysis(use_sample=False, num_parts=1, override=True)
+    build_cache_for_analysis(use_sample=False, num_parts=2, override=True)
