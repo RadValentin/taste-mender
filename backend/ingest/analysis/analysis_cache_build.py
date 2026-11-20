@@ -145,4 +145,4 @@ def build_cache_for_analysis(
 
 
 if __name__ == "__main__":
-    build_cache_for_analysis(use_sample=False, num_parts=2, override=True)
+    build_cache_for_analysis(use_sample=True, override=True)

@@ -19,10 +19,9 @@ else:
     BASE_DIR = settings.BASE_DIR
 
 import ingest.core.track_processing_helpers as tph
-from ingest.core.cli_helpers import style, fg, bg
-from ingest.core.lmdb_index import LMDBTrackIndex
+from ingest.core.cli_helpers import style, fg
 from ingest.core.pipeline import try_load_track_index
-from recommend_api.models import Track, Artist
+from recommend_api.models import Track
 
 # Size of on-disk track index, set an arbitrary default 2GB
 MAP_SIZE = 1024 * 1024 * 1024 * 2
