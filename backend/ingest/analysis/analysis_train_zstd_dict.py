@@ -18,7 +18,7 @@ if __name__ == "__main__":
 else:
     BASE_DIR = settings.BASE_DIR
 
-from ingest.core.analysis_cache_build import stream_tracks_json
+from ingest.analysis.analysis_cache_build import stream_tracks_json
 
 
 def read_samples(archive: str, limit: int) -> list[bytes]:

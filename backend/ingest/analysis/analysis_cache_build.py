@@ -22,7 +22,9 @@ from ingest.core.lmdb_index import LMDBTrackIndex, validate_compression_dictiona
 # Ensure libarchive can be used. On Windows it requires a prebuilt DLL.
 # Link: https://github.com/li-ruijie/libarchive
 if os.name == "nt":
-    os.environ["LIBARCHIVE"] = (Path(__file__).parent.resolve() / "libarchive-3.8.10.dll").as_posix()
+    os.environ["LIBARCHIVE"] = (
+        Path(__file__).resolve().parents[1] / "core" / "libarchive-3.8.10.dll"
+    ).as_posix()
 import libarchive
 
 
@@ -102,7 +104,7 @@ def build_cache_for_analysis(
     try:
         dictionary = dictionary_path.read_bytes()
     except FileNotFoundError:
-        from ingest.core.analysis_train_zstd_dict import read_samples, train_dictionary
+        from ingest.analysis.analysis_train_zstd_dict import read_samples, train_dictionary
 
         log.info("Dictionary not found; training from %s.", archive_paths[0])
         samples = read_samples(archive_paths[0], 8_000)

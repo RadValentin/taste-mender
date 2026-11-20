@@ -122,8 +122,9 @@ There is no direct mapping between MBIDs and YouTube videos. Playback therefore 
     - `models.py` - database models
     - `serializers.py` - API response and validation serializers
   - `ingest/` - AcousticBrainz dataset processing and database-building tools
+    - `analysis/` - dataset analysis notebook and utilities
+    - `core/` - ingest pipeline and its tests
     - `management/commands/` - Django commands such as `build_db` and `recommend`
-    - `tests/` - ingest pipeline tests
   - `features_and_index*.npz` - generated recommendation feature data
 - `frontend/` - React and TypeScript app that consumes the API
   - `src/pages/` - application pages

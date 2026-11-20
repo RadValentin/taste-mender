@@ -5,7 +5,7 @@ from unittest.mock import patch
 from django.test import SimpleTestCase
 from joblib import Memory
 
-from ingest.core.analysis_helpers import aggregate_stats
+from ingest.analysis.analysis_helpers import aggregate_stats
 
 
 class AggregateStatsTests(SimpleTestCase):
@@ -21,14 +21,14 @@ class AggregateStatsTests(SimpleTestCase):
             }}],
         }
         loader = patch(
-            "ingest.core.analysis_helpers.get_tracks_submissions",
+            "ingest.analysis.analysis_helpers.get_tracks_submissions",
             return_value=submissions,
         )
         self.load_submissions = loader.start()
         self.addCleanup(loader.stop)
 
     def test_explicit_features_override_defaults(self):
-        with patch("ingest.core.analysis_helpers.TARGET_FEATURES", self.features):
+        with patch("ingest.analysis.analysis_helpers.TARGET_FEATURES", self.features):
             defaults = aggregate_stats([self.mbid])
             explicit = aggregate_stats([self.mbid], target_features={
                 "mood_sad": {"pos_pred_key": "sad", "neg_pred_key": "not_sad"},
