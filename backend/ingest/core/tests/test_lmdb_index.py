@@ -107,11 +107,10 @@ class LMDBTrackIndexTests(SimpleTestCase):
 
     def test_persistence(self):
         self.store[self.key_a] = [self.value_a]
-        self.store.flush()
+        self.store.close()
 
-        tmp_store = LMDBTrackIndex(self.store_path)
-        self.assertEqual(tmp_store.get(self.key_a), [self.value_a])
-        tmp_store.close()
+        self.store = LMDBTrackIndex(self.store_path, map_size=20 * 1024**2)
+        self.assertEqual(self.store.get(self.key_a), [self.value_a])
 
     def test_completion_flag_is_persisted_after_flushing(self):
         self.store.append(self.key_a, self.value_a)

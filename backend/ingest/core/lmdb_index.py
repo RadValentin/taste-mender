@@ -212,7 +212,7 @@ class LMDBTrackIndex:
             return np.fromiter(
                 cursor.iternext(keys=True, values=False),
                 dtype=object,
-                count=txn.stat()["entries"],
+                count=txn.stat(db=self.db)["entries"],
             )
 
     def first_key(self) -> str | None:
@@ -263,7 +263,7 @@ class LMDBTrackIndex:
 
     def size_pages(self) -> int:
         with self.env.begin(db=self.db) as txn:
-            st = txn.stat()
+            st = txn.stat(db=self.db)
             return (st["branch_pages"] + st["leaf_pages"] + st["overflow_pages"]) * st["psize"]
 
     def map_size(self) -> int:
