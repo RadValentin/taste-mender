@@ -36,6 +36,7 @@ export default function AppLayout() {
 
   function onPlay(track: Track) {
     dispatch({ type: "PLAY_TRACK", track });
+    dispatch({ type: "OPEN_PLAYER" });
   }
 
   return (

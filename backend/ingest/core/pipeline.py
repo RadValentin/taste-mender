@@ -26,10 +26,10 @@ from recommend_api.dataset_manifest import DatasetManifest, MANIFEST_VERSION
 from pympler import asizeof
 from typing import List, Set, Tuple
 from ingest.core import track_processing_helpers as tph
-from ingest.core.lmdb_index import LMDBTrackIndex
+from ingest.core.lmdb_index import IndexCompressionError, LMDBTrackIndex
 from ingest.core.cli_helpers import print_banner, confirm, spinner, show_progress_bar
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("ingest.core")
 
 
 def ingest_parsed_track(result: dict | None, track_index: LMDBTrackIndex, counters):
@@ -52,6 +52,10 @@ def try_load_track_index(path: str, map_size: int) -> LMDBTrackIndex | None:
         first_key = track_index.first_key()
         if track_index.is_complete() and first_key is not None and track_index.get(first_key):
             return track_index
+    except IndexCompressionError:
+        if track_index is not None:
+            track_index.close()
+        raise
     except Exception:
         pass
 
@@ -250,7 +254,7 @@ def build_database(
     track_index_keys = track_index.keys_np()
     track_index_keys_count = track_index_keys.size
     for mbid_raw in track_index_keys:
-        mbid = str(uuid.UUID(bytes=mbid_raw.tobytes()))
+        mbid = mbid_raw.decode("utf-8")
         # Show progress bar
         merged_count += 1
         show_progress_bar(merged_count, track_index_keys_count, message="Merging:")
@@ -375,8 +379,13 @@ def build_database(
             # create Album object only if we have BOTH id and name
             if (album_id and album_name):
                 if (album_id not in album_index) or (album_index[album_id] is None):
+                    if len(album_name) > 255:
+                        log.warning(
+                            "Album name too long (%d chars), truncating. album=%s track=%s name=%r",
+                            len(album_name), album_id, track_id, album_name[:300],
+                        )
                     album_index[album_id] = Album(
-                        musicbrainz_albumid=album_id, name=album_name, date=album_date
+                        musicbrainz_albumid=album_id, name=album_name[:255], date=album_date
                     )
 
                 # Link track to album
@@ -443,8 +452,13 @@ def build_database(
         merged_artist_index = {}
         for artist_id, artist_names in artist_index.items():
             merged_name = Counter(artist_names).most_common(1)[0][0]
+            if len(merged_name) > 255:
+                log.warning(
+                    "Artist name too long (%d chars), truncating. artist=%s name=%r",
+                    len(merged_name), artist_id, merged_name[:300],
+                )
             merged_artist_index[artist_id] = Artist(
-                musicbrainz_artistid=artist_id, name=merged_name
+                musicbrainz_artistid=artist_id, name=merged_name[:255]
             )
         del artist_index
 
