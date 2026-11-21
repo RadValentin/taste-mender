@@ -28,7 +28,7 @@ if os.name == "nt":
 import libarchive
 
 
-def stream_tracks_json(path: str) -> Iterator[tuple[str, bytes]]:
+def stream_tracks_json(path: str) -> Iterator[tuple[str, str, bytes]]:
     with libarchive.file_reader(path) as archive:
         for entry in archive:
             name: str = entry.pathname or ""
@@ -41,8 +41,8 @@ def stream_tracks_json(path: str) -> Iterator[tuple[str, bytes]]:
                 log.warning("Failed reading %s: %s", name, e)
                 continue
 
-            mbid = PurePosixPath(name).stem.rsplit("-", 1)[0]
-            yield mbid, data
+            mbid, offset = PurePosixPath(name).stem.rsplit("-", 1)
+            yield mbid, offset, data
 
 
 def build_cache_for_analysis(
@@ -89,7 +89,7 @@ def build_cache_for_analysis(
             )
 
     archive_paths: list[str] = [
-        os.path.join(dataset_path, fname)
+        os.path.normpath(os.path.join(dataset_path, fname))
         for fname in os.listdir(dataset_path)
         if fname.lower().endswith(".tar.zst")
     ]
@@ -129,10 +129,13 @@ def build_cache_for_analysis(
     build_start = time.time()
     for archive_path in archive_paths:
         with spinner(f"Loading archive {archive_path}"):
-            for mbid, raw_json in stream_tracks_json(archive_path):
+            # The archive's identifier, eg. which part of the dataset it is
+            archive_id = PurePosixPath(archive_path).stem.rsplit(".", 1)[0].rsplit("-", 1)[1]
+            for mbid, offset, raw_json in stream_tracks_json(archive_path):
                 try:
                     data = orjson.loads(raw_json)
-                    track_index.append(mbid, {"highlevel": data.get("highlevel", {})})
+                    key: str = f"{mbid}:{offset}:{archive_id}"
+                    track_index[key] = [{"highlevel": data.get("highlevel", {})}]
                 except orjson.JSONDecodeError:
                     log.exception("Bad JSON string")
 
@@ -145,4 +148,4 @@ def build_cache_for_analysis(
 
 
 if __name__ == "__main__":
-    build_cache_for_analysis(use_sample=True, override=True)
+    build_cache_for_analysis(use_sample=False, override=True)

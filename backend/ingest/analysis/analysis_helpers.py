@@ -52,8 +52,10 @@ def get_tracks_submissions(
         results = defaultdict(list)
 
         for mbid in mbids:
-            submissions = track_index.get(mbid)
-            results[mbid] = submissions if submissions is not None else []
+            submissions = []
+            for _, values in track_index.iter_prefix(mbid):
+                submissions.extend(values)
+            results[mbid] = submissions
         return results
 
     else:

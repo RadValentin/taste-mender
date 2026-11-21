@@ -186,15 +186,17 @@ class LMDBTrackIndex:
                 for key_bytes, values_bytes in cur:
                     yield self._deserialize_key(key_bytes), self._deserialize_values(values_bytes)
 
-    def iter_prefix(self, prefix: bytes) -> Iterator[tuple[bytes, bytes]]:
-        """Yield committed raw key-value pairs with the given prefix in key order."""
+    def iter_prefix(self, prefix: str) -> Iterator[tuple[bytes, list]]:
+        """Yield committed keys and decoded values matching the prefix."""
+        prefix_bytes = self._serialize_key(prefix)
+
         with self.env.begin(db=self.db) as txn, txn.cursor() as cur:
-            if prefix and not cur.set_range(prefix):
+            if prefix_bytes and not cur.set_range(prefix_bytes):
                 return
             for key, value in cur:
-                if not key.startswith(prefix):
+                if not key.startswith(prefix_bytes):
                     break
-                yield key, value
+                yield key, self._deserialize_values(value)
 
     def keys(self) -> set[str]:
         with self.env.begin(db=self.db) as txn:

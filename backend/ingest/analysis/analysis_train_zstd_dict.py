@@ -24,7 +24,7 @@ from ingest.analysis.analysis_cache_build import stream_tracks_json
 def read_samples(archive: str, limit: int) -> list[bytes]:
     return [
         orjson.dumps([{"highlevel": orjson.loads(raw).get("highlevel", {})}])
-        for _, raw in islice(stream_tracks_json(archive), limit)
+        for _, _, raw in islice(stream_tracks_json(archive), limit)
     ]
 
 
