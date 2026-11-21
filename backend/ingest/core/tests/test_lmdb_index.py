@@ -35,9 +35,6 @@ class LMDBTrackIndexTests(SimpleTestCase):
         self.assertEqual(self.store.get(self.key_a), [self.value_a, self.value_b])
         self.assertEqual(self.store.stats["duplicates"], 1)
 
-    def test_append_invalid_mbid_raises(self):
-        self.assertRaises(ValueError, self.store.append, "not-an-uuid", self.value_a)
-
     def test_set_item(self):
         self.store[self.key_a] = [self.value_a]
         self.store[self.key_b] = [self.value_b]
@@ -82,7 +79,10 @@ class LMDBTrackIndexTests(SimpleTestCase):
             self.store.append(key, {"value": i})
         self.store.flush()
 
-        result = {str(uuid.UUID(bytes=key.tobytes())) for key in self.store.keys_np()}
+        result = {
+            str(uuid.UUID(key.decode()))
+            for key in self.store.keys_np()
+        }
         self.assertEqual(result, set(keys))
 
     def test_first_key(self):

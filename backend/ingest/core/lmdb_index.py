@@ -1,4 +1,4 @@
-import hashlib, lmdb, orjson, uuid
+import hashlib, lmdb, orjson
 import zstandard as zstd
 import numpy as np
 from collections import defaultdict
@@ -99,11 +99,11 @@ class LMDBTrackIndex:
 
     def _serialize_key(self, key: str) -> bytes:
         """Convert a key to bytes representation for internal use"""
-        return uuid.UUID(key).bytes
+        return key.encode()
 
     def _deserialize_key(self, key: bytes) -> str:
         """Convert a key from bytes to string for external use"""
-        return str(uuid.UUID(bytes=key))
+        return key.decode()
 
     def _serialize_values(self, data: list) -> bytes:
         """Compress (optional) and encode values to JSON bytes"""
@@ -186,6 +186,16 @@ class LMDBTrackIndex:
                 for key_bytes, values_bytes in cur:
                     yield self._deserialize_key(key_bytes), self._deserialize_values(values_bytes)
 
+    def iter_prefix(self, prefix: bytes) -> Iterator[tuple[bytes, bytes]]:
+        """Yield committed raw key-value pairs with the given prefix in key order."""
+        with self.env.begin(db=self.db) as txn, txn.cursor() as cur:
+            if prefix and not cur.set_range(prefix):
+                return
+            for key, value in cur:
+                if not key.startswith(prefix):
+                    break
+                yield key, value
+
     def keys(self) -> set[str]:
         with self.env.begin(db=self.db) as txn:
             with txn.cursor() as cur:
@@ -194,18 +204,14 @@ class LMDBTrackIndex:
                     for key in cur.iternext(keys=True, values=False)
                 )
 
-    def keys_np(self) -> NDArray[np.bytes_]:
-        """Return all keys as a NumPy array of fixed-size 16-byte records (UUID bytes)."""
-        with self.env.begin(db=self.db) as txn:
-            stat = txn.stat()
-            n = stat["entries"]
-            arr = np.empty(n, dtype="V16")
-            with txn.cursor() as cur:
-                i = 0
-                for key, _ in cur:
-                    arr[i] = np.frombuffer(key, dtype="V16")
-                    i += 1
-        return arr
+    def keys_np(self) -> NDArray[np.object_]:
+        """Return committed LMDB keys as an array of bytes in key order."""
+        with self.env.begin(db=self.db) as txn, txn.cursor() as cursor:
+            return np.fromiter(
+                cursor.iternext(keys=True, values=False),
+                dtype=object,
+                count=txn.stat()["entries"],
+            )
 
     def first_key(self) -> str | None:
         with self.env.begin(db=self.db) as txn:
