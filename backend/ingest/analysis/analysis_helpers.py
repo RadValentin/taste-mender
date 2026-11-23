@@ -79,6 +79,10 @@ TARGET_FEATURES = {
     "mood_sad": {
         "pos_pred_key": "sad",
         "neg_pred_key": "not_sad"
+    },
+    "mood_relaxed": {
+        "pos_pred_key": "relaxed",
+        "neg_pred_key": "not_relaxed",
     }
 }
 
@@ -158,16 +162,16 @@ def print_stats(stats: dict[str, Any]):
             print(f"{style.BRIGHT}{fg.GREEN}Stats for: {track.title} by {artists} ({mbid})", style.RESET_ALL)
 
         for feature_name, feature_keys in TARGET_FEATURES.items():
-            data = stats[mbid][feature_name]
+            data = stats[mbid].get(feature_name)
+            if data is None or data["pred_count"] < 1:
+                continue
+
             pos_name = feature_keys["pos_pred_key"]
             neg_name = feature_keys["neg_pred_key"]
             pos_won_predictions = [pos for pos, neg in data["predictions"] if pos > neg]
             neg_won_predictions = [neg for pos, neg in data["predictions"] if neg > pos]
             all_pos_predictions = [pos for pos, _ in data["predictions"]]
             all_neg_predictions = [neg for _, neg in data["predictions"]]
-
-            if data["pred_count"] < 1:
-                continue
 
             print(f"{style.BRIGHT}{fg.MAGENTA}{feature_name}", style.RESET_ALL)
             print(f"Total submissions: {style.BRIGHT}{data["pred_count"]}", style.RESET_ALL)
