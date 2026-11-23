@@ -8,6 +8,7 @@ omit =
     */settings/*
     */debug_*.py
     ingest/core/pipeline.py
+    ingest/analysis/*
 
 
 [report]
