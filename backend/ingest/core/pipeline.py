@@ -253,8 +253,7 @@ def build_database(
     merged_count = 0
     track_index_keys = track_index.keys_np()
     track_index_keys_count = track_index_keys.size
-    for mbid_raw in track_index_keys:
-        mbid = mbid_raw.decode("utf-8")
+    for mbid in track_index_keys:
         # Show progress bar
         merged_count += 1
         show_progress_bar(merged_count, track_index_keys_count, message="Merging:")

@@ -66,6 +66,16 @@ class LMDBTrackIndexTests(SimpleTestCase):
             i = keys.index(key)
             self.assertEqual(values, [{"value": i}])
 
+    def test_iter_prefix(self):
+        keys = ["foo:1", "bar:5", "foo:2", "foo:3", "bar:1", "foo:0"]
+        for key in keys:
+            self.store.append(key, {"value": f"{key}:val"})
+        self.store.flush()
+
+        foo_keys = list(filter(lambda x: x.startswith("foo"), keys))
+        store_foo_keys = [key for key, _ in self.store.iter_prefix("foo")]
+        self.assertCountEqual(foo_keys, store_foo_keys)
+
     def test_keys(self):
         keys = [str(uuid.uuid4()) for _ in range(10)]
         for i, key in enumerate(keys):
@@ -80,7 +90,7 @@ class LMDBTrackIndexTests(SimpleTestCase):
         self.store.flush()
 
         result = {
-            str(uuid.UUID(key.decode()))
+            str(uuid.UUID(key))
             for key in self.store.keys_np()
         }
         self.assertEqual(result, set(keys))

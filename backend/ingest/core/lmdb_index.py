@@ -186,17 +186,17 @@ class LMDBTrackIndex:
                 for key_bytes, values_bytes in cur:
                     yield self._deserialize_key(key_bytes), self._deserialize_values(values_bytes)
 
-    def iter_prefix(self, prefix: str) -> Iterator[tuple[bytes, list]]:
+    def iter_prefix(self, prefix: str) -> Iterator[tuple[str, list]]:
         """Yield committed keys and decoded values matching the prefix."""
         prefix_bytes = self._serialize_key(prefix)
 
         with self.env.begin(db=self.db) as txn, txn.cursor() as cur:
             if prefix_bytes and not cur.set_range(prefix_bytes):
                 return
-            for key, value in cur:
-                if not key.startswith(prefix_bytes):
+            for key_bytes, values_bytes in cur:
+                if not key_bytes.startswith(prefix_bytes):
                     break
-                yield key, self._deserialize_values(value)
+                yield self._deserialize_key(key_bytes), self._deserialize_values(values_bytes)
 
     def keys(self) -> set[str]:
         with self.env.begin(db=self.db) as txn:
@@ -207,12 +207,15 @@ class LMDBTrackIndex:
                 )
 
     def keys_np(self) -> NDArray[np.object_]:
-        """Return committed LMDB keys as an array of bytes in key order."""
-        with self.env.begin(db=self.db) as txn, txn.cursor() as cursor:
+        """Return committed LMDB keys as an array of strings in key order."""
+        with self.env.begin(db=self.db) as txn, txn.cursor() as cur:
             return np.fromiter(
-                cursor.iternext(keys=True, values=False),
+                (
+                    self._deserialize_key(key)
+                    for key in cur.iternext(keys=True, values=False)
+                ),
                 dtype=object,
-                count=txn.stat(db=self.db)["entries"],
+                count=txn.stat(db=self.db)["entries"]
             )
 
     def first_key(self) -> str | None:
