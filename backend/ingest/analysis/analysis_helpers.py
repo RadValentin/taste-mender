@@ -238,7 +238,7 @@ def export_stats(
             for metric in ("mean", "median", "std")
         )
         columns.extend([f"essentia_ver", f"gaia_ver"])
-    columns.append("mbid")
+    # columns.append("mbid")
 
     if target_mbids is not None:
         selected_mbids = set(target_mbids)
@@ -257,7 +257,7 @@ def export_stats(
     for mbid, track_stats in stats.items():
         track = tracks.get(mbid)
         row: dict[str, Any] = {
-            "mbid": mbid,
+            # "mbid": mbid,
             "title": track.title if track else "Unknown track",
             "artists": ", ".join(artist.name for artist in track.artists.all()) if track else "",
         }
