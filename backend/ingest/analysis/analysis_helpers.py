@@ -104,6 +104,10 @@ TARGET_FEATURES = {
         "pos_pred_key": "tonal",
         "neg_pred_key": "atonal",
     },
+    "timbre": {
+        "pos_pred_key": "bright",
+        "neg_pred_key": "dark",
+    },
 }
 
 
