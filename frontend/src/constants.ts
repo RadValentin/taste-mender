@@ -20,9 +20,9 @@ export const FEATURE_DISPLAY_NAMES: Record<string, string> = {
   instrumentalness: "Instrumentalness",
   tonality: "Tonality",
   brightness: "Brightness",
-  moods_mirex_1: "Passionate / Cheerful / Rowdy",
-  moods_mirex_2: "Poignant / Sad / Bittersweet",
-  moods_mirex_3: "Humorous / Silly / Witty",
-  moods_mirex_4: "Aggressive / Fiery / Intense",
-  moods_mirex_5: "Peaceful / Relaxed / Calming"
+  moods_mirex_1: "Passionate / Rousing / Rowdy",
+  moods_mirex_2: "Cheerful / Fun / Sweet",
+  moods_mirex_3: "Poignant / Wistful / Bittersweet",
+  moods_mirex_4: "Humorous / Silly / Witty",
+  moods_mirex_5: "Aggressive / Fiery / Intense",
 };
