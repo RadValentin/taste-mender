@@ -345,6 +345,8 @@ export default function Player() {
       return;
     }
 
+    const isDevMode = import.meta.env.DEV;
+
     return(
       <>
         <h4 className="heading mobile-hidden">Stats</h4>
@@ -387,6 +389,14 @@ export default function Player() {
             <p className="player__stats-box-heading">Listened tracks</p>
             <p className="player__stats-box-counter">{playbackState.history.length}</p>
           </div>
+          {isDevMode && (
+            <div className="player__stats-box">
+              <p className="player__stats-box-heading">MBID</p>
+              <p className="player__stats-box-counter player__stats-box-counter--small">
+                {playbackState.currentTrack?.mbid}
+              </p>
+            </div>
+          )}
         </div>
       </>
     )
