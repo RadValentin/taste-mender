@@ -100,6 +100,10 @@ TARGET_FEATURES = {
         "pos_pred_key": "instrumental",
         "neg_pred_key": "voice",
     },
+    "tonal_atonal": {
+        "pos_pred_key": "tonal",
+        "neg_pred_key": "atonal",
+    },
 }
 
 
