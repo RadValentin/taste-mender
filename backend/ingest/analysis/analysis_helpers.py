@@ -87,7 +87,11 @@ TARGET_FEATURES = {
     "mood_party": {
         "pos_pred_key": "party",
         "neg_pred_key": "not_party",
-    }
+    },
+    "mood_acoustic": {
+        "pos_pred_key": "acoustic",
+        "neg_pred_key": "not_acoustic",
+    },
 }
 
 
