@@ -96,6 +96,10 @@ TARGET_FEATURES = {
         "pos_pred_key": "electronic",
         "neg_pred_key": "not_electronic",
     },
+    "voice_instrumental": {
+        "pos_pred_key": "instrumental",
+        "neg_pred_key": "voice",
+    },
 }
 
 
