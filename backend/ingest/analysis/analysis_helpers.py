@@ -83,6 +83,10 @@ TARGET_FEATURES = {
     "mood_relaxed": {
         "pos_pred_key": "relaxed",
         "neg_pred_key": "not_relaxed",
+    },
+    "mood_party": {
+        "pos_pred_key": "party",
+        "neg_pred_key": "not_party",
     }
 }
 
