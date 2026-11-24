@@ -51,17 +51,23 @@ export default function TrackItem({ track, onPlay, disabled, variant = "list" }:
   const artUrl = track.album?.links?.art ?? null;
   const fallbackText = track.album?.name?.trim()?.charAt(0)?.toUpperCase() || "♪";
 
+  const isDevMode = import.meta.env.DEV;
+
   return (
     <div
       className={`track-item track-item--${variant}`}
       aria-label={`${track.title} by ${artists}`}
+      data-mbid={track.mbid}
     >
       <div className="track-item__coverart" aria-hidden="true">
         <ImageLoader src={artUrl} alt="cover art" fallback={fallbackText} />
       </div>
 
       <div className="track-item__meta">
-        <div className="track-item__title" title={track.title}>{track.title}</div>
+        <div className="track-item__title" title={track.title}>
+          {track.title}
+          {isDevMode && variant == "list" && <span className="track-item__mbid">{track.mbid}</span>}
+        </div>
         <div className="track-item__artist-album">
           <span className="artist" title={artists}>{artists}</span>
           {album && <> • <span className="album" title={album}>{album}</span></>}

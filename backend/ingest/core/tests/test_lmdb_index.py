@@ -35,9 +35,6 @@ class LMDBTrackIndexTests(SimpleTestCase):
         self.assertEqual(self.store.get(self.key_a), [self.value_a, self.value_b])
         self.assertEqual(self.store.stats["duplicates"], 1)
 
-    def test_append_invalid_mbid_raises(self):
-        self.assertRaises(ValueError, self.store.append, "not-an-uuid", self.value_a)
-
     def test_set_item(self):
         self.store[self.key_a] = [self.value_a]
         self.store[self.key_b] = [self.value_b]
@@ -69,6 +66,16 @@ class LMDBTrackIndexTests(SimpleTestCase):
             i = keys.index(key)
             self.assertEqual(values, [{"value": i}])
 
+    def test_iter_prefix(self):
+        keys = ["foo:1", "bar:5", "foo:2", "foo:3", "bar:1", "foo:0"]
+        for key in keys:
+            self.store.append(key, {"value": f"{key}:val"})
+        self.store.flush()
+
+        foo_keys = list(filter(lambda x: x.startswith("foo"), keys))
+        store_foo_keys = [key for key, _ in self.store.iter_prefix("foo")]
+        self.assertCountEqual(foo_keys, store_foo_keys)
+
     def test_keys(self):
         keys = [str(uuid.uuid4()) for _ in range(10)]
         for i, key in enumerate(keys):
@@ -82,7 +89,10 @@ class LMDBTrackIndexTests(SimpleTestCase):
             self.store.append(key, {"value": i})
         self.store.flush()
 
-        result = {str(uuid.UUID(bytes=key.tobytes())) for key in self.store.keys_np()}
+        result = {
+            str(uuid.UUID(key))
+            for key in self.store.keys_np()
+        }
         self.assertEqual(result, set(keys))
 
     def test_first_key(self):
@@ -107,11 +117,10 @@ class LMDBTrackIndexTests(SimpleTestCase):
 
     def test_persistence(self):
         self.store[self.key_a] = [self.value_a]
-        self.store.flush()
+        self.store.close()
 
-        tmp_store = LMDBTrackIndex(self.store_path)
-        self.assertEqual(tmp_store.get(self.key_a), [self.value_a])
-        tmp_store.close()
+        self.store = LMDBTrackIndex(self.store_path, map_size=20 * 1024**2)
+        self.assertEqual(self.store.get(self.key_a), [self.value_a])
 
     def test_completion_flag_is_persisted_after_flushing(self):
         self.store.append(self.key_a, self.value_a)

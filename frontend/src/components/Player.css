@@ -110,6 +110,10 @@
   margin: 0;
 }
 
+.player__stats-box-counter--small {
+  font-size: var(--font-size-metadata);
+}
+
 /* Recommendations panel */
 .player__recommendations {
   grid-area: recommendations;

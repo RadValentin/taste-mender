@@ -1,11 +1,17 @@
-import re, os, orjson, tarfile, uuid, logging
-import zstandard as zstd
+import re, os, orjson, uuid, logging
 from collections import Counter, defaultdict
-from datetime import datetime, timezone
+from datetime import datetime
+from pathlib import Path
 from statistics import median_low
 from typing import Any
 
-log = logging.getLogger(__name__)
+# Ensure libarchive can be used. On Windows it requires a prebuilt DLL.
+# Link: https://github.com/li-ruijie/libarchive
+if os.name == "nt":
+    os.environ["LIBARCHIVE"] = (Path(__file__).parent.resolve() / "libarchive-3.8.10.dll").as_posix()
+import libarchive
+
+log = logging.getLogger("ingest.core")
 invalid_date_count = 0
 missing_data_count = 0
 missing_title_count = 0
@@ -359,23 +365,16 @@ def process_file(json_path: str) -> dict[str, Any] | None:
 
 
 def stream_json_from_tar_zst(path: str, read_size=2*1024*1024):
-    dctx = zstd.ZstdDecompressor()
-    with open(path, "rb") as f:
-        with dctx.stream_reader(f, read_size=read_size) as stream:
-            with tarfile.open(fileobj=stream, mode="r|*") as tar:
-                for member in tar:
-                    if not (member.isfile() and member.name.endswith(".json")):
-                        continue
-                    try:
-                        fileobj = tar.extractfile(member)
-                        if not fileobj:
-                            log.warning(f"Skipping {member.name}")
-                            continue
-                        with fileobj:
-                            data = fileobj.read()
-                            yield member.name, data
-                    except Exception as e:
-                        log.warning(f"Failed reading archive {member.name}: {e}")
+    with libarchive.file_reader(path) as archive:
+        for entry in archive:
+            name: str = entry.pathname or ""
+            if not (entry.isfile and name.endswith(".json")):
+                continue
+            try:
+                data = b"".join(entry.get_blocks())
+                yield name, data
+            except Exception as e:
+                log.warning(f"Failed reading archive {entry.name}: {e}")
 
 def iter_archive(archive_path: str, limit: int | None = None):
     print(f"Loading {os.path.normpath(archive_path)}", end="", flush=True)

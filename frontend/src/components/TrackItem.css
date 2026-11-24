@@ -96,6 +96,12 @@
   }
 }
 
+.track-item__mbid {
+  margin-inline-start: .5rem;
+  font-size: .8em;
+  color: var(--text-secondary);
+}
+
 @media (width < 768px) {
   .track-item {
     & .track-item__title {

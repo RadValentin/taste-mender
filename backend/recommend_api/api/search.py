@@ -205,10 +205,10 @@ class SearchView(APIView):
                 )
             serializer = AlbumSerializer(results, many=True)
 
-            # for debugging SQL query
-            if settings.DEBUG:
-                log.debug(str(results.query))
-                #log.debug(results.query.explain(using="default", format="text"))
+            ## for debugging SQL query
+            # if settings.DEBUG:
+            #     log.debug(str(results.query))
+            #    # log.debug(results.query.explain(using="default", format="text"))
 
         # materialize results BEFORE calculating response time for accurate timings
         results = serializer.data
