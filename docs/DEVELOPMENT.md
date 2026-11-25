@@ -279,3 +279,13 @@ docker stop taste-mender-web
 >```sh
 >wsl --shutdown
 >```
+
+## Jupyter Notebooks
+
+Generally, notebooks should be committed to the repo without their cell outputs. However, the outputs can be committed separately as PDF artifacts.
+
+On Windows the setup for PDF export from Jupyter notebooks loaded in VSCode requires the following steps:
+
+- Install MiKTeX - https://miktex.org/download
+- Install Python packages - `pip install nbconvert`
+- Install Pandoc from PowerShell: `winget install --source winget --exact --id JohnMacFarlane.Pandoc`
