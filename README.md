@@ -12,6 +12,10 @@
   <a href="LICENSE"><img src="https://img.shields.io/github/license/RadValentin/taste-mender" alt="License"></a>
 </p>
 
+<div align="center">
+  <img src="assets/tastemender-mobile-tour.jpg" alt="TasteMender mobile tour: search for a song you like, adjust how recommendations should sound, then play a recommended song to find more like it." width="900" />
+</div>
+
 ## Overview
 
 TasteMender is a music discovery app that recommends songs based on acoustic characteristics such as danceability, energy, mood, and genre. You start with a song and shape the recommendations through genre and decade filters, audio-feature settings, and a balance between similarity and popularity. It takes a privacy-first approach: recommendations don't depend on a persistent profile of your listening habits.
